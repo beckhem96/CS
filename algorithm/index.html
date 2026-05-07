@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <span>알고리즘</span>
+    </nav>
+
+    <h1>🧮 알고리즘</h1>
+    <p class="lead">
+      알고리즘(Algorithm)은 어떤 문제를 풀기 위한 <strong>명확한 절차</strong>입니다.
+      같은 문제도 어떤 알고리즘을 쓰느냐에 따라 1초에 끝날 수도, 100년이 걸릴 수도 있죠.
+      여기서는 면접·코딩테스트·실무에서 가장 자주 쓰이는 알고리즘들을
+      <em>왜 그렇게 동작하는지</em>와 <em>언제 어떤 걸 골라야 하는지</em>를 중심으로 정리합니다.
+    </p>
+
+    <!-- =========================================
+         탐색
+    ========================================== -->
+    <section class="concept-section">
+      <h2>탐색(Search)</h2>
+      <p>"찾는다"는 가장 기본적인 작업. 데이터의 형태(정렬됨/그래프 등)에 따라 적절한 알고리즘이 달라진다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="binary-search.html">이진 탐색(Binary Search)</a>
+          <span class="summary">정렬된 배열을 절반씩 줄여 O(log n)에 찾기. lower_bound / upper_bound 변형이 필수.</span>
+        </li>
+        <li>
+          <a href="bfs-dfs.html">BFS / DFS (그래프 탐색)</a>
+          <span class="summary">너비 우선(큐)과 깊이 우선(스택/재귀). 가중치 없는 최단 경로, 사이클 탐지 등.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- =========================================
+         정렬
+    ========================================== -->
+    <section class="concept-section">
+      <h2>정렬(Sorting)</h2>
+      <p>가장 자주 등장하는 도구. 안정성·in-place 여부·평균/최악 복잡도가 선택 기준이 된다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="sorting.html">정렬 알고리즘 입문</a>
+          <span class="summary">버블/선택/삽입/병합/퀵/힙 정렬 비교. 안정 정렬, in-place, 비교 vs 비비교.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- =========================================
+         그래프 알고리즘
+    ========================================== -->
+    <section class="concept-section">
+      <h2>그래프 알고리즘</h2>
+      <p>최단 경로, 신장 트리, 위상 정렬 등 그래프의 구조를 활용하는 문제들.</p>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>다익스트라(Dijkstra) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">가중치 그래프의 최단 경로. 우선순위 큐로 O((V+E) log V).</span>
+        </li>
+        <li class="todo">
+          <a>벨만-포드 / 플로이드-워셜 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">음수 가중치 허용, 모든 쌍 최단 경로.</span>
+        </li>
+        <li class="todo">
+          <a>유니온-파인드(Union-Find) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">경로 압축 + 랭크 합치기로 거의 O(1)에 동치 클래스 관리.</span>
+        </li>
+        <li class="todo">
+          <a>위상 정렬(Topological Sort) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">DAG에서 의존 순서로 정점 나열. 빌드 시스템·작업 스케줄러의 기반.</span>
+        </li>
+        <li class="todo">
+          <a>최소 신장 트리 — 크루스칼 / 프림 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">모든 정점을 잇는 최소 비용 트리. 네트워크 설계에서 자주 등장.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- =========================================
+         설계 기법
+    ========================================== -->
+    <section class="concept-section">
+      <h2>설계 기법(Design Paradigm)</h2>
+      <p>특정 알고리즘이 아니라, 문제를 푸는 사고의 큰 틀.</p>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>동적 계획법(DP) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">중복 부분 문제를 메모이제이션 또는 타뷸레이션으로 해결.</span>
+        </li>
+        <li class="todo">
+          <a>그리디(Greedy) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">매 순간 가장 좋아 보이는 선택. 최적 부분 구조 + 그리디 선택 속성이 필요.</span>
+        </li>
+        <li class="todo">
+          <a>분할 정복(Divide &amp; Conquer) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">문제를 작은 부분으로 나눠 풀고 합치기. 병합 정렬, 퀵 정렬, 마스터 정리.</span>
+        </li>
+        <li class="todo">
+          <a>백트래킹(Backtracking) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">결정을 시도하다 막히면 되돌아가기. N-Queens, 부분집합, 순열 생성.</span>
+        </li>
+      </ul>
+    </section>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="../index.html">🏠 홈으로</a>
+      <span></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

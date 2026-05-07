@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BFS / DFS · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>BFS / DFS</span>
+    </nav>
+
+    <h1>BFS / DFS (그래프 탐색)</h1>
+
+    <div class="definition">
+      <strong>BFS(Breadth-First Search, 너비 우선 탐색)</strong>와 <strong>DFS(Depth-First Search, 깊이 우선 탐색)</strong>는
+      그래프나 트리의 정점들을 모두 방문하기 위한 두 가지 표준 탐색 방식입니다.
+      <strong>BFS는 큐</strong>를, <strong>DFS는 스택(또는 재귀)</strong>을 사용합니다.
+      가까운 곳부터 넓게 vs 한 방향으로 깊게 — 이 차이가 모든 응용을 결정합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비유하자면 BFS는 <strong>호수에 돌을 던졌을 때 퍼지는 물결</strong>이고, DFS는 <strong>미로에서 한쪽 벽만 짚고 따라가는 사람</strong>입니다.
+      BFS는 출발점에서 거리 1, 거리 2, 거리 3… 이런 식으로 동심원처럼 퍼져나가고,
+      DFS는 한쪽 길로 끝까지 들어갔다가 막히면 한 발짝 되돌아와 다른 길을 시도합니다.
+    </p>
+    <p>
+      두 알고리즘 모두 "이미 방문한 정점은 다시 방문하지 않는다"는 규칙을 지켜 사이클이 있어도 무한 루프에 빠지지 않습니다.
+      이걸 위해 보통 <code>visited</code> 배열이나 집합을 둡니다.
+    </p>
+
+    <table class="complexity">
+      <thead>
+        <tr><th>구분</th><th>BFS</th><th>DFS</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>보조 자료구조</td><td><a href="../data-structure/queue.html">큐</a></td><td><a href="../data-structure/stack.html">스택</a> 또는 재귀(호출 스택)</td></tr>
+        <tr><td>탐색 방식</td><td>가까운 정점부터 넓게</td><td>한 방향으로 끝까지 깊게</td></tr>
+        <tr><td>최단 경로 (가중치 없음)</td><td>✓ 보장</td><td>✗ 보장 안 됨</td></tr>
+        <tr><td>메모리</td><td>O(W) — W = 한 레벨의 폭(최대)</td><td>O(H) — H = 트리/그래프 깊이</td></tr>
+        <tr><td>대표 응용</td><td>최단 거리, 레벨 단위 처리</td><td>사이클 탐지, 위상 정렬, 연결 요소 찾기, SCC</td></tr>
+      </tbody>
+    </table>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      그래프와 트리 위에서 풀어야 할 문제 거의 전부가 BFS/DFS로 환원됩니다. 미로 최단 경로, 한 사람과의 친밀도(SNS 거리), 페이지 크롤링,
+      회로의 도달 가능성, 빌드 의존성 정렬, 컴파일러의 제어 흐름 분석…
+    </p>
+    <p>
+      두 방식은 서로 대체 가능한 게 아니라 <strong>문제의 성격에 따라 골라야 하는 도구</strong>입니다.
+      "가장 가까운 답"이 필요하면 BFS, "구조 분석/사이클/순서"가 필요하면 DFS — 이 한 줄이 핵심입니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 같은 그래프에서의 BFS / DFS 방문 순서 비교</h3>
+    <p>아래 그래프를 정점 1에서 출발해 탐색해 봅시다 (이웃은 번호 작은 순으로 방문).</p>
+
+    <div class="viz">
+      <svg width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="BFS/DFS 비교">
+        <!-- 그래프 -->
+        <line x1="100" y1="60"  x2="60"  y2="140" class="arrow"/>
+        <line x1="100" y1="60"  x2="140" y2="140" class="arrow"/>
+        <line x1="60"  y1="140" x2="40"  y2="200" class="arrow"/>
+        <line x1="60"  y1="140" x2="100" y2="200" class="arrow"/>
+        <line x1="140" y1="140" x2="180" y2="200" class="arrow"/>
+
+        <circle class="node" cx="100" cy="60"  r="22"/><text class="node-text" x="100" y="60">1</text>
+        <circle class="node" cx="60"  cy="140" r="22"/><text class="node-text" x="60"  y="140">2</text>
+        <circle class="node" cx="140" cy="140" r="22"/><text class="node-text" x="140" y="140">3</text>
+        <circle class="node" cx="40"  cy="200" r="22"/><text class="node-text" x="40"  y="200">4</text>
+        <circle class="node" cx="100" cy="200" r="22"/><text class="node-text" x="100" y="200">5</text>
+        <circle class="node" cx="180" cy="200" r="22"/><text class="node-text" x="180" y="200">6</text>
+
+        <!-- BFS -->
+        <text class="label" x="280" y="60" font-weight="bold" fill="var(--accent)">BFS 방문 순서: 1 → 2 → 3 → 4 → 5 → 6</text>
+        <text class="label" x="280" y="80">레벨별로 1 / 2,3 / 4,5,6 묶어서 처리됨</text>
+        <text class="label" x="280" y="100">→ 1에서 4까지 거리 = 2 (최단)</text>
+
+        <!-- DFS -->
+        <text class="label" x="280" y="150" font-weight="bold" fill="var(--accent)">DFS 방문 순서: 1 → 2 → 4 → 5 → 3 → 6</text>
+        <text class="label" x="280" y="170">한쪽 끝(4)까지 들어갔다가 되돌아오며 진행</text>
+        <text class="label" x="280" y="190">→ 사이클·도달 가능성 분석에 알맞음</text>
+      </svg>
+      <span class="viz-caption">같은 그래프라도 방문 순서가 완전히 다르다.</span>
+    </div>
+
+    <h3>2) BFS의 동작 — 큐로 레벨 단위 처리</h3>
+    <ol>
+      <li>출발 정점을 큐에 넣고 방문 표시.</li>
+      <li>큐에서 하나 꺼내고, 그 이웃 중 아직 방문하지 않은 정점을 모두 큐에 넣고 방문 표시.</li>
+      <li>큐가 빌 때까지 반복.</li>
+    </ol>
+
+    <h3>3) DFS의 동작 — 재귀 또는 스택</h3>
+    <ol>
+      <li>현재 정점을 방문 표시하고 처리.</li>
+      <li>이웃 중 아직 방문하지 않은 정점을 골라 그 정점에서 DFS를 재귀 호출.</li>
+      <li>모든 이웃 방문이 끝나면 호출이 자연스럽게 되돌아옴.</li>
+    </ol>
+
+    <h3>4) Java 코드로 보기</h3>
+<pre><code>import java.util.*;
+
+// 인접 리스트로 그래프 표현
+List&lt;List&lt;Integer&gt;&gt; adj;   // adj.get(u) = u의 이웃 목록
+
+// BFS — 시작 정점에서 모든 정점까지의 최단 거리
+int[] bfs(int start, int n) {
+    int[] dist = new int[n];
+    Arrays.fill(dist, -1);
+
+    Queue&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();
+    q.offer(start);
+    dist[start] = 0;
+
+    while (!q.isEmpty()) {
+        int u = q.poll();
+        for (int v : adj.get(u)) {
+            if (dist[v] == -1) {
+                dist[v] = dist[u] + 1;
+                q.offer(v);
+            }
+        }
+    }
+    return dist;
+}
+
+// DFS — 재귀
+boolean[] visited;
+
+void dfs(int u) {
+    visited[u] = true;
+    // u 처리
+
+    for (int v : adj.get(u)) {
+        if (!visited[v]) dfs(v);
+    }
+}
+
+// DFS — 명시적 스택 (재귀 깊이가 너무 클 때)
+void dfsIterative(int start) {
+    Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+    stack.push(start);
+
+    while (!stack.isEmpty()) {
+        int u = stack.pop();
+        if (visited[u]) continue;
+        visited[u] = true;
+        // u 처리
+
+        for (int v : adj.get(u)) {
+            if (!visited[v]) stack.push(v);
+        }
+    }
+}
+
+// 응용: 그래프의 연결 요소 개수
+int countComponents(int n) {
+    visited = new boolean[n];
+    int cnt = 0;
+    for (int i = 0; i &lt; n; i++) {
+        if (!visited[i]) {
+            dfs(i);     // 한 번의 DFS가 한 연결 요소를 모두 방문
+            cnt++;
+        }
+    }
+    return cnt;
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>구분</th><th>시간</th><th>공간</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>BFS / DFS (인접 리스트)</td><td>O(V + E)</td><td>O(V) — 방문 배열 + 큐/스택</td></tr>
+        <tr><td>BFS / DFS (인접 행렬)</td><td>O(V²)</td><td>O(V)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      두 알고리즘 모두 모든 정점과 모든 간선을 한 번씩 보기 때문에 시간 복잡도는 같습니다.
+      메모리는 BFS가 큐에 한 레벨의 정점들을 모두 담고 있어야 해서 그래프가 옆으로 넓을수록 많이 쓰고,
+      DFS는 재귀 깊이가 곧 호출 스택이라 그래프가 깊으면(혹은 길게 늘어진 트리면) 스택 오버플로 위험이 있습니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>BFS — 가중치 없는 최단 경로</strong>: 미로 풀이, 친구의 친구, 라우팅 홉 수.</li>
+      <li><strong>BFS — 레벨 단위 처리</strong>: 트리의 레벨 순회, 단계별 시뮬레이션.</li>
+      <li><strong>DFS — 사이클 탐지 / 강한 연결 요소(SCC)</strong>: Tarjan, Kosaraju 알고리즘의 기반.</li>
+      <li><strong>DFS — 위상 정렬</strong>: 빌드 의존성, 작업 스케줄러, Spark의 DAG 처리.</li>
+      <li><strong>DFS — 백트래킹</strong>: N-Queens, 부분집합·순열 생성, 스도쿠 풀이.</li>
+      <li><strong>DFS — 전역 상태 분석</strong>: 컴파일러의 제어 흐름 그래프, 데드 코드 검출.</li>
+      <li><strong>웹 크롤러</strong>: 보통 BFS로 출발 페이지에서 가까운 페이지부터 수집.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">BFS와 DFS는 각각 언제 쓰나요?</div>
+      <div class="a">
+        <strong>가까운 정점부터 처리</strong>해야 한다면 BFS가 답입니다. 가중치 없는 그래프의 최단 경로,
+        레벨 단위 시뮬레이션이 대표적이에요. 반면 그래프의 <strong>구조 분석</strong>(사이클, 위상 순서, 연결 요소, SCC)이나
+        <strong>완전 탐색·백트래킹</strong>이 필요하면 DFS가 자연스럽습니다. 시간 복잡도는 둘 다 O(V+E)로 같으니,
+        문제가 요구하는 <em>방문 순서의 의미</em>로 결정합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DFS를 재귀 대신 명시적 스택으로 짜는 이유는요?</div>
+      <div class="a">
+        주된 이유는 <strong>스택 오버플로 회피</strong>입니다. 그래프가 깊거나 정점이 매우 많으면 재귀 호출 깊이가 JVM 한계를 넘어서
+        <code>StackOverflowError</code>가 발생합니다. 명시적 스택은 힙 메모리에 쌓여 훨씬 큰 깊이를 견딜 수 있어요.
+        또 일부 응용(예: 반복 깊이 우선 탐색, IDS)에선 스택을 직접 다뤄야 자연스러운 경우도 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">BFS가 가중치 있는 그래프의 최단 경로를 구하지 못하는 이유는요?</div>
+      <div class="a">
+        BFS는 "한 칸 = 1"이라고 가정하고 레벨 순서로 방문하기 때문입니다. 간선마다 가중치가 다르면, 더 적은 칸으로 갔지만 비용이 큰 경로가
+        먼저 도착해 그 정점이 "처리 완료"로 굳어버려 더 짧은(가중치 합이 작은) 경로를 놓치게 됩니다.
+        그래서 가중치 그래프의 최단 경로는 우선순위 큐를 사용한 <strong>다익스트라</strong> 같은 알고리즘이 필요합니다.
+        가중치가 0/1만 있으면 0-1 BFS(덱 이용)로 가능하긴 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DFS로 사이클을 어떻게 검출하나요?</div>
+      <div class="a">
+        방향 그래프에선 정점 상태를 <em>WHITE(미방문) / GRAY(현재 경로 위) / BLACK(끝남)</em>으로 추적합니다.
+        DFS 도중 GRAY인 정점으로 가는 간선을 만나면 "현재 탐색 경로로 다시 돌아오는" 사이클입니다.
+        무방향 그래프에선 부모가 아닌 이미 방문된 정점으로 가는 간선이 사이클 신호이고요.
+        둘 다 시간 복잡도는 O(V+E)에 끝납니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="../data-structure/graph.html">그래프</a></li>
+      <li><a href="../data-structure/queue.html">큐</a></li>
+      <li><a href="../data-structure/stack.html">스택</a></li>
+      <li><a href="binary-search.html">이진 탐색</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="sorting.html">
+        <span class="label">이전</span>
+        ← 정렬
+      </a>
+      <a href="index.html">📂 알고리즘으로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

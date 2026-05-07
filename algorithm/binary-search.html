@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>이진 탐색(Binary Search) · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>이진 탐색</span>
+    </nav>
+
+    <h1>이진 탐색(Binary Search)</h1>
+
+    <div class="definition">
+      <strong>이진 탐색</strong>이란, <strong>정렬된 배열</strong>에서 가운데 값을 보고 찾는 값과 비교해
+      탐색 범위를 절반씩 줄여가며 O(log n)에 원소를 찾는 알고리즘입니다.
+      "정답을 매개변수로 두고 조건을 만족하는지 검사"하는 <strong>매개변수 탐색</strong>으로 일반화되어 광범위하게 쓰입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비유는 단순합니다. <strong>500쪽짜리 책에서 247쪽 찾기</strong>. 책 절반을 펴서 250쪽이 나오면
+      "247은 앞쪽이네" 하고 앞쪽 절반에서 다시 절반을 펴고… 이런 식으로 한 번에 후보를 절반씩 버리면
+      금방 찾는 페이지에 도달하죠. 이진 탐색이 정확히 이거예요.
+    </p>
+    <p>
+      알고리즘은 두 개의 포인터 <code>lo</code>, <code>hi</code>로 탐색 범위를 표현하고,
+      <code>mid = (lo + hi) / 2</code>의 값을 찾는 값과 비교해 다음 중 하나로 분기합니다.
+    </p>
+    <ul>
+      <li><code>arr[mid] == target</code> — 찾았다, 종료.</li>
+      <li><code>arr[mid] &lt; target</code> — 답은 오른쪽 절반에 있다 → <code>lo = mid + 1</code></li>
+      <li><code>arr[mid] &gt; target</code> — 답은 왼쪽 절반에 있다 → <code>hi = mid - 1</code></li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>이진 탐색의 전제 — "단조성(monotonicity)"</strong></p>
+      <p>
+        이진 탐색이 동작하려면 데이터에 <em>순서가 있어서</em>, 한쪽에 답이 있다는 걸 한 번의 비교로 결정할 수 있어야 합니다.
+        정렬된 배열이 가장 흔한 예지만, "조건 X를 만족하는 가장 작은 값"처럼 결정 함수가 단조롭기만 하면
+        배열이 아닌 문제(매개변수 탐색)에도 적용됩니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      선형 탐색은 평균적으로 n/2번, 최악으로 n번 비교가 필요합니다. n이 1억이라면 1억 번이죠.
+      반면 이진 탐색은 한 번 비교할 때마다 후보가 절반씩 줄어 <strong>log₂ 1억 ≈ 27번</strong>이면 끝납니다.
+      데이터가 수백만 개를 넘어가면 차이가 어마어마합니다.
+    </p>
+    <p>
+      더 큰 가치는 응용 가능성에 있어요. "조건을 만족하는 최소/최대 값"을 찾는 문제,
+      회전된 정렬 배열에서 값 찾기, 함수의 영점 찾기 같은 문제도 모두 이진 탐색의 변형입니다.
+      코딩테스트의 단골 도구이기도 합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 단계별 시각화 — 정렬된 배열에서 23 찾기</h3>
+
+    <div class="viz">
+      <svg width="640" height="320" viewBox="0 0 640 320" role="img" aria-label="이진 탐색 단계">
+        <text class="label" x="20" y="20" font-weight="bold">배열: [1, 5, 9, 13, 17, 23, 28, 35, 42] (찾는 값: 23)</text>
+
+        <!-- step 1: lo=0, hi=8, mid=4 (17) -->
+        <text class="label" x="20" y="55">단계 1. lo=0, hi=8, mid=4 → arr[4]=17 &lt; 23 → 오른쪽으로</text>
+        <g transform="translate(20, 70)">
+          <rect class="node" x="0"   y="0" width="50" height="34" rx="4"/><text class="node-text" x="25"  y="18">1</text>
+          <rect class="node" x="55"  y="0" width="50" height="34" rx="4"/><text class="node-text" x="80"  y="18">5</text>
+          <rect class="node" x="110" y="0" width="50" height="34" rx="4"/><text class="node-text" x="135" y="18">9</text>
+          <rect class="node" x="165" y="0" width="50" height="34" rx="4"/><text class="node-text" x="190" y="18">13</text>
+          <rect class="node highlight" x="220" y="0" width="50" height="34" rx="4"/><text class="node-text" x="245" y="18" fill="#1a1a1a" font-weight="bold">17</text>
+          <rect class="node" x="275" y="0" width="50" height="34" rx="4"/><text class="node-text" x="300" y="18">23</text>
+          <rect class="node" x="330" y="0" width="50" height="34" rx="4"/><text class="node-text" x="355" y="18">28</text>
+          <rect class="node" x="385" y="0" width="50" height="34" rx="4"/><text class="node-text" x="410" y="18">35</text>
+          <rect class="node" x="440" y="0" width="50" height="34" rx="4"/><text class="node-text" x="465" y="18">42</text>
+          <text class="label" x="25"  y="50" text-anchor="middle">lo</text>
+          <text class="label" x="245" y="50" text-anchor="middle">mid</text>
+          <text class="label" x="465" y="50" text-anchor="middle">hi</text>
+        </g>
+
+        <!-- step 2: lo=5, hi=8, mid=6 (28) -->
+        <text class="label" x="20" y="155">단계 2. lo=5, hi=8, mid=6 → arr[6]=28 &gt; 23 → 왼쪽으로</text>
+        <g transform="translate(20, 170)">
+          <rect x="0"   y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="25"  y="18" fill="var(--text-dim)">1</text>
+          <rect x="55"  y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="80"  y="18" fill="var(--text-dim)">5</text>
+          <rect x="110" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="135" y="18" fill="var(--text-dim)">9</text>
+          <rect x="165" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="190" y="18" fill="var(--text-dim)">13</text>
+          <rect x="220" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="245" y="18" fill="var(--text-dim)">17</text>
+          <rect class="node" x="275" y="0" width="50" height="34" rx="4"/><text class="node-text" x="300" y="18">23</text>
+          <rect class="node highlight" x="330" y="0" width="50" height="34" rx="4"/><text class="node-text" x="355" y="18" fill="#1a1a1a" font-weight="bold">28</text>
+          <rect class="node" x="385" y="0" width="50" height="34" rx="4"/><text class="node-text" x="410" y="18">35</text>
+          <rect class="node" x="440" y="0" width="50" height="34" rx="4"/><text class="node-text" x="465" y="18">42</text>
+          <text class="label" x="300" y="50" text-anchor="middle">lo</text>
+          <text class="label" x="355" y="50" text-anchor="middle">mid</text>
+          <text class="label" x="465" y="50" text-anchor="middle">hi</text>
+        </g>
+
+        <!-- step 3: lo=5, hi=5, mid=5 (23) → 발견 -->
+        <text class="label" x="20" y="255">단계 3. lo=5, hi=5, mid=5 → arr[5]=23 == 23 → 발견!</text>
+        <g transform="translate(20, 270)">
+          <rect x="0"   y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="25"  y="18" fill="var(--text-dim)">1</text>
+          <rect x="55"  y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="80"  y="18" fill="var(--text-dim)">5</text>
+          <rect x="110" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="135" y="18" fill="var(--text-dim)">9</text>
+          <rect x="165" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="190" y="18" fill="var(--text-dim)">13</text>
+          <rect x="220" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="245" y="18" fill="var(--text-dim)">17</text>
+          <rect class="node highlight" x="275" y="0" width="50" height="34" rx="4"/><text class="node-text" x="300" y="18" fill="#1a1a1a" font-weight="bold">23</text>
+          <rect x="330" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="355" y="18" fill="var(--text-dim)">28</text>
+          <rect x="385" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="410" y="18" fill="var(--text-dim)">35</text>
+          <rect x="440" y="0" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/><text class="node-text" x="465" y="18" fill="var(--text-dim)">42</text>
+        </g>
+      </svg>
+      <span class="viz-caption">9개 원소를 단 3번의 비교로 끝낸다 — log₂ 9 ≈ 3.17.</span>
+    </div>
+
+    <h3>2) 자주 헷갈리는 변형 — lower_bound / upper_bound</h3>
+    <p>
+      "정확히 일치하는 인덱스"가 아니라 <strong>경계</strong>를 찾고 싶을 때가 더 많습니다. 두 가지 표준 변형을 외워두면 응용이 쉬워요.
+    </p>
+    <ul>
+      <li><strong>lower_bound(target)</strong> — <em>target 이상</em>의 첫 번째 인덱스. 즉 "target을 삽입할 수 있는 가장 왼쪽 자리".</li>
+      <li><strong>upper_bound(target)</strong> — <em>target 초과</em>의 첫 번째 인덱스. 즉 "target을 삽입할 수 있는 가장 오른쪽 자리".</li>
+    </ul>
+    <p>
+      두 값을 빼면 <strong>target의 등장 횟수</strong>(= upper - lower)가 나옵니다. 정렬된 배열에서 등장 횟수, 범위 카운트 같은 문제가 깔끔하게 풀려요.
+    </p>
+
+    <h3>3) Java 코드로 보기</h3>
+<pre><code>// 표준 이진 탐색 — 값 인덱스 반환, 없으면 -1
+int binarySearch(int[] arr, int target) {
+    int lo = 0, hi = arr.length - 1;
+    while (lo &lt;= hi) {
+        int mid = lo + (hi - lo) / 2;     // 오버플로 방지
+        if (arr[mid] == target) return mid;
+        if (arr[mid] &lt; target) lo = mid + 1;
+        else                   hi = mid - 1;
+    }
+    return -1;
+}
+
+// lower_bound — target 이상의 첫 인덱스 (없으면 arr.length)
+int lowerBound(int[] arr, int target) {
+    int lo = 0, hi = arr.length;          // hi는 length로!
+    while (lo &lt; hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (arr[mid] &lt; target) lo = mid + 1;
+        else                   hi = mid;
+    }
+    return lo;
+}
+
+// 매개변수 탐색 — "조건 ok(x)가 단조롭게 false→true로 바뀐다"고 가정
+int parametricSearch(int lo, int hi) {
+    // ok(x) = (x가 충분히 큰가)
+    while (lo &lt; hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (ok(mid)) hi = mid;            // 조건 만족하는 가장 작은 mid를 찾음
+        else         lo = mid + 1;
+    }
+    return lo;
+}
+
+// 표준 라이브러리 활용
+import java.util.Arrays;
+int idx = Arrays.binarySearch(arr, target);  // 음수 반환은 "삽입 자리의 ~값"
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>버전</th><th>시간</th><th>공간</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>반복문 구현</td><td>O(log n)</td><td>O(1)</td></tr>
+        <tr><td>재귀 구현</td><td>O(log n)</td><td>O(log n) — 호출 스택</td></tr>
+      </tbody>
+    </table>
+    <p>
+      "한 번 비교에 후보가 절반"이 핵심입니다. n번에 도달하려면 <code>n / 2 / 2 / ... / 2 = 1</code>이 되는 횟수, 즉 log₂ n 번.
+      재귀로 짜면 코드가 깔끔하지만 호출 스택이 쌓이므로, 보통은 반복문으로 짭니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>정렬된 배열에서 키 검색</strong> — Java <code>Arrays.binarySearch</code>, C++ <code>std::lower_bound</code> 등 표준 라이브러리.</li>
+      <li><strong>데이터베이스 인덱스</strong> — B+Tree 노드 안에서 키를 찾을 때 이진 탐색 사용.</li>
+      <li><strong>매개변수 탐색</strong> — "최소 시간 안에 끝낼 수 있는 가장 큰 작업 크기" 같은 최적화 문제.</li>
+      <li><strong>Git의 <code>git bisect</code></strong> — 어떤 커밋에서 버그가 들어왔는지 이진 탐색으로 찾음.</li>
+      <li><strong>회전된 정렬 배열에서 검색</strong>, <strong>버전 관리에서 첫 결함 버전 찾기</strong> 같은 변형 문제.</li>
+      <li><strong>코딩테스트의 단골</strong> — "정답을 이분 탐색"하는 문제는 아주 흔한 패턴.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">이진 탐색에서 <code>mid = (lo + hi) / 2</code> 대신 <code>lo + (hi - lo) / 2</code>를 쓰는 이유는요?</div>
+      <div class="a">
+        정수 오버플로 방지 때문입니다. <code>lo + hi</code>가 int 범위를 넘으면 음수가 되어 잘못된 mid를 계산할 수 있습니다.
+        실제로 자바 표준 라이브러리도 한때 이 버그가 있었어요. <code>lo + (hi - lo) / 2</code>는 차이를 먼저 구해 더하기 때문에
+        오버플로가 일어나지 않습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">중복 값이 있는 배열에서 첫 번째 위치는 어떻게 찾나요?</div>
+      <div class="a">
+        <strong>lower_bound</strong>를 쓰면 됩니다. <code>arr[mid] &lt; target</code>일 때만 <code>lo = mid + 1</code>로 옮기고,
+        <code>arr[mid] &gt;= target</code>이면 <code>hi = mid</code>로 두는 식이죠. 이렇게 하면 같은 값이 여러 개 있어도
+        그중 가장 왼쪽 인덱스를 보장하게 됩니다. upper_bound도 같은 패턴인데 부등호만 살짝 다릅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">이진 탐색을 쓸 수 있는 조건은 무엇인가요?</div>
+      <div class="a">
+        한 번의 비교로 답이 어느 쪽에 있는지 결정할 수 있어야 합니다 — 즉 <strong>단조성</strong>이 있어야 합니다.
+        가장 흔한 경우가 정렬된 배열이지만, "어떤 조건 ok(x)가 false → true로 한 번만 바뀌는 함수"라면
+        배열이 아니어도 적용 가능합니다(매개변수 탐색). 단조성이 깨지면 이진 탐색은 잘못된 답을 줄 수 있어요.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">매개변수 탐색은 일반 이진 탐색과 어떻게 다른가요?</div>
+      <div class="a">
+        구조는 같습니다. 차이는 <em>탐색 대상</em>이 배열의 인덱스가 아니라 <strong>정답 후보의 값</strong>이라는 점이에요.
+        예: "출판할 수 있는 책의 최소 두께"를 구하라 → 두께를 mid로 두고, 그 두께로 출판이 가능한지 ok(mid) 함수로 확인합니다.
+        ok가 단조롭게 변한다는 보장이 있으면 이진 탐색으로 답을 좁혀갈 수 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="../data-structure/array.html">배열</a></li>
+      <li><a href="../data-structure/binary-search-tree.html">이진 탐색 트리</a></li>
+      <li><a href="sorting.html">정렬</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span class="prev"></span>
+      <a href="index.html">📂 알고리즘으로</a>
+      <a class="next" href="sorting.html">
+        <span class="label">다음</span>
+        정렬 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

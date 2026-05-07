@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>정렬 알고리즘 입문 · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>정렬 알고리즘 입문</span>
+    </nav>
+
+    <h1>정렬 알고리즘 입문</h1>
+
+    <div class="definition">
+      <strong>정렬(sort)</strong>이란 데이터를 어떤 기준에 따라 <strong>오름차순/내림차순으로 재배치</strong>하는 작업입니다.
+      알고리즘은 십수 가지가 있지만, 핵심은 <em>시간 복잡도</em>·<em>공간 복잡도</em>·<em>안정성</em>·<em>동작 방식(in-place 등)</em>이라는 네 축을 이해하는 것입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      정렬은 가장 단순해 보이지만 실무에서 끊임없이 등장합니다. 이진 탐색·중위 순회·구간 합 같은 알고리즘은 모두 정렬을 전제로 하고,
+      "비슷한 데이터를 모은다"는 것만으로 풀리는 문제도 많아요. 그래서 정렬 자체보다 <strong>"이 상황에 어떤 정렬이 어울리는가"</strong>를 고를 줄 아는 게 중요합니다.
+    </p>
+
+    <h3>판단 기준 4가지</h3>
+    <ul>
+      <li><strong>시간 복잡도</strong> — n이 클 때 O(n²)와 O(n log n)는 차원이 다른 차이를 만듦.</li>
+      <li><strong>공간 복잡도</strong> — 추가 메모리가 필요한가? <em>제자리(in-place)</em> 정렬은 추가 메모리가 O(1).</li>
+      <li>
+        <strong>안정성(stability)</strong> — 같은 값을 가진 원소들의 <em>원래 순서</em>가 정렬 후에도 유지되는가?
+        예: "이름순 정렬 후 다시 점수순 정렬"이 의미를 가지려면 안정 정렬이어야 함.
+      </li>
+      <li><strong>동작 특성</strong> — 비교 기반인가, 키 자체를 인덱스로 쓰는 비비교 정렬인가? 데이터 분포에 따라 유리한 게 달라짐.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>비교 정렬은 O(n log n)가 한계다</strong></p>
+      <p>
+        원소를 두 개씩 비교하기만 해서는 어떤 알고리즘도 O(n log n)보다 빨라질 수 없습니다(정보 이론적 하한).
+        그래서 그보다 빠른 정렬은 비교 외의 정보(예: 키 값의 범위, 자릿수)를 활용하는 <strong>비비교 정렬</strong>(계수·기수·버킷 정렬)뿐입니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      이진 탐색은 정렬 없이는 동작하지 않고, "중복 제거"·"가장 가까운 두 원소 찾기"·"중앙값"·"구간 카운팅" 같은 문제도
+      정렬해두면 한 번 훑기만으로 끝납니다. 또 정렬은 자주 일어나는 작업이라 라이브러리·DB가 내장 정렬을 제공하고,
+      각자 다른 알고리즘(자바는 Timsort, C++ <code>std::sort</code>는 introsort)을 씁니다. 어떤 게 어떤 이유로 선택됐는지 아는 것 자체가
+      알고리즘 안목입니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 한눈에 보는 6가지 정렬</h3>
+    <table class="complexity">
+      <thead>
+        <tr>
+          <th>알고리즘</th>
+          <th>평균</th>
+          <th>최악</th>
+          <th>공간</th>
+          <th>안정?</th>
+          <th>특징</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>버블 정렬(Bubble)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✓</td>
+          <td>인접 비교/교환. 교육용 외에는 안 씀.</td>
+        </tr>
+        <tr>
+          <td>선택 정렬(Selection)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✗</td>
+          <td>매번 최솟값을 골라 앞으로 옮김. 교환 횟수 적음.</td>
+        </tr>
+        <tr>
+          <td>삽입 정렬(Insertion)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>✓</td>
+          <td>거의 정렬된 데이터에선 O(n)에 가까움. Timsort의 부분 알고리즘.</td>
+        </tr>
+        <tr>
+          <td>병합 정렬(Merge)</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n)</td><td>✓</td>
+          <td>분할정복. 안정 + 최악 보장. 추가 메모리 필요.</td>
+        </tr>
+        <tr>
+          <td>퀵 정렬(Quick)</td><td>O(n log n)</td><td>O(n²)</td><td>O(log n)</td><td>✗</td>
+          <td>피벗 기반 분할정복. 평균 매우 빠름. 최악은 편향 시.</td>
+        </tr>
+        <tr>
+          <td>힙 정렬(Heap)</td><td>O(n log n)</td><td>O(n log n)</td><td>O(1)</td><td>✗</td>
+          <td>제자리 + 최악 보장. 캐시 효율은 떨어지는 편.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2) 삽입 정렬 — 단계별 시각화</h3>
+    <p>
+      카드 정렬과 똑같습니다. 왼쪽이 정렬된 영역, 오른쪽이 미정렬 영역. 미정렬에서 한 장씩 뽑아 정렬된 영역의 적절한 자리에 끼워넣어요.
+      거의 정렬된 데이터에선 매우 빠르고, 작은 배열에선 단순함 덕분에 실제로 빠릅니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="240" viewBox="0 0 640 240" role="img" aria-label="삽입 정렬 단계">
+        <text class="label" x="20" y="20" font-weight="bold">[5, 3, 8, 1, 4]를 삽입 정렬로 처리</text>
+
+        <text class="label" x="20" y="55">초기 → 5 | 3 8 1 4</text>
+        <g transform="translate(180, 40)">
+          <rect class="node" x="0" y="0" width="40" height="30" rx="4"/><text class="node-text" x="20" y="16">5</text>
+          <line x1="42" y1="0" x2="42" y2="30" stroke="var(--accent)" stroke-width="2"/>
+          <rect class="node" x="44" y="0" width="40" height="30" rx="4"/><text class="node-text" x="64" y="16">3</text>
+          <rect class="node" x="88" y="0" width="40" height="30" rx="4"/><text class="node-text" x="108" y="16">8</text>
+          <rect class="node" x="132" y="0" width="40" height="30" rx="4"/><text class="node-text" x="152" y="16">1</text>
+          <rect class="node" x="176" y="0" width="40" height="30" rx="4"/><text class="node-text" x="196" y="16">4</text>
+        </g>
+
+        <text class="label" x="20" y="95">3 삽입 → 3 5 | 8 1 4</text>
+        <g transform="translate(180, 80)">
+          <rect class="node" x="0" y="0" width="40" height="30" rx="4"/><text class="node-text" x="20" y="16">3</text>
+          <rect class="node" x="44" y="0" width="40" height="30" rx="4"/><text class="node-text" x="64" y="16">5</text>
+          <line x1="86" y1="0" x2="86" y2="30" stroke="var(--accent)" stroke-width="2"/>
+          <rect class="node" x="88" y="0" width="40" height="30" rx="4"/><text class="node-text" x="108" y="16">8</text>
+          <rect class="node" x="132" y="0" width="40" height="30" rx="4"/><text class="node-text" x="152" y="16">1</text>
+          <rect class="node" x="176" y="0" width="40" height="30" rx="4"/><text class="node-text" x="196" y="16">4</text>
+        </g>
+
+        <text class="label" x="20" y="135">8 삽입 → 3 5 8 | 1 4</text>
+        <g transform="translate(180, 120)">
+          <rect class="node" x="0" y="0" width="40" height="30" rx="4"/><text class="node-text" x="20" y="16">3</text>
+          <rect class="node" x="44" y="0" width="40" height="30" rx="4"/><text class="node-text" x="64" y="16">5</text>
+          <rect class="node" x="88" y="0" width="40" height="30" rx="4"/><text class="node-text" x="108" y="16">8</text>
+          <line x1="130" y1="0" x2="130" y2="30" stroke="var(--accent)" stroke-width="2"/>
+          <rect class="node" x="132" y="0" width="40" height="30" rx="4"/><text class="node-text" x="152" y="16">1</text>
+          <rect class="node" x="176" y="0" width="40" height="30" rx="4"/><text class="node-text" x="196" y="16">4</text>
+        </g>
+
+        <text class="label" x="20" y="175">1 삽입 → 1 3 5 8 | 4</text>
+        <g transform="translate(180, 160)">
+          <rect class="node highlight" x="0" y="0" width="40" height="30" rx="4"/><text class="node-text" x="20" y="16" fill="#1a1a1a" font-weight="bold">1</text>
+          <rect class="node" x="44" y="0" width="40" height="30" rx="4"/><text class="node-text" x="64" y="16">3</text>
+          <rect class="node" x="88" y="0" width="40" height="30" rx="4"/><text class="node-text" x="108" y="16">5</text>
+          <rect class="node" x="132" y="0" width="40" height="30" rx="4"/><text class="node-text" x="152" y="16">8</text>
+          <line x1="174" y1="0" x2="174" y2="30" stroke="var(--accent)" stroke-width="2"/>
+          <rect class="node" x="176" y="0" width="40" height="30" rx="4"/><text class="node-text" x="196" y="16">4</text>
+        </g>
+
+        <text class="label" x="20" y="215">4 삽입 → 1 3 4 5 8 (완료)</text>
+        <g transform="translate(180, 200)">
+          <rect class="node" x="0" y="0" width="40" height="30" rx="4"/><text class="node-text" x="20" y="16">1</text>
+          <rect class="node" x="44" y="0" width="40" height="30" rx="4"/><text class="node-text" x="64" y="16">3</text>
+          <rect class="node highlight" x="88" y="0" width="40" height="30" rx="4"/><text class="node-text" x="108" y="16" fill="#1a1a1a" font-weight="bold">4</text>
+          <rect class="node" x="132" y="0" width="40" height="30" rx="4"/><text class="node-text" x="152" y="16">5</text>
+          <rect class="node" x="176" y="0" width="40" height="30" rx="4"/><text class="node-text" x="196" y="16">8</text>
+        </g>
+      </svg>
+      <span class="viz-caption">왼쪽 구간(|의 왼쪽)은 항상 정렬된 상태로 유지된다.</span>
+    </div>
+
+    <h3>3) 병합 정렬 — 분할정복</h3>
+    <p>
+      배열을 절반으로 계속 쪼개다 길이 1이 되면, 두 개씩 합치면서 정렬된 배열을 만들어 갑니다.
+      합치는 작업이 O(n), 단계 수가 log n이라서 전체 O(n log n). 안정 정렬이고 최악도 보장됩니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="240" viewBox="0 0 640 240" role="img" aria-label="병합 정렬 분할/합치기">
+        <text class="label" x="320" y="20" text-anchor="middle">[5, 3, 8, 1, 4, 7]</text>
+        <text class="label" x="160" y="60" text-anchor="middle">[5, 3, 8]</text>
+        <text class="label" x="480" y="60" text-anchor="middle">[1, 4, 7]</text>
+        <text class="label" x="80"  y="100" text-anchor="middle">[5]</text>
+        <text class="label" x="180" y="100" text-anchor="middle">[3, 8]</text>
+        <text class="label" x="400" y="100" text-anchor="middle">[1]</text>
+        <text class="label" x="500" y="100" text-anchor="middle">[4, 7]</text>
+
+        <line x1="290" y1="25" x2="170" y2="48" class="arrow"/>
+        <line x1="350" y1="25" x2="470" y2="48" class="arrow"/>
+        <line x1="140" y1="65" x2="80"  y2="88" class="arrow"/>
+        <line x1="180" y1="65" x2="180" y2="88" class="arrow"/>
+        <line x1="460" y1="65" x2="400" y2="88" class="arrow"/>
+        <line x1="500" y1="65" x2="500" y2="88" class="arrow"/>
+
+        <text class="label" x="320" y="140" font-weight="bold" fill="var(--accent)">↓ 합치며 정렬</text>
+
+        <text class="label" x="80"  y="180" text-anchor="middle">[5]</text>
+        <text class="label" x="180" y="180" text-anchor="middle">[3, 8]</text>
+        <text class="label" x="400" y="180" text-anchor="middle">[1]</text>
+        <text class="label" x="500" y="180" text-anchor="middle">[4, 7]</text>
+        <text class="label" x="140" y="210" text-anchor="middle">[3, 5, 8]</text>
+        <text class="label" x="450" y="210" text-anchor="middle">[1, 4, 7]</text>
+        <text class="label" x="320" y="232" text-anchor="middle" font-weight="bold">[1, 3, 4, 5, 7, 8]</text>
+      </svg>
+      <span class="viz-caption">위에서 아래로 분할, 아래에서 위로 합치며 정렬. 합치는 단계가 알고리즘의 핵심.</span>
+    </div>
+
+    <h3>4) 퀵 정렬 — 피벗과 분할</h3>
+    <p>
+      <strong>피벗(pivot)</strong>을 하나 골라 그보다 작은 값은 왼쪽, 큰 값은 오른쪽으로 모으고(파티션),
+      양쪽을 재귀적으로 같은 방식으로 정렬합니다. 병합 정렬과 달리 추가 메모리를 거의 안 쓰고, 평균은 더 빠르지만
+      피벗 선택이 나쁘면(이미 정렬된 입력에서 첫 원소를 피벗으로 고르면) 최악 O(n²)이 될 수 있습니다.
+      그래서 보통 임의 피벗 또는 <em>중앙값-of-3</em>를 사용합니다.
+    </p>
+
+    <h3>5) Java 코드로 보기</h3>
+<pre><code>// 삽입 정렬
+void insertionSort(int[] a) {
+    for (int i = 1; i &lt; a.length; i++) {
+        int key = a[i], j = i - 1;
+        while (j &gt;= 0 &amp;&amp; a[j] &gt; key) {
+            a[j + 1] = a[j];
+            j--;
+        }
+        a[j + 1] = key;
+    }
+}
+
+// 병합 정렬
+void mergeSort(int[] a, int lo, int hi) {
+    if (lo &gt;= hi) return;
+    int mid = (lo + hi) / 2;
+    mergeSort(a, lo, mid);
+    mergeSort(a, mid + 1, hi);
+    merge(a, lo, mid, hi);
+}
+
+void merge(int[] a, int lo, int mid, int hi) {
+    int[] tmp = new int[hi - lo + 1];
+    int i = lo, j = mid + 1, k = 0;
+    while (i &lt;= mid &amp;&amp; j &lt;= hi) {
+        tmp[k++] = (a[i] &lt;= a[j]) ? a[i++] : a[j++];
+    }
+    while (i &lt;= mid) tmp[k++] = a[i++];
+    while (j &lt;= hi)  tmp[k++] = a[j++];
+    System.arraycopy(tmp, 0, a, lo, tmp.length);
+}
+
+// 퀵 정렬 (Lomuto 파티션)
+void quickSort(int[] a, int lo, int hi) {
+    if (lo &gt;= hi) return;
+    int p = partition(a, lo, hi);
+    quickSort(a, lo, p - 1);
+    quickSort(a, p + 1, hi);
+}
+
+int partition(int[] a, int lo, int hi) {
+    int pivot = a[hi];     // 마지막 원소를 피벗으로
+    int i = lo - 1;
+    for (int j = lo; j &lt; hi; j++) {
+        if (a[j] &lt;= pivot) {
+            i++;
+            int t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+    }
+    int t = a[i + 1]; a[i + 1] = a[hi]; a[hi] = t;
+    return i + 1;
+}
+
+// 표준 라이브러리
+import java.util.Arrays;
+Arrays.sort(intArr);                   // 원시 타입: dual-pivot quicksort
+Arrays.sort(objArr);                   // 객체: Timsort (병합+삽입 하이브리드)
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <p>위 표 참고. 한 번 더 짚자면:</p>
+    <ul>
+      <li><strong>O(n²) 그룹</strong> (버블/선택/삽입) — 작은 배열, 거의 정렬된 입력, 교육용에서만 의미가 있음.</li>
+      <li><strong>O(n log n) 그룹</strong> (병합/퀵/힙) — 실무에서 거의 모든 경우 이 셋 중 하나 또는 그 변형이 쓰임.</li>
+      <li><strong>비비교 정렬</strong> (계수/기수/버킷) — 키의 범위가 작거나 정수일 때 O(n)에 가능. 키 분포가 핵심 가정.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>표준 라이브러리</strong> — Java <code>Arrays.sort(Object[])</code> = Timsort, C++ <code>std::sort</code> = introsort, Python <code>sorted</code> = Timsort.</li>
+      <li><strong>데이터베이스</strong> — <code>ORDER BY</code>, <code>GROUP BY</code>, <code>DISTINCT</code> 처리. 큰 데이터엔 디스크 기반 외부 병합 정렬.</li>
+      <li><strong>이진 탐색의 전제조건</strong> — 정렬 없이는 이진 탐색을 적용할 수 없음.</li>
+      <li><strong>중복 제거 / 그룹핑 / 통계</strong> — 정렬 후 한 번 훑으면 끝.</li>
+      <li><strong>지도/내비게이션의 우선순위 처리</strong> — 힙 정렬과 같은 원리(우선순위 큐)로 자주 등장.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">"안정 정렬"이란 무엇이고 왜 중요한가요?</div>
+      <div class="a">
+        안정 정렬은 같은 키를 가진 원소들이 정렬 전후로 같은 상대 순서를 유지하는 것입니다.
+        실무에선 <em>다중 키 정렬</em>에 결정적이에요. 예를 들어 "이름순 정렬 후 점수순 정렬"을 했을 때, 점수가 같은 학생들이
+        이름 알파벳 순으로 남아 있으려면 두 번째 정렬이 안정 정렬이어야 합니다.
+        병합·삽입·버블은 안정, 퀵·힙·선택은 일반적으로 불안정입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">퀵 정렬의 평균은 빠른데 최악이 O(n²)인 이유는요?</div>
+      <div class="a">
+        퀵 정렬은 피벗 기준으로 양쪽으로 나누는데, 매번 한쪽에 0개·반대쪽에 n-1개가 몰리는 극단적인 분할이 일어나면
+        재귀 깊이가 n이 되어 전체가 O(n²)이 됩니다. 정렬된 입력에서 첫/마지막 원소를 피벗으로 고를 때 발생합니다.
+        해결책은 <em>임의 피벗</em>이나 <em>중앙값-of-3</em>를 쓰는 것이고, 더 견고하게는 일정 깊이를 넘으면 힙 정렬로 전환하는
+        <em>introsort</em>가 있습니다(C++ <code>std::sort</code>가 그 방식).
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">병합 정렬과 퀵 정렬 중 어느 걸 써야 하나요?</div>
+      <div class="a">
+        <strong>퀵 정렬</strong>은 추가 메모리가 거의 필요 없고 평균이 빨라 메모리에서 정렬할 때 유리합니다.
+        <strong>병합 정렬</strong>은 추가 O(n) 메모리가 필요하지만 안정 정렬이고 최악도 O(n log n)이라 신뢰성이 좋습니다.
+        그래서 자바는 객체 정렬에 안정성이 필요해 Timsort(병합 기반)를, 원시 타입엔 빠른 dual-pivot 퀵소트를 씁니다.
+        디스크처럼 데이터가 크고 순차 접근이 유리한 환경에선 외부 병합 정렬이 표준이에요.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">계수 정렬(Counting Sort)이 O(n)에 가능한 이유는요?</div>
+      <div class="a">
+        비교를 안 하기 때문입니다. 키의 범위가 0~k 사이의 정수라고 가정하고, "각 값이 몇 번 나오는지"를 세어
+        그걸 누적해서 직접 위치를 계산합니다. 비교 정렬의 O(n log n) 하한은 비교만으로 정렬할 때 얘기이고,
+        키의 범위(k)가 작다고 알고 있으면 O(n + k)로 가능해집니다.
+        다만 k가 n보다 훨씬 크면 의미가 없고, 부동소수점이나 임의 객체에는 그대로 쓸 수 없는 한계도 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="binary-search.html">이진 탐색</a></li>
+      <li><a href="../data-structure/heap.html">힙</a></li>
+      <li><a href="../data-structure/array.html">배열</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="binary-search.html">
+        <span class="label">이전</span>
+        ← 이진 탐색
+      </a>
+      <a href="index.html">📂 알고리즘으로</a>
+      <a class="next" href="bfs-dfs.html">
+        <span class="label">다음</span>
+        BFS / DFS →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
