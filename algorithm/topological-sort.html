@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>위상 정렬(Topological Sort) · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>위상 정렬</span>
+    </nav>
+
+    <h1>위상 정렬(Topological Sort)</h1>
+
+    <div class="definition">
+      <strong>위상 정렬</strong>이란, <strong>방향 비순환 그래프(DAG)</strong>의 정점들을 <strong>모든 간선 (u → v)에 대해 u가 v보다 앞에 오도록</strong>
+      나열하는 것입니다. "A 다음에 B" 같은 의존 관계를 만족시키는 순서를 찾는 도구로, 빌드 시스템·작업 스케줄러·강의 선이수 처리 등에 쓰입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비유는 <strong>학과의 강의 선이수 체계</strong>입니다. "자료구조"를 들으려면 "프로그래밍 입문"을 먼저 들어야 하고,
+      "알고리즘"은 "자료구조" 다음에 와야 하죠. 이런 의존 관계를 그래프로 그리면 강의가 정점, 선이수 관계가 방향 간선이 됩니다.
+      위상 정렬은 모든 선이수 조건을 만족하는 한 학기 수강 순서 — 또는 졸업까지의 강의 순서 — 를 만들어 주는 작업입니다.
+    </p>
+    <p>주의할 점 두 가지가 있습니다.</p>
+    <ul>
+      <li><strong>DAG에서만 가능</strong> — 사이클이 있으면 순환 의존이라 어떤 순서도 만족시킬 수 없음. 그래서 사이클이 발견되면 알고리즘이 실패해야 함.</li>
+      <li><strong>답이 유일하지 않을 수 있음</strong> — 의존성이 없는 정점들은 어느 쪽이 먼저 와도 되어 여러 가지 정답이 존재할 수 있다.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>두 가지 표준 알고리즘</strong></p>
+      <ul>
+        <li><strong>Kahn 알고리즘 (BFS 기반)</strong> — 진입 차수(in-degree)가 0인 정점부터 큐에 넣고 하나씩 꺼내며 처리. 결과적으로 사이클도 자연스럽게 감지.</li>
+        <li><strong>DFS 기반</strong> — 모든 정점을 DFS로 방문하면서 끝난 순서대로 스택에 넣고, 마지막에 뒤집으면 위상 정렬 결과. 후위 순회의 응용.</li>
+      </ul>
+      <p>둘 다 시간 복잡도 O(V + E)로 같고, 상황에 따라 어느 쪽이 더 자연스러운지가 다릅니다.</p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      "이건 저것 다음에 해야 한다"는 제약이 있는 작업 집합을 다룰 때, 어떤 순서로 처리할지 정해야 합니다.
+      Make/Maven/Gradle 같은 빌드 시스템은 파일 의존성을 위상 정렬해 빌드 순서를 정하고, Spark의 DAG 스케줄러도 잡 단계를 위상 정렬로 처리합니다.
+      운영체제의 부팅 시 서비스 의존성, 머신러닝 파이프라인의 실행 순서, 패키지 매니저의 설치 순서… 모두 위상 정렬의 응용입니다.
+    </p>
+    <p>
+      또한 위상 정렬이 가능한지 여부는 <strong>그래프에 사이클이 있는지</strong>를 알려주는 강력한 검증 도구이기도 합니다.
+      "정렬이 끝났는데 처리되지 않은 정점이 남아 있다 → 사이클이 있다"는 명확한 결론을 줍니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 예제 그래프 — 강의 선이수 관계</h3>
+
+    <div class="viz">
+      <svg width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="DAG 예시">
+        <defs>
+          <marker id="tA" viewBox="0 0 10 10" refX="14" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+
+        <!-- 간선들 -->
+        <line x1="80"  y1="100" x2="220" y2="60"  stroke="var(--text-muted)" stroke-width="1.5" fill="none" marker-end="url(#tA)"/>
+        <line x1="80"  y1="100" x2="220" y2="160" stroke="var(--text-muted)" stroke-width="1.5" fill="none" marker-end="url(#tA)"/>
+        <line x1="220" y1="60"  x2="380" y2="60"  stroke="var(--text-muted)" stroke-width="1.5" fill="none" marker-end="url(#tA)"/>
+        <line x1="220" y1="160" x2="380" y2="60"  stroke="var(--text-muted)" stroke-width="1.5" fill="none" marker-end="url(#tA)"/>
+        <line x1="220" y1="160" x2="380" y2="160" stroke="var(--text-muted)" stroke-width="1.5" fill="none" marker-end="url(#tA)"/>
+        <line x1="380" y1="60"  x2="540" y2="100" stroke="var(--text-muted)" stroke-width="1.5" fill="none" marker-end="url(#tA)"/>
+        <line x1="380" y1="160" x2="540" y2="100" stroke="var(--text-muted)" stroke-width="1.5" fill="none" marker-end="url(#tA)"/>
+
+        <circle class="node" cx="80"  cy="100" r="26"/><text class="node-text" x="80"  y="100" font-size="11">프로그래밍</text>
+        <circle class="node" cx="220" cy="60"  r="26"/><text class="node-text" x="220" y="60"  font-size="11">자료구조</text>
+        <circle class="node" cx="220" cy="160" r="26"/><text class="node-text" x="220" y="160" font-size="11">이산수학</text>
+        <circle class="node" cx="380" cy="60"  r="26"/><text class="node-text" x="380" y="60"  font-size="11">알고리즘</text>
+        <circle class="node" cx="380" cy="160" r="26"/><text class="node-text" x="380" y="160" font-size="11">DB</text>
+        <circle class="node" cx="540" cy="100" r="26"/><text class="node-text" x="540" y="100" font-size="11">캡스톤</text>
+      </svg>
+      <span class="viz-caption">방향 간선은 "선행 → 후행"의 의미. 사이클 없음.</span>
+    </div>
+
+    <h3>2) Kahn 알고리즘 (BFS 기반) — 단계별</h3>
+    <p>각 정점의 <strong>진입 차수(들어오는 간선 수)</strong>를 미리 계산하고, 0인 정점부터 큐에 넣어 처리합니다.</p>
+
+    <table class="complexity">
+      <thead>
+        <tr><th>라운드</th><th>꺼낸 정점</th><th>큐 상태</th><th>결과 누적</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>초기</td><td>—</td><td>[프로그래밍]</td><td>[]</td></tr>
+        <tr><td>1</td><td>프로그래밍 (in=0)</td><td>[자료구조, 이산수학]</td><td>[프로그래밍]</td></tr>
+        <tr><td>2</td><td>자료구조 (in=0)</td><td>[이산수학]</td><td>[프로그래밍, 자료구조]</td></tr>
+        <tr><td>3</td><td>이산수학 (in=0)</td><td>[알고리즘, DB]</td><td>[..., 이산수학]</td></tr>
+        <tr><td>4</td><td>알고리즘 (in=0)</td><td>[DB]</td><td>[..., 알고리즘]</td></tr>
+        <tr><td>5</td><td>DB (in=0)</td><td>[캡스톤]</td><td>[..., DB]</td></tr>
+        <tr><td>6</td><td>캡스톤 (in=0)</td><td>[]</td><td>[모두 처리됨]</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      한 정점을 꺼낼 때마다 그 정점에서 나가는 간선들을 "지운다"고 생각하면 됩니다.
+      그러면 이웃 정점들의 진입 차수가 1씩 감소하고, 0이 되면 큐에 새로 들어옵니다.
+    </p>
+
+    <h3>3) 사이클 감지</h3>
+    <p>
+      Kahn 알고리즘이 끝났는데 결과 리스트의 길이가 정점 수와 다르다면, 진입 차수가 0이 되지 못한 정점이 남아 있다는 뜻이고
+      그건 사이클이 있다는 신호입니다. 이렇게 위상 정렬은 사이클 검출까지 한 번에 해줍니다.
+    </p>
+
+    <h3>4) DFS 기반 — 후위 순서의 역순</h3>
+    <p>
+      모든 정점을 DFS로 방문하면서, <strong>한 정점의 모든 후손 처리가 끝나는 순간 그 정점을 스택에 push</strong>합니다.
+      DFS가 끝나고 스택을 거꾸로(또는 push 순서의 반대로) 꺼내면 위상 정렬 결과가 됩니다.
+      "내가 끝나려면 내 자식들이 먼저 끝나야 한다"는 후위 순회의 성질을 이용하는 방식이에요.
+    </p>
+
+    <h3>5) Java 코드로 보기</h3>
+<pre><code>import java.util.*;
+
+// Kahn 알고리즘
+List&lt;Integer&gt; topologicalSortKahn(int n, List&lt;List&lt;Integer&gt;&gt; adj) {
+    int[] indegree = new int[n];
+    for (int u = 0; u &lt; n; u++) {
+        for (int v : adj.get(u)) indegree[v]++;
+    }
+
+    Queue&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();
+    for (int i = 0; i &lt; n; i++) {
+        if (indegree[i] == 0) q.offer(i);
+    }
+
+    List&lt;Integer&gt; order = new ArrayList&lt;&gt;();
+    while (!q.isEmpty()) {
+        int u = q.poll();
+        order.add(u);
+        for (int v : adj.get(u)) {
+            if (--indegree[v] == 0) q.offer(v);
+        }
+    }
+
+    if (order.size() != n) {
+        throw new IllegalStateException("사이클이 있어 위상 정렬 불가");
+    }
+    return order;
+}
+
+// DFS 기반
+List&lt;Integer&gt; topologicalSortDFS(int n, List&lt;List&lt;Integer&gt;&gt; adj) {
+    boolean[] visited = new boolean[n];
+    Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+
+    for (int i = 0; i &lt; n; i++) {
+        if (!visited[i]) dfs(i, adj, visited, stack);
+    }
+
+    List&lt;Integer&gt; order = new ArrayList&lt;&gt;();
+    while (!stack.isEmpty()) order.add(stack.pop());
+    return order;
+}
+
+private void dfs(int u, List&lt;List&lt;Integer&gt;&gt; adj, boolean[] visited, Deque&lt;Integer&gt; stack) {
+    visited[u] = true;
+    for (int v : adj.get(u)) {
+        if (!visited[v]) dfs(v, adj, visited, stack);
+    }
+    stack.push(u);   // 후손 처리가 끝났으니 이제 자기 차례
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>방법</th><th>시간</th><th>공간</th><th>특징</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Kahn (BFS)</td><td>O(V + E)</td><td>O(V)</td><td>큐 + 진입 차수 배열. 사이클 검출 자연스러움.</td></tr>
+        <tr><td>DFS</td><td>O(V + E)</td><td>O(V)</td><td>재귀 호출 스택 사용. 후위 순회의 응용.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      두 방식 모두 모든 정점과 모든 간선을 정확히 한 번씩 보기 때문에 O(V+E)로 같습니다.
+      Kahn은 진입 차수 배열이 추가로 필요하고, DFS는 재귀 깊이가 곧 호출 스택이라 깊은 그래프에선 명시적 스택을 고려해야 합니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>빌드 시스템</strong> — Make, Bazel, Gradle, Maven이 파일·모듈 의존성을 위상 정렬해 빌드 순서 결정.</li>
+      <li><strong>패키지 매니저</strong> — npm, pip, apt 등이 패키지 설치 순서를 위상 정렬로 풀어냄.</li>
+      <li><strong>Spark / Airflow의 DAG 스케줄러</strong> — 잡 단계를 의존 순서대로 실행.</li>
+      <li><strong>강의 선이수 / 자격증 코스 설계</strong> — 수강 가능한 다음 강의 추천 등.</li>
+      <li><strong>스프레드시트 재계산 순서</strong> — 셀 의존성을 위상 정렬해 한 번에 재계산.</li>
+      <li><strong>컴파일러 단계</strong> — 타입 의존성 처리, 모듈 import 순서 결정.</li>
+      <li><strong>그래프에 사이클이 있는지 검사</strong> — 위상 정렬이 실패하면 사이클이 있다는 강력한 신호.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">위상 정렬이 가능한 그래프의 조건은요?</div>
+      <div class="a">
+        <strong>방향 그래프이면서 사이클이 없는</strong>(DAG) 경우에만 가능합니다.
+        무방향 그래프는 "선행/후행" 관계 자체가 정의되지 않아 의미가 없고, 방향 그래프라도 사이클이 있으면
+        그 사이클 안 정점들은 서로의 선행이자 후행이라 어떤 순서도 만들 수 없습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Kahn과 DFS 중 어느 걸 써야 하나요?</div>
+      <div class="a">
+        취향이나 상황에 따라 갈립니다. <strong>Kahn</strong>은 진입 차수 0인 정점부터 처리하기 때문에
+        "사이클 검출"과 "여러 가능한 순서 중 사전순/우선순위 등 추가 기준 적용"이 자연스럽습니다(우선순위 큐 사용).
+        <strong>DFS</strong>는 코드가 짧고, 다른 그래프 분석(SCC 등)과 같은 흐름으로 처리하기 좋습니다.
+        시간 복잡도는 같으니 사이클 검출이 동시에 필요하면 Kahn을 권장하는 편이 보통입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">위상 정렬 결과가 여러 개 나올 수 있는 이유는요?</div>
+      <div class="a">
+        같은 시점에 진입 차수가 0인 정점이 여러 개일 때, 어느 걸 먼저 처리해도 의존 관계는 만족됩니다.
+        그래서 의존성이 부분 순서(partial order)인 경우 일직선의 정답이 여러 가지로 나타날 수 있어요.
+        실무에선 "가능하면 사전순으로", "가능하면 우선순위가 높은 정점 먼저"처럼 추가 기준을 두기 위해
+        Kahn에서 일반 큐 대신 우선순위 큐를 쓰는 변형을 자주 사용합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">위상 정렬이 그래프에 사이클이 있는지를 어떻게 알려주나요?</div>
+      <div class="a">
+        Kahn 알고리즘이 끝났을 때 결과 리스트의 길이가 정점 수와 다르면 사이클이 있다는 신호입니다.
+        진입 차수가 끝까지 0이 되지 못한 정점들이 있다는 뜻이고, 그건 그 정점들이 서로를 끝없이 가리키는 사이클을 형성하기 때문입니다.
+        DFS 기반에서는 정점 상태를 WHITE/GRAY/BLACK으로 추적하다 GRAY로 가는 간선을 만나면 사이클 — 같은 원리예요.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="../data-structure/graph.html">그래프</a></li>
+      <li><a href="bfs-dfs.html">BFS / DFS</a></li>
+      <li><a href="union-find.html">유니온-파인드</a></li>
+      <li><a href="../data-structure/queue.html">큐</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="union-find.html">
+        <span class="label">이전</span>
+        ← 유니온-파인드
+      </a>
+      <a href="index.html">📂 알고리즘으로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
