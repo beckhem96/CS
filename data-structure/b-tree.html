@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>B-Tree / B+Tree · 자료구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">자료구조</a>
+      <span class="sep">›</span>
+      <span>B-Tree / B+Tree</span>
+    </nav>
+
+    <h1>B-Tree / B+Tree</h1>
+
+    <div class="definition">
+      <strong>B-Tree</strong>는 <strong>한 노드에 여러 개의 키와 자식</strong>을 담아 트리의 높이를 낮춘 자가 균형 트리입니다.
+      디스크 I/O를 최소화하기 위해 만들어진 구조로, 거의 모든 데이터베이스 인덱스와 파일 시스템의 표준입니다.
+      <strong>B+Tree</strong>는 그 변형으로, 데이터를 잎(leaf)에만 저장하고 잎끼리 연결 리스트로 묶어 범위 검색에 강합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비유로는 <strong>도서관의 분류 안내판</strong>이 가깝습니다. 입구의 큰 안내판 하나만 봐도 "100~199번대는 1층 동쪽, 200~299번대는 1층 서쪽…"처럼
+      많은 정보가 한꺼번에 보이죠. 그래서 단 몇 번의 안내판 읽기로 책에 도달합니다.
+      B-Tree도 마찬가지로 한 노드가 키를 여러 개 들고 있어, 트리를 몇 단계만 내려가면 원하는 데이터에 도달합니다.
+    </p>
+    <p>
+      <strong>M차(M-way) B-Tree</strong>의 규칙은 다음과 같습니다.
+    </p>
+    <ul>
+      <li>각 노드는 최대 <strong>M-1개의 키</strong>와 <strong>M개의 자식</strong>을 가진다.</li>
+      <li>루트를 제외한 모든 노드는 최소 <strong>⌈M/2⌉-1개의 키</strong>를 가진다 (반쯤은 차 있어야 함).</li>
+      <li>한 노드 안의 키들은 정렬되어 있고, 자식들은 키 사이의 범위를 담당한다.</li>
+      <li>모든 잎의 깊이가 같다 (완전한 균형).</li>
+    </ul>
+
+    <h3>B-Tree vs B+Tree</h3>
+    <p>두 변종의 핵심 차이만 정리하면 이렇습니다.</p>
+    <ul>
+      <li><strong>B-Tree</strong> — 데이터(value 또는 그 포인터)가 <em>모든 노드</em>(내부+잎)에 저장됨. 잎끼리 연결 안 됨.</li>
+      <li><strong>B+Tree</strong> — 데이터는 <em>잎에만</em> 저장되고, 내부 노드는 키만 들고 라우팅 역할. <strong>잎끼리 연결 리스트</strong>로 묶여 있어 범위 스캔이 매우 효율적.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>왜 RB 트리 대신 B-Tree?</strong></p>
+      <p>
+        메모리 안에서는 RB 트리도 충분히 빠르지만, <strong>디스크 I/O는 메모리 접근보다 수십만 배 비쌉니다</strong>.
+        디스크는 한 번 접근할 때마다 보통 4KB~16KB의 <em>페이지(블록)</em>를 통째로 읽습니다.
+        그러면 한 노드에 키 하나만 담는 RB 트리는 페이지의 대부분을 낭비하게 되죠.
+        B-Tree는 한 노드를 디스크 페이지 하나에 맞춰 키 수백~수천 개를 채우기 때문에 같은 데이터 양에서 트리 높이가 훨씬 낮고,
+        탐색에 필요한 디스크 I/O 수가 압도적으로 적습니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      "메모리에 다 못 올리는 거대한 데이터를 디스크에 두고 빠르게 조회하고 싶다"가 출발점입니다.
+      MySQL, PostgreSQL 같은 DB의 인덱스에는 수억 행짜리 테이블도 들어 있고, 파일 시스템도 디렉토리 안에 수백만 개 파일이 있을 수 있습니다.
+      이 정도 규모에선 트리의 높이가 1만 늘어도 디스크 접근이 한 번 더 일어나서 성능에 큰 차이를 냅니다.
+    </p>
+    <p>
+      B-Tree는 한 노드가 디스크 페이지(예: 16KB) 하나를 통째로 사용하도록 설계되어, 한 번의 디스크 읽기로 수백 개의 키를 비교할 수 있습니다.
+      그래서 1억 건의 데이터에서도 보통 <strong>3~4번의 디스크 접근</strong>이면 어떤 키든 찾아냅니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) B-Tree(차수 4) 예시</h3>
+    <p>한 노드에 최대 3개의 키, 최대 4개의 자식을 가진 B-Tree입니다. 모든 잎의 깊이가 같다는 점에 주목하세요.</p>
+
+    <div class="viz">
+      <svg width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="B-Tree 예시">
+        <!-- 루트 -->
+        <rect class="node" x="260" y="20" width="120" height="40" rx="4"/>
+        <line x1="300" y1="20" x2="300" y2="60" stroke="#666"/>
+        <line x1="340" y1="20" x2="340" y2="60" stroke="#666"/>
+        <text class="node-text" x="280" y="40">10</text>
+        <text class="node-text" x="320" y="40">20</text>
+        <text class="node-text" x="360" y="40">30</text>
+
+        <!-- 자식들 -->
+        <line x1="270" y1="60"  x2="100" y2="120" class="arrow"/>
+        <line x1="310" y1="60"  x2="260" y2="120" class="arrow"/>
+        <line x1="350" y1="60"  x2="420" y2="120" class="arrow"/>
+        <line x1="380" y1="60"  x2="560" y2="120" class="arrow"/>
+
+        <rect class="node" x="40"  y="120" width="120" height="40" rx="4"/>
+        <line x1="80"  y1="120" x2="80"  y2="160" stroke="#666"/>
+        <line x1="120" y1="120" x2="120" y2="160" stroke="#666"/>
+        <text class="node-text" x="60"  y="140">3</text>
+        <text class="node-text" x="100" y="140">5</text>
+        <text class="node-text" x="140" y="140">8</text>
+
+        <rect class="node" x="200" y="120" width="120" height="40" rx="4"/>
+        <line x1="240" y1="120" x2="240" y2="160" stroke="#666"/>
+        <line x1="280" y1="120" x2="280" y2="160" stroke="#666"/>
+        <text class="node-text" x="220" y="140">12</text>
+        <text class="node-text" x="260" y="140">15</text>
+        <text class="node-text" x="300" y="140">17</text>
+
+        <rect class="node" x="360" y="120" width="120" height="40" rx="4"/>
+        <line x1="400" y1="120" x2="400" y2="160" stroke="#666"/>
+        <line x1="440" y1="120" x2="440" y2="160" stroke="#666"/>
+        <text class="node-text" x="380" y="140">22</text>
+        <text class="node-text" x="420" y="140">25</text>
+        <text class="node-text" x="460" y="140">28</text>
+
+        <rect class="node" x="500" y="120" width="120" height="40" rx="4"/>
+        <line x1="540" y1="120" x2="540" y2="160" stroke="#666"/>
+        <line x1="580" y1="120" x2="580" y2="160" stroke="#666"/>
+        <text class="node-text" x="520" y="140">35</text>
+        <text class="node-text" x="560" y="140">40</text>
+        <text class="node-text" x="600" y="140">45</text>
+
+        <text class="label" x="20" y="195">루트의 키 10/20/30이 4개 자식 노드의 범위 분기점이 된다 (~10, 10~20, 20~30, 30~).</text>
+      </svg>
+      <span class="viz-caption">한 노드에 여러 키 → 트리 높이가 낮음 → 디스크 접근 적음.</span>
+    </div>
+
+    <h3>2) 탐색 — 15를 찾기</h3>
+    <p>루트에서 키와 비교해 어느 자식으로 내려갈지 결정합니다. 한 노드 안에서는 보통 <em>이진 탐색</em>으로 키를 찾습니다.</p>
+    <ol>
+      <li>루트 [10, 20, 30] → 15는 10과 20 사이 → 두 번째 자식으로.</li>
+      <li>잎 [12, 15, 17] → 15 발견.</li>
+    </ol>
+
+    <h3>3) B+Tree — 잎끼리 연결</h3>
+    <p>B+Tree는 데이터를 잎에만 두고, 잎끼리 양방향 연결 리스트로 묶습니다. 그래서 "20 이상의 모든 키"같은 범위 질의는 잎 하나를 찾은 뒤 옆으로 쭉 따라가면 됩니다.</p>
+
+    <div class="viz">
+      <svg width="640" height="240" viewBox="0 0 640 240" role="img" aria-label="B+Tree 잎 연결">
+        <!-- 내부 노드 (키만) -->
+        <rect class="node" x="260" y="20" width="120" height="40" rx="4"/>
+        <line x1="300" y1="20" x2="300" y2="60" stroke="#666"/>
+        <line x1="340" y1="20" x2="340" y2="60" stroke="#666"/>
+        <text class="node-text" x="280" y="40">10</text>
+        <text class="node-text" x="320" y="40">20</text>
+        <text class="node-text" x="360" y="40">30</text>
+        <text class="label" x="395" y="40">← 라우팅용 (값 없음)</text>
+
+        <line x1="270" y1="60"  x2="80"  y2="120" class="arrow"/>
+        <line x1="310" y1="60"  x2="240" y2="120" class="arrow"/>
+        <line x1="350" y1="60"  x2="400" y2="120" class="arrow"/>
+        <line x1="380" y1="60"  x2="560" y2="120" class="arrow"/>
+
+        <!-- 잎 노드 (키 + 데이터) -->
+        <g transform="translate(20, 120)">
+          <rect class="node" x="0" y="0" width="120" height="50" rx="4"/>
+          <text class="node-text" x="60" y="22" font-size="12">3, 5, 8</text>
+          <text class="node-text" x="60" y="40" font-size="10" fill="var(--text-muted)">→ data</text>
+        </g>
+        <g transform="translate(180, 120)">
+          <rect class="node" x="0" y="0" width="120" height="50" rx="4"/>
+          <text class="node-text" x="60" y="22" font-size="12">12, 15, 17</text>
+          <text class="node-text" x="60" y="40" font-size="10" fill="var(--text-muted)">→ data</text>
+        </g>
+        <g transform="translate(340, 120)">
+          <rect class="node" x="0" y="0" width="120" height="50" rx="4"/>
+          <text class="node-text" x="60" y="22" font-size="12">22, 25, 28</text>
+          <text class="node-text" x="60" y="40" font-size="10" fill="var(--text-muted)">→ data</text>
+        </g>
+        <g transform="translate(500, 120)">
+          <rect class="node" x="0" y="0" width="120" height="50" rx="4"/>
+          <text class="node-text" x="60" y="22" font-size="12">35, 40, 45</text>
+          <text class="node-text" x="60" y="40" font-size="10" fill="var(--text-muted)">→ data</text>
+        </g>
+
+        <!-- 잎 연결 리스트 -->
+        <defs>
+          <marker id="bpA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <path d="M 140 175 L 175 175" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#bpA)"/>
+        <path d="M 300 175 L 335 175" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#bpA)"/>
+        <path d="M 460 175 L 495 175" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#bpA)"/>
+
+        <text class="label" x="20" y="220" fill="var(--accent)">잎끼리 연결 → 한 잎을 찾은 뒤 옆으로 따라가면 범위 검색이 시퀀셜 디스크 읽기와 같아진다.</text>
+      </svg>
+      <span class="viz-caption">B+Tree의 핵심 — 데이터는 잎에만, 잎끼리 연결 리스트.</span>
+    </div>
+
+    <h3>4) 분할(split) — 노드가 가득 찼을 때</h3>
+    <p>
+      한 노드에 더 이상 키를 넣을 수 없을 때는, 노드를 두 개로 쪼개고 가운데 키를 부모로 올려 보냅니다.
+      부모도 가득 찼다면 같은 과정이 위로 전파되고, 루트까지 차면 트리 높이가 1 늘어납니다.
+      덕분에 트리는 항상 잎 깊이가 같은 균형 상태를 유지합니다.
+    </p>
+
+    <h3>5) Java 코드로 보기</h3>
+    <p>
+      직접 구현할 일은 거의 없고, DB나 라이브러리에 깔려 있는 구현을 사용합니다.
+      Java의 <code>TreeMap</code>은 인메모리용이라 RB 트리지만, 디스크 친화적인 인메모리 자료구조가 필요하다면
+      <code>jdbm</code>·<code>MapDB</code> 같은 임베디드 라이브러리가 B-Tree를 제공합니다.
+    </p>
+<pre><code>// 실무에서는 보통 DB가 알아서 B+Tree 인덱스를 만든다 — SQL 한 줄이면 됨
+//
+//   CREATE INDEX idx_users_email ON users(email);
+//
+// 이 인덱스를 통한 조회는 내부적으로 B+Tree 탐색을 수행한다.
+
+// 범위 검색이 B+Tree에서 효율적인 이유:
+//
+//   SELECT * FROM users WHERE id BETWEEN 1000 AND 2000;
+//
+// → 1) 트리 탐색으로 id=1000을 가진 잎에 도달 (몇 번의 디스크 I/O)
+//   2) 잎 연결 리스트를 따라 id=2000까지 시퀀셜 읽기
+// → 인덱스를 따라 점프하지 않아도 되어 매우 빠름.
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>연산</th><th>시간</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>탐색</td><td>O(log n)</td><td>로그의 밑이 M(차수)이라 RB 트리보다 트리 높이가 훨씬 낮음</td></tr>
+        <tr><td>삽입 / 삭제</td><td>O(log n)</td><td>분할(split)·병합(merge)이 위로 전파될 수 있음</td></tr>
+        <tr><td>범위 검색 (B+Tree)</td><td>O(log n + k)</td><td>k는 결과 개수. 잎 연결 따라가기만 하면 됨</td></tr>
+      </tbody>
+    </table>
+    <p>
+      "log의 밑이 M"이 핵심입니다. M이 100이라면 1억 개 데이터의 트리 높이가 약 4 정도입니다.
+      공간은 O(n)이지만, 노드의 빈 공간을 일부 허용하기 때문에 실제 사용량은 1.5n 정도가 보통입니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>관계형 데이터베이스 인덱스</strong> — MySQL/InnoDB, PostgreSQL의 기본 인덱스가 모두 <strong>B+Tree</strong>.</li>
+      <li><strong>NoSQL 일부</strong> — MongoDB의 인덱스도 B-Tree 계열.</li>
+      <li><strong>파일 시스템</strong> — NTFS, HFS+, ext4의 디렉토리 인덱스, ReiserFS, Btrfs(Btr는 B-Tree에서 따옴) 등.</li>
+      <li><strong>임베디드 DB</strong> — SQLite, BerkeleyDB도 B+Tree 페이지 기반.</li>
+      <li><strong>전공정 추적/시계열</strong> — InfluxDB, TimeScaleDB의 인덱스에도 B+Tree 변형이 등장.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">B-Tree와 B+Tree의 차이를 설명해 주세요.</div>
+      <div class="a">
+        B-Tree는 데이터(또는 데이터 포인터)가 모든 노드에 분산 저장되고 잎끼리 연결되어 있지 않습니다.
+        B+Tree는 데이터를 잎에만 저장하고 내부 노드는 키만 가지며, 잎끼리 연결 리스트로 묶여 있습니다.
+        그래서 B+Tree는 한 노드(특히 내부 노드)가 더 많은 키를 담을 수 있어 트리 높이가 더 낮고, 잎 연결 덕분에 범위 검색이 매우 빠릅니다.
+        오늘날 DB 인덱스는 거의 모두 B+Tree를 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">왜 디스크 기반 인덱스에는 B-Tree를, 메모리 기반에는 RB 트리를 쓰나요?</div>
+      <div class="a">
+        디스크 I/O는 한 번에 4KB~16KB의 페이지를 통째로 읽기 때문에, 한 노드에 가능한 한 많은 키를 채우는 게 유리합니다.
+        B-Tree는 한 노드를 페이지 하나에 맞춰 수백~수천 개의 키를 담아 트리 높이를 극단적으로 낮춥니다.
+        반대로 메모리에서는 한 워드 단위로 빠르게 접근하기 때문에 노드를 크게 만들 필요가 없고,
+        오히려 회전 같은 단순한 재조정이 효율적이라 RB 트리가 더 적합합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">B+Tree에서 범위 검색이 효율적인 이유는요?</div>
+      <div class="a">
+        잎끼리 연결 리스트로 묶여 있어서, 범위의 시작 키를 가진 잎을 찾은 뒤 잎 포인터를 따라 끝 키까지 읽기만 하면 됩니다.
+        매번 트리를 위에서 다시 탐색할 필요가 없어, 디스크에서는 시퀀셜 읽기가 되어 랜덤 액세스보다 훨씬 빠릅니다.
+        SQL의 <code>BETWEEN</code>, <code>ORDER BY ... LIMIT</code> 같은 쿼리가 이 성질 덕분에 빠릅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">B-Tree는 분할(split)이 일어나면 무슨 일이 벌어지나요?</div>
+      <div class="a">
+        가득 찬 노드에 새 키가 들어오면, 그 노드를 가운데 키 기준으로 둘로 쪼개고 가운데 키를 부모 노드로 올려 보냅니다.
+        부모가 또 가득 차 있으면 같은 과정이 위로 전파되고, 결국 루트까지 차면 새 루트가 생기면서 트리 높이가 1 증가합니다.
+        이 방식 때문에 B-Tree는 항상 모든 잎이 같은 깊이에 있는 완전 균형 상태를 유지합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="binary-search-tree.html">이진 탐색 트리</a></li>
+      <li><a href="avl-rb-tree.html">AVL / 레드-블랙 트리</a></li>
+      <li><a href="hash-table.html">해시 테이블</a></li>
+      <li><a href="index.html">자료구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="avl-rb-tree.html">
+        <span class="label">이전</span>
+        ← AVL / 레드-블랙 트리
+      </a>
+      <a href="index.html">📂 자료구조로</a>
+      <a class="next" href="trie.html">
+        <span class="label">다음</span>
+        트라이 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

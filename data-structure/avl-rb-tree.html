@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AVL / 레드-블랙 트리 · 자료구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">자료구조</a>
+      <span class="sep">›</span>
+      <span>AVL / 레드-블랙 트리</span>
+    </nav>
+
+    <h1>AVL / 레드-블랙 트리</h1>
+
+    <div class="definition">
+      <strong>AVL 트리</strong>와 <strong>레드-블랙(RB) 트리</strong>는, 삽입·삭제 후 트리가 한쪽으로 치우치지 않도록
+      <strong>스스로 균형을 맞추는 BST</strong>입니다. 입력이 어떻게 들어오든 항상 높이 O(log n)을 보장해
+      탐색·삽입·삭제 모두 O(log n) 최악 시간을 보장합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      일반 BST는 입력 순서가 정렬되어 들어오면 한쪽으로만 자라 사실상 연결 리스트가 됩니다. 그러면 모든 연산이 O(n)이 되죠.
+      이걸 막기 위해, 삽입·삭제가 일어날 때마다 <strong>약간의 추가 작업</strong>을 통해 균형을 다시 맞추는 BST가
+      <em>자가 균형 BST(self-balancing BST)</em>입니다. AVL과 RB는 그중 가장 많이 쓰이는 두 가지예요.
+    </p>
+
+    <h3>AVL 트리</h3>
+    <p>
+      <strong>AVL 트리</strong>는 가장 엄격한 균형을 유지합니다. 모든 노드에서 <strong>왼쪽 서브트리 높이와 오른쪽 서브트리 높이의 차이가 1 이하</strong>여야 합니다.
+      이 차이를 <em>균형 인수(Balance Factor)</em>라고 부릅니다 (BF = h(left) − h(right)).
+      삽입/삭제 후 BF가 ±2가 되면 <strong>회전(rotation)</strong>으로 균형을 복원합니다.
+    </p>
+
+    <h3>레드-블랙 트리</h3>
+    <p>
+      <strong>레드-블랙 트리</strong>는 모든 노드에 <strong>빨강 / 검정</strong> 색을 부여하고, 다음 5가지 속성을 항상 유지합니다.
+    </p>
+    <ol>
+      <li>모든 노드는 빨강 또는 검정.</li>
+      <li>루트는 검정.</li>
+      <li>모든 잎(NIL, 비어 있는 자식)은 검정.</li>
+      <li>빨강 노드의 자식은 모두 검정 (빨강이 연속으로 나오면 안 됨).</li>
+      <li>임의의 노드에서 그 후손 NIL까지의 모든 경로에 들어 있는 검정 노드 수가 같다 (블랙 높이).</li>
+    </ol>
+    <p>
+      이 속성들 덕분에 RB 트리는 가장 긴 경로가 가장 짧은 경로의 <strong>최대 2배</strong>를 넘지 않습니다.
+      AVL만큼 빡빡한 균형은 아니지만, <strong>삽입·삭제 시 회전 횟수가 더 적어</strong> 평균적으로 더 빠른 갱신 성능을 보입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>AVL vs RB — 한눈에</strong></p>
+      <ul>
+        <li><strong>AVL</strong>은 더 균형이 잡혀 있어 <em>탐색 성능</em>이 약간 더 빠름. 읽기가 많은 워크로드에 유리.</li>
+        <li><strong>RB</strong>는 균형이 덜 빡빡해 <em>삽입·삭제 시 재조정 비용</em>이 적음. 쓰기가 잦은 워크로드와 범용 라이브러리에 유리.</li>
+        <li>그래서 Java <code>TreeMap</code>·<code>TreeSet</code>, C++ <code>std::map</code>·<code>std::set</code>, Linux 커널의 일부(스케줄러·timer)는 모두 <strong>RB 트리</strong>를 씁니다.</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      BST의 평균 O(log n)은 입력이 무작위라는 가정 하에서만 성립합니다. 실세계 데이터는 정렬되어 있거나 거의 정렬되어 있는 경우가 흔하고,
+      그러면 BST가 편향 트리로 망가져 O(n)이 됩니다. 라이브러리나 데이터베이스 같은 곳에서 <strong>최악 보장</strong>을 깔고 가야 한다면
+      자가 균형 BST가 필수입니다.
+    </p>
+    <p>
+      또한 정렬 순서·범위 검색이 필요한 상황에서는 해시 테이블이 답이 안 되니, 자가 균형 BST가 사실상 유일한 선택지입니다.
+      그래서 표준 라이브러리의 정렬 맵/셋은 거의 모두 RB 트리로 구현되어 있습니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) AVL — LL 회전 예시</h3>
+    <p>
+      <code>30, 20, 10</code> 순으로 삽입하면 왼쪽으로 치우친 트리가 됩니다. 30의 균형 인수가 2가 되어 불균형 → <strong>오른쪽 회전(LL)</strong>으로 복원합니다.
+    </p>
+
+    <div class="viz">
+      <svg width="600" height="240" viewBox="0 0 600 240" role="img" aria-label="AVL 오른쪽 회전">
+        <!-- 회전 전 -->
+        <text class="label" x="20" y="20" font-weight="bold">회전 전 (BF=2)</text>
+        <line x1="120" y1="50" x2="80"  y2="110" class="arrow"/>
+        <line x1="80"  y1="110" x2="40" y2="170" class="arrow"/>
+
+        <circle class="node" cx="120" cy="50"  r="22"/><text class="node-text" x="120" y="50">30</text>
+        <circle class="node" cx="80"  cy="110" r="22"/><text class="node-text" x="80"  y="110">20</text>
+        <circle class="node" cx="40"  cy="170" r="22"/><text class="node-text" x="40"  y="170">10</text>
+        <text class="label" x="155" y="55" fill="var(--warn)">BF=2</text>
+
+        <!-- 화살표 -->
+        <path d="M 230 110 L 320 110" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#avlA)"/>
+        <text class="label" x="245" y="100" fill="var(--accent)">오른쪽 회전</text>
+        <defs>
+          <marker id="avlA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <!-- 회전 후 -->
+        <text class="label" x="380" y="20" font-weight="bold">회전 후 (균형)</text>
+        <line x1="460" y1="80" x2="420" y2="140" class="arrow"/>
+        <line x1="460" y1="80" x2="500" y2="140" class="arrow"/>
+
+        <circle class="node" cx="460" cy="80"  r="22"/><text class="node-text" x="460" y="80">20</text>
+        <circle class="node" cx="420" cy="140" r="22"/><text class="node-text" x="420" y="140">10</text>
+        <circle class="node" cx="500" cy="140" r="22"/><text class="node-text" x="500" y="140">30</text>
+      </svg>
+      <span class="viz-caption">왼쪽 자식이 더 무거운 경우(LL) → 부모를 오른쪽으로 회전. 4가지 케이스(LL/RR/LR/RL)가 있다.</span>
+    </div>
+
+    <h3>2) AVL의 4가지 회전 케이스</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>케이스</th><th>상황</th><th>해결</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>LL</td><td>왼쪽 자식의 왼쪽 서브트리에 삽입</td><td>오른쪽 단일 회전</td></tr>
+        <tr><td>RR</td><td>오른쪽 자식의 오른쪽 서브트리에 삽입</td><td>왼쪽 단일 회전</td></tr>
+        <tr><td>LR</td><td>왼쪽 자식의 오른쪽 서브트리에 삽입</td><td>왼쪽 회전 → 오른쪽 회전 (이중)</td></tr>
+        <tr><td>RL</td><td>오른쪽 자식의 왼쪽 서브트리에 삽입</td><td>오른쪽 회전 → 왼쪽 회전 (이중)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) 레드-블랙 트리의 모양</h3>
+    <p>색깔 속성을 시각화한 RB 트리 예시입니다 (NIL 잎은 생략).</p>
+
+    <div class="viz">
+      <svg width="500" height="240" viewBox="0 0 500 240" role="img" aria-label="레드-블랙 트리 예시">
+        <line x1="250" y1="40"  x2="160" y2="100" class="arrow"/>
+        <line x1="250" y1="40"  x2="340" y2="100" class="arrow"/>
+        <line x1="160" y1="100" x2="100" y2="170" class="arrow"/>
+        <line x1="160" y1="100" x2="220" y2="170" class="arrow"/>
+        <line x1="340" y1="100" x2="280" y2="170" class="arrow"/>
+        <line x1="340" y1="100" x2="400" y2="170" class="arrow"/>
+
+        <!-- 검정 노드 -->
+        <circle cx="250" cy="40"  r="22" fill="#222" stroke="#888" stroke-width="1.5"/>
+        <text class="node-text" x="250" y="40" fill="#fff">13</text>
+        <circle cx="160" cy="100" r="22" fill="#222" stroke="#888" stroke-width="1.5"/>
+        <text class="node-text" x="160" y="100" fill="#fff">8</text>
+        <circle cx="340" cy="100" r="22" fill="#c0392b" stroke="#aaa" stroke-width="1.5"/>
+        <text class="node-text" x="340" y="100" fill="#fff">17</text>
+        <circle cx="100" cy="170" r="22" fill="#c0392b" stroke="#aaa" stroke-width="1.5"/>
+        <text class="node-text" x="100" y="170" fill="#fff">1</text>
+        <circle cx="220" cy="170" r="22" fill="#c0392b" stroke="#aaa" stroke-width="1.5"/>
+        <text class="node-text" x="220" y="170" fill="#fff">11</text>
+        <circle cx="280" cy="170" r="22" fill="#222" stroke="#888" stroke-width="1.5"/>
+        <text class="node-text" x="280" y="170" fill="#fff">15</text>
+        <circle cx="400" cy="170" r="22" fill="#222" stroke="#888" stroke-width="1.5"/>
+        <text class="node-text" x="400" y="170" fill="#fff">25</text>
+
+        <text class="label" x="20" y="20">검정 ⬛   빨강 🟥</text>
+        <text class="label" x="20" y="220">루트=검정 / 빨강 자식은 모두 검정 / 모든 경로에 검정 노드 수 동일</text>
+      </svg>
+      <span class="viz-caption">색깔 속성 + 회전 + 색 재칠하기로 균형을 유지한다.</span>
+    </div>
+
+    <h3>4) Java 코드로 보기</h3>
+    <p>표준 라이브러리에 자가 균형 BST가 들어 있어 직접 구현할 일은 거의 없습니다. 보통은 이렇게 씁니다.</p>
+<pre><code>import java.util.TreeMap;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+
+// 정렬된 맵 — 내부적으로 레드-블랙 트리
+TreeMap&lt;Integer, String&gt; map = new TreeMap&lt;&gt;();
+map.put(10, "a");
+map.put(5,  "b");
+map.put(20, "c");
+
+map.firstKey();         // 5  — 가장 작은 키
+map.lastKey();          // 20
+map.floorKey(15);       // 10 — 15 이하의 가장 큰 키
+map.ceilingKey(15);     // 20 — 15 이상의 가장 작은 키
+map.subMap(5, 20);      // [5, 20) 범위 검색
+
+// 정렬된 셋
+TreeSet&lt;Integer&gt; set = new TreeSet&lt;&gt;();
+
+// 회전(개념 코드) — AVL의 오른쪽 회전
+Node rotateRight(Node y) {
+    Node x = y.left;
+    Node t = x.right;
+
+    x.right = y;
+    y.left  = t;
+
+    y.height = 1 + Math.max(height(y.left), height(y.right));
+    x.height = 1 + Math.max(height(x.left), height(x.right));
+    return x;   // 새 루트
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>연산</th><th>AVL</th><th>RB</th><th>일반 BST(편향)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>탐색</td><td>O(log n)</td><td>O(log n)</td><td>O(n)</td></tr>
+        <tr><td>삽입</td><td>O(log n)</td><td>O(log n)</td><td>O(n)</td></tr>
+        <tr><td>삭제</td><td>O(log n)</td><td>O(log n)</td><td>O(n)</td></tr>
+        <tr><td>회전 횟수 (삽입 시)</td><td>최대 2회</td><td>최대 2회</td><td>—</td></tr>
+        <tr><td>회전 횟수 (삭제 시)</td><td>O(log n)</td><td>최대 3회</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>
+      AVL은 더 엄격한 균형이라 탐색이 약간 빠르고, RB는 삭제 시 회전이 상수 번이라 갱신이 빠릅니다.
+      공간은 둘 다 O(n)이고 노드당 추가 정보(AVL=높이, RB=색상 1비트)를 들고 다닙니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>표준 라이브러리의 정렬된 맵/셋</strong> — Java <code>TreeMap</code>/<code>TreeSet</code>, C++ <code>std::map</code>/<code>std::set</code> 모두 RB 트리.</li>
+      <li><strong>리눅스 커널</strong> — CFS 스케줄러의 가상 런타임 정렬, epoll의 등록 fd 관리 등에 RB 트리 사용.</li>
+      <li><strong>인메모리 데이터베이스의 정렬 인덱스</strong> — 범위 질의가 필요한 곳.</li>
+      <li><strong>구간 탐색·일정 관리</strong> — 가장 가까운 시각의 작업, 다음 만료 이벤트 등.</li>
+      <li>참고로 <strong>디스크 기반 인덱스</strong>는 RB가 아니라 <a href="b-tree.html">B-Tree/B+Tree</a>를 씁니다 (디스크 I/O 특성 때문).</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">AVL과 레드-블랙 트리 중 어느 걸 더 자주 쓰나요? 왜죠?</div>
+      <div class="a">
+        실무에서 표준 라이브러리에는 거의 모두 <strong>레드-블랙 트리</strong>가 쓰입니다.
+        AVL이 균형은 더 빡빡해 탐색이 조금 빠르지만, 삽입·삭제 시 회전이 더 자주/더 깊게 일어납니다.
+        RB는 색깔 속성으로 적당한 균형만 유지해서 갱신 비용이 평균적으로 낮고, 범용 라이브러리에선 갱신과 탐색이 섞이기 때문에
+        균형 잡힌 성능이 중요해 RB가 선택됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">레드-블랙 트리의 색 속성은 무엇을 보장하나요?</div>
+      <div class="a">
+        다섯 가지 속성이 함께 작용해서 "가장 긴 경로가 가장 짧은 경로의 2배를 넘지 않는다"를 보장합니다.
+        특히 "빨강 노드의 자식은 검정"이라는 규칙 때문에 빨강이 연속으로 나오지 못하고,
+        "어떤 경로든 검정 노드 수가 같다"는 규칙 때문에 양쪽 깊이 차이가 무한히 벌어지지 못합니다.
+        이 두 가지가 함께 트리 높이를 O(log n)으로 묶어줍니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">자가 균형 BST 대신 해시 테이블을 쓰면 안 되나요?</div>
+      <div class="a">
+        단순한 키-값 매핑이라면 해시 테이블이 더 빠릅니다(평균 O(1)).
+        하지만 자가 균형 BST는 <strong>정렬된 순서</strong>로 데이터를 다룰 수 있고, "X 이상의 첫 키" 같은 범위·근접 질의에 강합니다.
+        해시 테이블은 그런 질의가 안 되기 때문에, 정렬·범위가 필요하면 자가 균형 BST가 정답입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">왜 디스크 기반 인덱스에는 RB 트리가 아니라 B-Tree를 쓸까요?</div>
+      <div class="a">
+        디스크 I/O는 메모리 접근보다 수십만 배 비싸서, 트리의 <em>높이를 최대한 낮추는 것</em>이 중요합니다.
+        RB 트리는 한 노드가 키 1개를 가져 트리가 깊어지지만, B-Tree는 한 노드가 수백~수천 개의 키를 담을 수 있어 같은 데이터 양에서도
+        높이가 훨씬 낮습니다. 그래서 디스크 접근 횟수가 줄어 인덱스에 적합합니다. 자세한 건 <a href="b-tree.html">B-Tree 페이지</a> 참고.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="binary-search-tree.html">이진 탐색 트리</a></li>
+      <li><a href="binary-tree.html">이진 트리</a></li>
+      <li><a href="b-tree.html">B-Tree / B+Tree</a></li>
+      <li><a href="index.html">자료구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="heap.html">
+        <span class="label">이전</span>
+        ← 힙
+      </a>
+      <a href="index.html">📂 자료구조로</a>
+      <a class="next" href="b-tree.html">
+        <span class="label">다음</span>
+        B-Tree →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
