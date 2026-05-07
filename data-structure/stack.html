@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>스택(Stack) · 자료구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">자료구조</a>
+      <span class="sep">›</span>
+      <span>스택</span>
+    </nav>
+
+    <h1>스택(Stack)</h1>
+
+    <div class="definition">
+      <strong>스택</strong>이란, 데이터를 한쪽 끝에서만 넣고 빼는 <strong>LIFO(Last-In-First-Out, 후입선출)</strong>
+      구조입니다. 가장 최근에 넣은 데이터가 가장 먼저 나옵니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비유로 가장 잘 맞는 건 <strong>식당에 쌓아둔 접시 더미</strong>입니다.
+      새 접시는 위에 올리고, 꺼낼 때도 위에서 꺼냅니다. 아래에 있는 접시를 먼저 빼려고 하면 위에 쌓인 게 다 쏟아지죠.
+      그래서 늦게 올린 게 먼저 내려옵니다 — 이것이 LIFO입니다.
+    </p>
+    <p>
+      스택의 동작은 사실상 두 가지뿐입니다.
+    </p>
+    <ul>
+      <li><strong>push(x)</strong> — 위에 새 데이터를 올린다.</li>
+      <li><strong>pop()</strong> — 맨 위 데이터를 꺼내서 반환한다.</li>
+    </ul>
+    <p>
+      여기에 보조 연산으로 <strong>peek()</strong>(맨 위만 들여다봄), <strong>isEmpty()</strong>, <strong>size()</strong> 정도가 따라옵니다.
+      "맨 위(top)"라는 위치 하나만 신경 쓰면 되기 때문에 구현이 매우 단순합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>스택은 추상 자료형(ADT)이다</strong></p>
+      <p>
+        스택은 <em>"이런 동작이 보장되는 자료구조"</em>라는 인터페이스이지, 그 자체가 메모리 구조는 아닙니다.
+        실제로는 <strong>배열로도 구현할 수 있고, 연결 리스트로도 구현할 수 있어요</strong>.
+        Java의 <code>ArrayDeque</code>나 <code>Deque</code>를 스택처럼 쓰는 게 보통이고,
+        예전 <code>java.util.Stack</code>은 동기화 오버헤드 때문에 잘 쓰지 않습니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      "마지막에 한 일을 가장 먼저 되돌려야 한다"는 상황이 의외로 많기 때문입니다. 대표적인 예시들:
+    </p>
+    <ul>
+      <li><strong>함수 호출</strong> — A가 B를 부르고, B가 C를 불렀다면 C가 끝나야 B가 끝나고, B가 끝나야 A가 끝남.</li>
+      <li><strong>웹 브라우저 뒤로 가기</strong> — 가장 최근에 방문한 페이지로 먼저 돌아감.</li>
+      <li><strong>괄호/태그 매칭</strong> — 가장 최근에 연 괄호가 가장 먼저 닫혀야 함.</li>
+      <li><strong>실행 취소(Undo)</strong> — 마지막 동작이 가장 먼저 취소됨.</li>
+    </ul>
+    <p>
+      이런 "가장 최근 것 먼저"라는 패턴이 보이면 자연스럽게 스택이 떠올라야 합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) push 와 pop 단계별 시각화</h3>
+    <p>빈 스택에 10, 20, 30을 차례로 push한 뒤 pop을 한 번 하는 과정입니다.</p>
+
+    <div class="viz">
+      <svg width="700" height="220" viewBox="0 0 700 220" role="img" aria-label="스택 push/pop 단계">
+        <!-- 공통: 4단계 박스 -->
+        <!-- 단계 1: push 10 -->
+        <g transform="translate(20, 20)">
+          <text class="label" x="50" y="0" text-anchor="middle">push(10)</text>
+          <rect x="20" y="80" width="60" height="30" class="node highlight"/>
+          <text class="node-text" x="50" y="98" fill="#1a1a1a" font-weight="bold">10</text>
+          <line x1="20" y1="120" x2="80" y2="120" stroke="var(--text-muted)" stroke-width="2"/>
+          <text class="label" x="50" y="140" text-anchor="middle">top</text>
+          <text class="label" x="50" y="160" text-anchor="middle">↑</text>
+        </g>
+
+        <!-- 단계 2: push 20 -->
+        <g transform="translate(180, 20)">
+          <text class="label" x="50" y="0" text-anchor="middle">push(20)</text>
+          <rect x="20" y="50" width="60" height="30" class="node highlight"/>
+          <text class="node-text" x="50" y="68" fill="#1a1a1a" font-weight="bold">20</text>
+          <rect x="20" y="80" width="60" height="30" class="node"/>
+          <text class="node-text" x="50" y="98">10</text>
+          <line x1="20" y1="120" x2="80" y2="120" stroke="var(--text-muted)" stroke-width="2"/>
+          <text class="label" x="50" y="140" text-anchor="middle">top</text>
+          <text class="label" x="50" y="160" text-anchor="middle">↑</text>
+        </g>
+
+        <!-- 단계 3: push 30 -->
+        <g transform="translate(340, 20)">
+          <text class="label" x="50" y="0" text-anchor="middle">push(30)</text>
+          <rect x="20" y="20" width="60" height="30" class="node highlight"/>
+          <text class="node-text" x="50" y="38" fill="#1a1a1a" font-weight="bold">30</text>
+          <rect x="20" y="50" width="60" height="30" class="node"/>
+          <text class="node-text" x="50" y="68">20</text>
+          <rect x="20" y="80" width="60" height="30" class="node"/>
+          <text class="node-text" x="50" y="98">10</text>
+          <line x1="20" y1="120" x2="80" y2="120" stroke="var(--text-muted)" stroke-width="2"/>
+          <text class="label" x="50" y="140" text-anchor="middle">top</text>
+          <text class="label" x="50" y="160" text-anchor="middle">↑</text>
+        </g>
+
+        <!-- 단계 4: pop() → 30 반환 -->
+        <g transform="translate(500, 20)">
+          <text class="label" x="50" y="0" text-anchor="middle">pop() → 30</text>
+          <rect x="20" y="20" width="60" height="30" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/>
+          <text class="node-text" x="50" y="38" fill="var(--text-dim)">30</text>
+          <path d="M 95 35 L 130 15" class="arrow" marker-end="url(#arrSt)"/>
+          <text class="label" x="155" y="20">반환</text>
+
+          <rect x="20" y="50" width="60" height="30" class="node highlight"/>
+          <text class="node-text" x="50" y="68" fill="#1a1a1a" font-weight="bold">20</text>
+          <rect x="20" y="80" width="60" height="30" class="node"/>
+          <text class="node-text" x="50" y="98">10</text>
+          <line x1="20" y1="120" x2="80" y2="120" stroke="var(--text-muted)" stroke-width="2"/>
+          <text class="label" x="50" y="140" text-anchor="middle">top</text>
+          <text class="label" x="50" y="160" text-anchor="middle">↑</text>
+        </g>
+
+        <defs>
+          <marker id="arrSt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+      </svg>
+      <span class="viz-caption">top은 항상 가장 최근에 들어온 원소를 가리킨다. pop은 그 원소를 꺼내고 top을 한 칸 내린다.</span>
+    </div>
+
+    <h3>2) 응용 — 괄호 짝 검사</h3>
+    <p>
+      <code>"({[]})"</code> 가 올바른 괄호 문자열인지 어떻게 알까요? 스택을 쓰면 한 번만 훑어도 됩니다.
+      여는 괄호가 나오면 push, 닫는 괄호가 나오면 top과 짝이 맞는지 확인하면서 pop. 끝났을 때 스택이 비어 있으면 OK.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="170" viewBox="0 0 640 170" role="img" aria-label="괄호 매칭 시각화">
+        <text class="label" x="20" y="20" font-weight="bold">입력: ( { [ ] } )</text>
+        <text class="label" x="20" y="40">"(", "{", "[" 까지 push → 스택: [ "(", "{", "[" ]</text>
+
+        <g transform="translate(20, 60)">
+          <rect x="0"   y="0" width="50" height="30" class="node"/>
+          <text class="node-text" x="25" y="18">(</text>
+          <rect x="55"  y="0" width="50" height="30" class="node"/>
+          <text class="node-text" x="80" y="18">{</text>
+          <rect x="110" y="0" width="50" height="30" class="node highlight"/>
+          <text class="node-text" x="135" y="18" fill="#1a1a1a">[</text>
+          <text class="label" x="170" y="20">← top</text>
+        </g>
+
+        <text class="label" x="20" y="115">"]" 가 들어옴 → top "[" 과 짝이 맞음 → pop. 같은 식으로 "}", ")"도 모두 짝이 맞으면 비어 있는 채로 종료 = 올바른 괄호.</text>
+      </svg>
+      <span class="viz-caption">스택 한 개로 짝 검사를 O(n)에 끝낼 수 있다.</span>
+    </div>
+
+    <h3>3) Java 코드로 보기</h3>
+<pre><code>import java.util.ArrayDeque;
+import java.util.Deque;
+
+// 일반적으로 권장되는 방식 (Stack 클래스보다 빠름)
+Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+int top = stack.peek();   // 30 — 들여다보기만
+int x   = stack.pop();    // 30 — 꺼냄
+boolean empty = stack.isEmpty();
+
+// 응용: 괄호 매칭
+boolean isValid(String s) {
+    Deque&lt;Character&gt; st = new ArrayDeque&lt;&gt;();
+    for (char c : s.toCharArray()) {
+        if (c == '(' || c == '{' || c == '[') {
+            st.push(c);
+        } else {
+            if (st.isEmpty()) return false;
+            char open = st.pop();
+            if (c == ')' &amp;&amp; open != '(') return false;
+            if (c == '}' &amp;&amp; open != '{') return false;
+            if (c == ']' &amp;&amp; open != '[') return false;
+        }
+    }
+    return st.isEmpty();
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>연산</th><th>시간</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>push</td><td>O(1)</td><td>top 위치에 쌓기</td></tr>
+        <tr><td>pop</td><td>O(1)</td><td>top에서 꺼내기</td></tr>
+        <tr><td>peek</td><td>O(1)</td><td>top 들여다보기</td></tr>
+        <tr><td>탐색 (특정 값)</td><td>O(n)</td><td>스택의 본 목적이 아니어서 보통 권장되지 않음</td></tr>
+      </tbody>
+    </table>
+    <p>공간 복잡도는 들어 있는 원소 수에 비례해 O(n).</p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>함수 호출 스택(Call Stack)</strong> — JVM 등 모든 런타임이 함수 호출/반환을 관리하는 핵심 구조.</li>
+      <li><strong>Undo/Redo</strong> — 에디터, 그래픽 툴의 실행 취소/재실행.</li>
+      <li><strong>브라우저 뒤로가기/앞으로가기</strong> — 두 개의 스택을 두면 깔끔하게 구현 가능.</li>
+      <li><strong>수식 계산기</strong> — 중위 표기식 → 후위 표기식 변환, 후위 표기식 평가에 사용.</li>
+      <li><strong>DFS(깊이 우선 탐색)</strong> — 재귀를 명시적인 스택으로 풀어쓸 때.</li>
+      <li><strong>JVM 스레드별 스택 메모리</strong> — 지역 변수와 호출 정보를 담아 두는 영역.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">스택과 큐의 차이를 설명해 주세요.</div>
+      <div class="a">
+        스택은 LIFO(후입선출), 큐는 FIFO(선입선출)입니다. 스택은 한쪽 끝(top)에서만 넣고 빼지만,
+        큐는 한쪽 끝에서 넣고(rear) 다른 쪽 끝에서 뺍니다(front).
+        그래서 "최근 것 먼저"가 필요하면 스택, "들어온 순서대로 처리"가 필요하면 큐를 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">재귀 함수와 스택은 어떤 관계인가요?</div>
+      <div class="a">
+        재귀 호출은 내부적으로 <strong>호출 스택(Call Stack)</strong>을 사용합니다.
+        함수가 자기 자신을 부를 때마다 새 프레임이 스택에 쌓이고, 함수가 끝나면 프레임이 pop되면서 결과가 돌아옵니다.
+        그래서 재귀 깊이가 너무 깊으면 <em>StackOverflowError</em>가 나죠.
+        모든 재귀는 명시적인 스택을 써서 반복문으로 바꿀 수 있다는 점도 기억해 두면 좋습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Java에서 <code>Stack</code> 대신 <code>ArrayDeque</code>를 권장하는 이유는요?</div>
+      <div class="a">
+        <code>java.util.Stack</code>은 <code>Vector</code>를 상속해서 모든 메서드가 동기화되어 있어 단일 스레드에선 불필요한 오버헤드가 있고,
+        구조적으로도 낡은 설계라 권장되지 않습니다. <code>ArrayDeque</code>는 동기화가 없고 더 빠르며,
+        스택과 큐 모두로 쓸 수 있어 실무에서 표준처럼 쓰입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">스택을 큐로 만들 수 있나요?</div>
+      <div class="a">
+        가능합니다. 스택 두 개를 써서 <em>입력용</em>과 <em>출력용</em>으로 나눕니다.
+        push는 입력 스택에 쌓고, pop은 출력 스택에서 꺼내는데, 출력 스택이 비어 있으면 입력 스택의 모든 원소를 옮겨 담습니다.
+        그러면 가장 오래된 원소가 출력 스택의 top이 되어 FIFO처럼 동작합니다.
+        분할상환으로 보면 push와 pop 모두 O(1)입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="array.html">배열</a></li>
+      <li><a href="linked-list.html">연결 리스트</a></li>
+      <li><a href="queue.html">큐</a></li>
+      <li><a href="deque.html">덱</a></li>
+      <li><a href="index.html">자료구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="linked-list.html">
+        <span class="label">이전</span>
+        ← 연결 리스트
+      </a>
+      <a href="index.html">📂 자료구조로</a>
+      <a class="next" href="queue.html">
+        <span class="label">다음</span>
+        큐 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>자료구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <span>자료구조</span>
+    </nav>
+
+    <h1>🧱 자료구조</h1>
+    <p class="lead">
+      자료구조(Data Structure)는 데이터를 효율적으로 저장하고 다루기 위한 <strong>형식과 규칙</strong>입니다.
+      어떤 자료구조를 쓰느냐에 따라 같은 작업이라도 속도와 메모리 사용량이 크게 달라지기 때문에,
+      문제 상황에 맞는 자료구조를 고르는 안목이 곧 개발자의 기본기입니다.
+      여기서는 가장 자주 쓰이는 자료구조들을 <em>형태와 동작 방식</em>을 중심으로 정리합니다.
+    </p>
+
+    <!-- =========================================
+         선형 구조
+    ========================================== -->
+    <section class="concept-section">
+      <h2>선형 구조</h2>
+      <p>데이터가 <strong>일렬로 늘어선</strong> 형태. 순서가 있고, 한 방향(또는 양방향)으로 이동하면서 다룬다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="array.html">배열(Array)</a>
+          <span class="summary">고정 크기 메모리에 같은 타입 데이터를 연속으로 저장. 인덱스 접근이 O(1).</span>
+        </li>
+        <li>
+          <a href="linked-list.html">연결 리스트(Linked List)</a>
+          <span class="summary">각 노드가 다음 노드를 포인터로 가리키는 구조. 삽입/삭제가 빠른 대신 임의 접근이 느림.</span>
+        </li>
+        <li>
+          <a href="stack.html">스택(Stack)</a>
+          <span class="summary">LIFO(Last-In-First-Out). 함수 호출, 되돌리기, 괄호 검사 등에 쓰임.</span>
+        </li>
+        <li>
+          <a href="queue.html">큐(Queue)</a>
+          <span class="summary">FIFO(First-In-First-Out). 작업 대기열, BFS 탐색에 사용.</span>
+        </li>
+        <li>
+          <a href="deque.html">덱(Deque)</a>
+          <span class="summary">양쪽 끝에서 모두 삽입/삭제가 가능한 큐. 슬라이딩 윈도우 기법에 활용.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- =========================================
+         해시 기반
+    ========================================== -->
+    <section class="concept-section">
+      <h2>해시 기반</h2>
+      <p>키(key)를 <strong>해시 함수</strong>로 변환해 빠르게 위치를 찾는 구조. 평균 O(1) 조회가 강점.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="hash-table.html">해시 테이블(Hash Table)</a>
+          <span class="summary">키-값 매핑. 충돌 처리(체이닝/오픈 어드레싱)와 부하율(load factor)이 핵심.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- =========================================
+         비선형 구조 (트리)
+    ========================================== -->
+    <section class="concept-section">
+      <h2>비선형 구조 — 트리</h2>
+      <p>부모-자식 관계로 <strong>계층</strong>을 표현. 탐색·정렬·우선순위 처리 등 다양한 변형이 있다.</p>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>이진 트리(Binary Tree) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">자식이 최대 둘인 트리. 순회 방식(전위/중위/후위/레벨)이 기본기.</span>
+        </li>
+        <li class="todo">
+          <a>이진 탐색 트리(BST) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">왼쪽 서브트리 &lt; 루트 &lt; 오른쪽 서브트리. 평균 O(log n) 탐색.</span>
+        </li>
+        <li class="todo">
+          <a>AVL / 레드-블랙 트리 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">스스로 균형을 맞추는 BST. 최악의 경우에도 O(log n) 보장.</span>
+        </li>
+        <li class="todo">
+          <a>B-Tree / B+Tree <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">한 노드에 여러 키를 저장해 디스크 I/O를 줄임. DB 인덱스의 표준.</span>
+        </li>
+        <li class="todo">
+          <a>힙(Heap) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">완전 이진 트리 형태의 우선순위 큐. 최댓값/최솟값을 O(log n)에 꺼냄.</span>
+        </li>
+        <li class="todo">
+          <a>트라이(Trie) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">문자열을 트리로 저장해 자동완성·접두사 검색에 강함.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- =========================================
+         비선형 구조 (그래프)
+    ========================================== -->
+    <section class="concept-section">
+      <h2>비선형 구조 — 그래프</h2>
+      <p>노드(정점)와 엣지(간선)로 <strong>관계</strong>를 표현. 지도, SNS 친구 관계, 의존성 관리 등에 등장.</p>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>그래프(Graph) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">정점과 간선의 집합. 인접 행렬 vs 인접 리스트의 trade-off가 핵심.</span>
+        </li>
+      </ul>
+    </section>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="../index.html">🏠 홈으로</a>
+      <span></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

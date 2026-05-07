@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>해시 테이블(Hash Table) · 자료구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">자료구조</a>
+      <span class="sep">›</span>
+      <span>해시 테이블</span>
+    </nav>
+
+    <h1>해시 테이블(Hash Table)</h1>
+
+    <div class="definition">
+      <strong>해시 테이블</strong>이란, <strong>키(key)를 해시 함수에 넣어 인덱스를 얻은 뒤</strong> 그 위치의 배열 칸에
+      값(value)을 저장하는 자료구조입니다. 평균 <strong>O(1)</strong>에 삽입·검색·삭제가 가능한 강력한 무기입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      해시 테이블의 비유는 <strong>옷가게 보관함</strong>입니다. 손님 이름을 적어내면 직원이 이름을 일정한 규칙으로 바꿔서
+      "37번 보관함"이라고 알려줍니다. 다음에 다시 와서 이름을 말하면 같은 규칙으로 같은 번호가 나오니까
+      바로 그 보관함에서 옷을 꺼내줄 수 있죠. 매번 모든 보관함을 뒤지지 않아도 됩니다.
+    </p>
+    <p>핵심 구성 요소는 세 가지입니다.</p>
+    <ul>
+      <li><strong>해시 함수(hash function)</strong> — 임의 키를 정수 인덱스로 변환하는 함수.</li>
+      <li><strong>버킷 배열(buckets)</strong> — 인덱스로 바로 접근 가능한 저장소.</li>
+      <li><strong>충돌 처리(collision resolution)</strong> — 서로 다른 키가 같은 인덱스를 받았을 때의 처리 방법.</li>
+    </ul>
+    <p>
+      이상적인 경우 인덱스 한 번 계산이면 끝나서 <strong>O(1)</strong>이지만, 충돌이 자주 일어나면 그만큼 비용이 커집니다.
+      그래서 좋은 해시 함수와 적절한 부하율 관리가 성능을 좌우합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>해시 함수의 조건</strong></p>
+      <ul>
+        <li><strong>결정적</strong> — 같은 입력에는 항상 같은 출력.</li>
+        <li><strong>균등 분포</strong> — 결과가 인덱스 공간에 골고루 퍼져야 충돌이 줄어듦.</li>
+        <li><strong>빠름</strong> — 자주 호출되므로 가벼워야 함.</li>
+        <li><strong>(보안용일 경우) 일방향</strong> — 출력에서 입력을 역산하기 어려워야 함. 일반 해시 테이블에는 불필요.</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      "키로 값을 빠르게 찾고 싶다"가 출발점입니다. 배열은 <em>인덱스</em>로만 빠른 접근이 가능하고, 연결 리스트는
+      처음부터 훑어야 하고, 정렬된 트리도 O(log n)이 걸립니다. 만약 키-값 쌍이 수백만 개라면 차이가 어마어마합니다.
+    </p>
+    <p>
+      해시 테이블은 키를 직접 인덱스로 바꿔버리기 때문에, 데이터가 아무리 많아져도 평균 검색 시간이 거의 그대로입니다.
+      덕분에 캐시, 데이터베이스 인덱스(특히 동등 비교용), 사전(dictionary), 집합(set) 등 거의 모든 곳에 깔려 있어요.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 해시 함수로 인덱스 계산</h3>
+    <p>크기 7짜리 버킷 배열에 "apple", "banana"를 넣는다고 해봅시다.</p>
+
+    <div class="viz">
+      <svg width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="해시 함수와 버킷 배열">
+        <defs>
+          <marker id="hA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+
+        <!-- 키 -->
+        <rect class="node" x="20" y="20" width="100" height="34" rx="4"/>
+        <text class="node-text" x="70" y="38">"apple"</text>
+        <rect class="node" x="20" y="80" width="100" height="34" rx="4"/>
+        <text class="node-text" x="70" y="98">"banana"</text>
+
+        <!-- 해시 함수 박스 -->
+        <rect x="160" y="40" width="120" height="60" rx="6" fill="var(--bg-card)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text class="node-text" x="220" y="65">hash(key)</text>
+        <text class="label" x="220" y="85" text-anchor="middle">% 7</text>
+
+        <path d="M 125 37 L 155 55" class="arrow" marker-end="url(#hA)"/>
+        <path d="M 125 97 L 155 85" class="arrow" marker-end="url(#hA)"/>
+
+        <!-- 결과 인덱스 -->
+        <text class="label" x="295" y="55">→ 3</text>
+        <text class="label" x="295" y="85">→ 1</text>
+        <path d="M 285 50 L 380 35" class="arrow" marker-end="url(#hA)"/>
+        <path d="M 285 88 L 380 105" class="arrow" marker-end="url(#hA)"/>
+
+        <!-- 버킷 배열 -->
+        <g transform="translate(380, 20)">
+          <rect class="node" x="0"   y="0"  width="50" height="30" rx="4"/>
+          <rect class="node highlight" x="0"   y="32" width="50" height="30" rx="4"/>
+          <rect class="node" x="0"   y="64" width="50" height="30" rx="4"/>
+          <rect class="node highlight" x="0"   y="96" width="50" height="30" rx="4"/>
+          <rect class="node" x="0"   y="128" width="50" height="30" rx="4"/>
+          <rect class="node" x="0"   y="160" width="50" height="30" rx="4"/>
+          <rect class="node" x="0"   y="192" width="50" height="30" rx="4" />
+
+          <text class="label" x="-15" y="20" text-anchor="end">0</text>
+          <text class="label" x="-15" y="52" text-anchor="end">1</text>
+          <text class="label" x="-15" y="84" text-anchor="end">2</text>
+          <text class="label" x="-15" y="116" text-anchor="end">3</text>
+          <text class="label" x="-15" y="148" text-anchor="end">4</text>
+          <text class="label" x="-15" y="180" text-anchor="end">5</text>
+          <text class="label" x="-15" y="212" text-anchor="end">6</text>
+
+          <text class="node-text" x="25" y="50" font-size="11" fill="#1a1a1a">banana</text>
+          <text class="node-text" x="25" y="114" font-size="11" fill="#1a1a1a">apple</text>
+        </g>
+      </svg>
+      <span class="viz-caption">해시 함수가 키를 정수로 바꾸고, 그 정수를 버킷 배열의 인덱스로 사용한다.</span>
+    </div>
+
+    <h3>2) 충돌 — 체이닝(Chaining)</h3>
+    <p>
+      서로 다른 키가 같은 인덱스를 받으면 어떡할까요? 가장 단순한 방법은 그 자리에 <strong>연결 리스트</strong>를
+      매달아두는 것입니다. 새 항목이 오면 그 리스트 끝에 추가하고, 검색은 같은 버킷 안에서 키를 비교하며 찾습니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="190" viewBox="0 0 640 190" role="img" aria-label="체이닝">
+        <defs>
+          <marker id="cA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+
+        <!-- 버킷 -->
+        <g transform="translate(20, 20)">
+          <rect class="node" x="0" y="0"  width="60" height="30" rx="4"/>
+          <text class="label" x="-10" y="20" text-anchor="end">0</text>
+          <rect class="node" x="0" y="35" width="60" height="30" rx="4"/>
+          <text class="label" x="-10" y="55" text-anchor="end">1</text>
+          <rect class="node highlight" x="0" y="70" width="60" height="30" rx="4"/>
+          <text class="label" x="-10" y="90" text-anchor="end">2</text>
+          <rect class="node" x="0" y="105" width="60" height="30" rx="4"/>
+          <text class="label" x="-10" y="125" text-anchor="end">3</text>
+          <rect class="node" x="0" y="140" width="60" height="30" rx="4"/>
+          <text class="label" x="-10" y="160" text-anchor="end">4</text>
+        </g>
+
+        <!-- 인덱스 2의 체인: cat → bat → eel -->
+        <path d="M 80 85 L 110 85" class="arrow" marker-end="url(#cA)"/>
+        <rect class="node" x="115" y="65" width="80" height="40" rx="4"/>
+        <text class="node-text" x="155" y="85" font-size="12">cat:1</text>
+        <path d="M 195 85 L 225 85" class="arrow" marker-end="url(#cA)"/>
+        <rect class="node" x="230" y="65" width="80" height="40" rx="4"/>
+        <text class="node-text" x="270" y="85" font-size="12">bat:5</text>
+        <path d="M 310 85 L 340 85" class="arrow" marker-end="url(#cA)"/>
+        <rect class="node" x="345" y="65" width="80" height="40" rx="4"/>
+        <text class="node-text" x="385" y="85" font-size="12">eel:9</text>
+        <text class="label" x="445" y="88">→ null</text>
+
+        <text class="label" x="20" y="185">cat, bat, eel 모두 hash(key) % 5 == 2 인 경우 같은 버킷에 연결 리스트로 매달림</text>
+      </svg>
+      <span class="viz-caption">버킷에 충돌이 일어나면 같은 자리에서 리스트로 이어 붙인다. 검색은 그 리스트 안에서 키 비교.</span>
+    </div>
+
+    <h3>3) 충돌 — 오픈 어드레싱(Open Addressing)</h3>
+    <p>
+      또 다른 방법은 충돌이 나면 <strong>다른 빈 칸을 찾아가는</strong> 것입니다. 가장 단순한 형태인 <em>선형 탐사(linear probing)</em>는
+      충돌 시 다음 칸, 그 다음 칸… 식으로 한 칸씩 이동하면서 비어 있는 자리를 찾습니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="선형 탐사">
+        <text class="label" x="20" y="20" font-weight="bold">"cat"의 hash가 2인데 이미 차 있음 → 3, 4 순으로 빈 자리 탐색</text>
+        <g transform="translate(20, 40)">
+          <rect class="node" x="0"   y="0" width="60" height="40" rx="4"/>
+          <text class="node-text" x="30"  y="20">apple</text>
+          <text class="label" x="30" y="55" text-anchor="middle">0</text>
+
+          <rect class="node" x="65"  y="0" width="60" height="40" rx="4"/>
+          <text class="node-text" x="95"  y="20">key A</text>
+          <text class="label" x="95" y="55" text-anchor="middle">1</text>
+
+          <rect class="node" x="130" y="0" width="60" height="40" rx="4"/>
+          <text class="node-text" x="160" y="20">dog</text>
+          <text class="label" x="160" y="55" text-anchor="middle">2 (충돌)</text>
+
+          <rect class="node" x="195" y="0" width="60" height="40" rx="4"/>
+          <text class="node-text" x="225" y="20">key B</text>
+          <text class="label" x="225" y="55" text-anchor="middle">3 (또 차 있음)</text>
+
+          <rect class="node highlight" x="260" y="0" width="60" height="40" rx="4"/>
+          <text class="node-text" x="290" y="20" fill="#1a1a1a" font-weight="bold">cat</text>
+          <text class="label" x="290" y="55" text-anchor="middle">4 ← 여기에 저장</text>
+
+          <rect class="node" x="325" y="0" width="60" height="40" rx="4"/>
+          <text class="label" x="355" y="55" text-anchor="middle">5</text>
+        </g>
+      </svg>
+      <span class="viz-caption">검색 시에도 같은 규칙으로 따라가면서 키를 비교한다. 삭제는 <em>tombstone</em> 처리가 필요해 까다롭다.</span>
+    </div>
+
+    <h3>4) 부하율(Load Factor)과 리해싱(Rehashing)</h3>
+    <p>
+      <strong>부하율 = 저장된 항목 수 / 버킷 수</strong>. 이 값이 높아질수록 충돌이 많아져 성능이 떨어집니다.
+      그래서 보통 <em>임계값(예: 0.75)</em>을 넘으면 더 큰 배열을 만들어 모든 항목을 다시 해싱해서 옮깁니다.
+      이 작업을 <strong>리해싱</strong>이라고 부르고, 한 번에 비싸지만(O(n)) 분할상환으로 보면 평균 O(1)이 됩니다.
+    </p>
+
+    <h3>5) Java 코드로 보기</h3>
+<pre><code>import java.util.HashMap;
+import java.util.Map;
+
+Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();
+
+map.put("apple", 1);     // 평균 O(1)
+map.put("banana", 2);
+
+int v = map.get("apple"); // O(1)
+boolean has = map.containsKey("banana");
+map.remove("apple");
+
+// 자주 묻는 패턴: 빈도수 세기
+String[] words = {"a", "b", "a", "c", "b", "a"};
+Map&lt;String, Integer&gt; cnt = new HashMap&lt;&gt;();
+for (String w : words) {
+    cnt.merge(w, 1, Integer::sum);
+}
+// {a=3, b=2, c=1}
+
+// 사용자 정의 키를 쓸 때는 equals/hashCode를 반드시 같이 오버라이드
+class Point {
+    final int x, y;
+    Point(int x, int y) { this.x = x; this.y = y; }
+
+    @Override public boolean equals(Object o) {
+        if (!(o instanceof Point p)) return false;
+        return x == p.x &amp;&amp; y == p.y;
+    }
+    @Override public int hashCode() {
+        return 31 * x + y;
+    }
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>연산</th><th>평균</th><th>최악</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>삽입 (put)</td><td>O(1)</td><td>O(n)</td><td>충돌이 심하면 같은 버킷의 모든 항목 비교</td></tr>
+        <tr><td>검색 (get)</td><td>O(1)</td><td>O(n)</td><td>좋은 해시 함수에선 거의 일어나지 않음</td></tr>
+        <tr><td>삭제 (remove)</td><td>O(1)</td><td>O(n)</td><td>최악은 검색과 동일</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Java 8부터는 한 버킷의 체인이 일정 길이를 넘으면 <strong>레드-블랙 트리</strong>로 변환해 최악을 O(log n)으로 낮춥니다.
+      공간은 O(n)이지만 부하율을 낮게 유지하기 때문에 실제로는 항목 수의 1.3~2배 메모리를 씁니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>언어의 기본 사전/맵 자료구조</strong> — Java <code>HashMap</code>, Python <code>dict</code>, JS <code>Object/Map</code>.</li>
+      <li><strong>캐시</strong> — 키로 결과를 빠르게 찾는 모든 종류의 캐시(Memcached, Redis 등).</li>
+      <li><strong>데이터베이스 인덱스</strong> — 동등 비교 위주의 해시 인덱스. 범위 검색은 약함.</li>
+      <li><strong>중복 제거 / 집합 연산</strong> — <code>HashSet</code>으로 O(1) 멤버십 검사.</li>
+      <li><strong>파일/메시지 무결성 검사</strong> — SHA-256 같은 암호학적 해시는 변조 감지에 사용.</li>
+      <li><strong>로드 밸런서</strong> — 키의 해시값으로 서버를 고르는 일관 해싱(Consistent Hashing).</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">해시 충돌이란 무엇이고 어떻게 해결하나요?</div>
+      <div class="a">
+        서로 다른 키가 같은 인덱스를 받는 현상입니다. 두 가지 대표적인 해결책이 있습니다.
+        <strong>체이닝</strong>은 같은 인덱스에 연결 리스트나 트리를 매달아 모든 충돌 항목을 그 안에 저장하고,
+        <strong>오픈 어드레싱</strong>은 충돌 시 다른 빈 칸(선형/이차/이중 해싱)을 찾아 저장합니다.
+        Java HashMap은 체이닝 + (체인이 길어지면) 트리화 방식을 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">해시 테이블의 평균은 O(1)인데 최악은 왜 O(n)인가요?</div>
+      <div class="a">
+        모든 키가 같은 버킷에 몰리는 극단적 상황을 가정하면, 한 버킷 안의 리스트가 곧 전체 항목과 같아져 검색이 O(n)이 됩니다.
+        실제로는 일어나기 어렵지만, 악의적인 키를 넣어 의도적으로 충돌을 유도하는 <em>해시 충돌 공격(HashDoS)</em>이 가능해서
+        Java 8은 트리화로 최악을 O(log n)으로 완화했습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q"><code>equals</code>와 <code>hashCode</code>는 왜 함께 오버라이드해야 하나요?</div>
+      <div class="a">
+        해시 테이블은 먼저 <code>hashCode</code>로 버킷을 찾고, 그 안에서 <code>equals</code>로 같은 키인지 확인합니다.
+        둘이 일관되지 않으면 — 예를 들어 같은 객체인데 hashCode가 다르면 — 다른 버킷에 들어가 영영 못 찾고,
+        반대로 hashCode는 같은데 equals가 false면 충돌은 났는데 같다고 인정 안 되는 일이 생깁니다.
+        그래서 "equals가 같으면 hashCode도 같아야 한다"는 계약이 항상 깔립니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">체이닝과 오픈 어드레싱 중 어느 것이 더 좋나요?</div>
+      <div class="a">
+        상황에 따라 다릅니다. <strong>체이닝</strong>은 부하율이 1을 넘어도 동작 가능하고 삭제가 단순하지만, 노드 할당과 포인터 추적 비용이 있습니다.
+        <strong>오픈 어드레싱</strong>은 메모리 연속성이 좋아 캐시 효율이 높지만, 부하율이 0.7~0.8을 넘으면 성능이 급격히 나빠지고
+        삭제가 까다롭습니다(빈 칸과 삭제된 칸을 구분해야 함). 라이브러리는 보통 체이닝, 고성능 인메모리 자료구조는 오픈 어드레싱을 선호합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="array.html">배열</a></li>
+      <li><a href="linked-list.html">연결 리스트</a></li>
+      <li><a href="index.html">자료구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="deque.html">
+        <span class="label">이전</span>
+        ← 덱
+      </a>
+      <a href="index.html">📂 자료구조로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

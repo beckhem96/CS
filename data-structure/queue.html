@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>큐(Queue) · 자료구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">자료구조</a>
+      <span class="sep">›</span>
+      <span>큐</span>
+    </nav>
+
+    <h1>큐(Queue)</h1>
+
+    <div class="definition">
+      <strong>큐</strong>란, 한쪽 끝(rear)에서 데이터를 넣고 반대쪽 끝(front)에서 꺼내는
+      <strong>FIFO(First-In-First-Out, 선입선출)</strong> 구조입니다. 먼저 들어온 데이터가 먼저 나옵니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비유로 가장 직관적인 건 <strong>매표소 줄서기</strong>입니다. 줄 뒤로 가서 서고,
+      앞쪽부터 차례로 표를 받고 빠져나갑니다. 새치기 없이 들어온 순서대로 처리되는 게 큐의 핵심이에요.
+    </p>
+    <p>큐의 기본 연산은 두 가지입니다.</p>
+    <ul>
+      <li><strong>enqueue(x)</strong> — rear 쪽에 새 데이터를 넣는다.</li>
+      <li><strong>dequeue()</strong> — front 쪽 데이터를 꺼내서 반환한다.</li>
+    </ul>
+    <p>
+      여기에 <strong>peek()</strong>(front 들여다보기), <strong>isEmpty()</strong>, <strong>size()</strong>가 따라옵니다.
+      스택과 달리 들어오는 쪽과 나가는 쪽이 <em>반대편</em>이라는 점이 핵심입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>큐의 변종</strong></p>
+      <ul>
+        <li><strong>선형 큐(Linear Queue)</strong> — 배열 한 줄에 front/rear 인덱스를 두는 가장 단순한 형태. 메모리 낭비 문제가 있음.</li>
+        <li><strong>원형 큐(Circular Queue)</strong> — 배열의 끝과 처음을 이어 붙여 메모리를 재활용하는 형태.</li>
+        <li><strong>우선순위 큐(Priority Queue)</strong> — 들어온 순서가 아니라 <em>우선순위</em>에 따라 꺼내짐. 보통 힙으로 구현.</li>
+        <li><strong>덱(Deque)</strong> — 양 끝에서 모두 넣고 뺄 수 있는 일반화된 큐. <a href="deque.html">덱 페이지</a> 참고.</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      "들어온 순서대로 공정하게 처리해야 한다"는 상황에서 큐는 정답입니다.
+      OS 스케줄러가 작업을 받는 순서대로 처리하거나, 프린터에 전송한 순서대로 인쇄되거나,
+      네트워크 패킷이 도착한 순서대로 라우팅되어야 할 때 모두 큐가 깔려 있죠.
+    </p>
+    <p>
+      또 하나, <strong>BFS(너비 우선 탐색)</strong>도 큐 없이는 구현할 수 없습니다.
+      현재 위치에서 갈 수 있는 곳을 큐에 넣어두고 가까운 곳부터 차례로 꺼내 탐색해야
+      "최단 거리"를 보장할 수 있기 때문입니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) enqueue / dequeue 단계별 시각화</h3>
+    <p>빈 큐에 10, 20, 30을 enqueue한 뒤 한 번 dequeue하는 과정입니다.</p>
+
+    <div class="viz">
+      <svg width="700" height="200" viewBox="0 0 700 200" role="img" aria-label="큐 enqueue/dequeue 단계">
+        <!-- 단계 1: enq 10 -->
+        <g transform="translate(20, 20)">
+          <text class="label" x="80" y="0" text-anchor="middle">enqueue(10)</text>
+          <rect class="node highlight" x="20" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="45" y="32" fill="#1a1a1a" font-weight="bold">10</text>
+          <text class="label" x="45" y="65" text-anchor="middle">↑</text>
+          <text class="label" x="45" y="80" text-anchor="middle">front=rear</text>
+        </g>
+
+        <!-- 단계 2: enq 20 -->
+        <g transform="translate(180, 20)">
+          <text class="label" x="80" y="0" text-anchor="middle">enqueue(20)</text>
+          <rect class="node" x="20" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="45" y="32">10</text>
+          <rect class="node highlight" x="70" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="95" y="32" fill="#1a1a1a" font-weight="bold">20</text>
+          <text class="label" x="45" y="65" text-anchor="middle">↑</text>
+          <text class="label" x="45" y="80" text-anchor="middle">front</text>
+          <text class="label" x="95" y="65" text-anchor="middle">↑</text>
+          <text class="label" x="95" y="80" text-anchor="middle">rear</text>
+        </g>
+
+        <!-- 단계 3: enq 30 -->
+        <g transform="translate(340, 20)">
+          <text class="label" x="80" y="0" text-anchor="middle">enqueue(30)</text>
+          <rect class="node" x="20" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="45" y="32">10</text>
+          <rect class="node" x="70" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="95" y="32">20</text>
+          <rect class="node highlight" x="120" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="145" y="32" fill="#1a1a1a" font-weight="bold">30</text>
+          <text class="label" x="45" y="65" text-anchor="middle">↑</text>
+          <text class="label" x="45" y="80" text-anchor="middle">front</text>
+          <text class="label" x="145" y="65" text-anchor="middle">↑</text>
+          <text class="label" x="145" y="80" text-anchor="middle">rear</text>
+        </g>
+
+        <!-- 단계 4: dequeue -->
+        <g transform="translate(500, 20)">
+          <text class="label" x="80" y="0" text-anchor="middle">dequeue() → 10</text>
+          <rect x="20" y="15" width="50" height="34" rx="4" fill="none" stroke="#888" stroke-dasharray="4 3"/>
+          <text class="node-text" x="45" y="32" fill="var(--text-dim)">10</text>
+          <path d="M 5 32 L -10 50" class="arrow" marker-end="url(#qa)"/>
+
+          <rect class="node highlight" x="70" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="95" y="32" fill="#1a1a1a" font-weight="bold">20</text>
+          <rect class="node" x="120" y="15" width="50" height="34" rx="4"/>
+          <text class="node-text" x="145" y="32">30</text>
+          <text class="label" x="95" y="65" text-anchor="middle">↑</text>
+          <text class="label" x="95" y="80" text-anchor="middle">front</text>
+          <text class="label" x="145" y="65" text-anchor="middle">↑</text>
+          <text class="label" x="145" y="80" text-anchor="middle">rear</text>
+        </g>
+
+        <defs>
+          <marker id="qa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+      </svg>
+      <span class="viz-caption">front은 가장 오래된 원소, rear는 가장 최근에 들어온 원소를 가리킨다.</span>
+    </div>
+
+    <h3>2) 선형 큐의 문제 — 그리고 원형 큐</h3>
+    <p>
+      배열로 큐를 만들면 dequeue를 반복할 때마다 front가 오른쪽으로 이동해서, 앞쪽에 빈 자리가 생기지만
+      재활용되지 않습니다. 결국 배열이 안 찼는데도 rear가 끝에 도달해서 더 이상 enqueue가 안 되는 일이 생깁니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="240" viewBox="0 0 640 240" role="img" aria-label="원형 큐">
+        <text class="label" x="20" y="20" font-weight="bold">선형 큐의 비효율</text>
+        <g transform="translate(20, 35)">
+          <rect x="0"   y="0" width="50" height="34" rx="4" fill="none" stroke="#666" stroke-dasharray="4 3"/>
+          <rect x="50"  y="0" width="50" height="34" rx="4" fill="none" stroke="#666" stroke-dasharray="4 3"/>
+          <rect class="node" x="100" y="0" width="50" height="34" rx="4"/>
+          <text class="node-text" x="125" y="18">30</text>
+          <rect class="node" x="150" y="0" width="50" height="34" rx="4"/>
+          <text class="node-text" x="175" y="18">40</text>
+          <rect class="node" x="200" y="0" width="50" height="34" rx="4"/>
+          <text class="node-text" x="225" y="18">50</text>
+          <rect x="250" y="0" width="50" height="34" rx="4" fill="none" stroke="#666"/>
+          <rect x="300" y="0" width="50" height="34" rx="4" fill="none" stroke="#666"/>
+          <text class="label" x="125" y="55" text-anchor="middle">↑ front</text>
+          <text class="label" x="225" y="55" text-anchor="middle">↑ rear</text>
+          <text class="label" x="370" y="22">앞 두 칸은 비어 있는데 다시 못 쓴다</text>
+        </g>
+
+        <text class="label" x="20" y="115" font-weight="bold">원형 큐 — 끝과 처음을 이어 붙여 재활용</text>
+        <!-- 원형 표현: 단순 도형 -->
+        <g transform="translate(180, 130)">
+          <circle cx="80" cy="50" r="50" fill="none" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <!-- 6개 셀 -->
+          <text class="node-text" x="80" y="10" font-size="13">[0]</text>
+          <text class="node-text" x="125" y="32" font-size="13">[1] 30</text>
+          <text class="node-text" x="125" y="72" font-size="13">[2] 40</text>
+          <text class="node-text" x="80"  y="95" font-size="13">[3] 50</text>
+          <text class="node-text" x="35"  y="72" font-size="13">[4]</text>
+          <text class="node-text" x="35"  y="32" font-size="13">[5]</text>
+
+          <text class="label" x="160" y="34">↑ front</text>
+          <text class="label" x="160" y="100">↑ rear</text>
+          <path d="M 80 0 Q 130 0 130 50" class="arrow" marker-end="url(#qa2)" fill="none"/>
+        </g>
+        <text class="label" x="20" y="160">rear가 끝에 닿으면 0번으로 돌아가서 빈 자리를 채운다</text>
+
+        <defs>
+          <marker id="qa2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+      </svg>
+      <span class="viz-caption">원형 큐는 인덱스를 모듈러 연산( <code>i % capacity</code> )으로 다뤄 메모리를 끝까지 활용한다.</span>
+    </div>
+
+    <h3>3) Java 코드로 보기</h3>
+<pre><code>import java.util.ArrayDeque;
+import java.util.Queue;
+
+// Queue 인터페이스의 표준 구현으로 ArrayDeque 권장
+Queue&lt;Integer&gt; queue = new ArrayDeque&lt;&gt;();
+
+queue.offer(10);   // enqueue
+queue.offer(20);
+queue.offer(30);
+
+int x = queue.poll();      // dequeue → 10
+int peek = queue.peek();   // 20 (꺼내지는 않음)
+boolean empty = queue.isEmpty();
+
+// 응용: 그래프 BFS
+import java.util.*;
+
+void bfs(Map&lt;Integer, List&lt;Integer&gt;&gt; graph, int start) {
+    Queue&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();
+    Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();
+
+    q.offer(start);
+    visited.add(start);
+
+    while (!q.isEmpty()) {
+        int cur = q.poll();
+        // cur 처리
+
+        for (int next : graph.getOrDefault(cur, List.of())) {
+            if (!visited.contains(next)) {
+                visited.add(next);
+                q.offer(next);
+            }
+        }
+    }
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>연산</th><th>시간</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>enqueue</td><td>O(1)</td><td>rear에 추가</td></tr>
+        <tr><td>dequeue</td><td>O(1)</td><td>front에서 제거</td></tr>
+        <tr><td>peek</td><td>O(1)</td><td>front 들여다보기</td></tr>
+        <tr><td>탐색 (특정 값)</td><td>O(n)</td><td>큐의 본 목적이 아님</td></tr>
+      </tbody>
+    </table>
+    <p>
+      공간 복잡도는 O(n). 단, 선형 큐를 단순 배열로 만들면 dequeue 후 shift를 한다거나 하면 dequeue가 O(n)이 될 수 있어,
+      실무에선 원형 큐 또는 연결 리스트 기반 구현을 씁니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>OS 스케줄링</strong> — 프로세스/스레드 대기열, 라운드 로빈 스케줄링.</li>
+      <li><strong>BFS(너비 우선 탐색)</strong> — 미로 최단 경로, 소셜 네트워크의 "친구의 친구" 탐색.</li>
+      <li><strong>메시지 큐(Message Queue)</strong> — Kafka, RabbitMQ, SQS 등 비동기 시스템의 핵심.</li>
+      <li><strong>프린터 작업 대기열, 콜센터 통화 대기열</strong> — 공정한 순서 처리가 필요한 모든 곳.</li>
+      <li><strong>버퍼/캐싱</strong> — 동영상 스트리밍의 패킷 버퍼, 키보드 입력 버퍼.</li>
+      <li><strong>자바 ExecutorService</strong> — 작업 큐(BlockingQueue)에 작업을 넣고 워커 스레드가 꺼내 처리.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">스택과 큐의 차이를 한 문장으로 설명하면?</div>
+      <div class="a">
+        스택은 LIFO(가장 최근 것이 먼저), 큐는 FIFO(가장 오래된 것이 먼저)입니다.
+        스택은 한쪽 끝에서만 넣고 빼고, 큐는 한쪽 끝에서 넣고 반대쪽 끝에서 뺍니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">선형 큐의 단점과 원형 큐가 어떻게 그것을 해결하는지 설명해 주세요.</div>
+      <div class="a">
+        선형 큐는 dequeue가 반복되면 front가 계속 오른쪽으로 이동해 앞쪽 메모리를 다시 못 씁니다.
+        결국 배열이 가득 차지 않았는데도 rear가 끝에 닿아 enqueue가 막히는 "false-full" 문제가 생기죠.
+        원형 큐는 인덱스를 <code>i % capacity</code>로 다뤄서, rear가 끝에 닿으면 0번으로 돌아가 비어 있는 앞쪽 메모리를 채우게 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">우선순위 큐는 어떻게 동작하나요?</div>
+      <div class="a">
+        들어온 순서가 아니라 <em>우선순위</em>가 높은 원소가 먼저 나옵니다. 보통 <strong>힙(Heap)</strong>으로 구현해서
+        삽입과 최우선 원소 추출이 모두 O(log n)에 가능합니다.
+        다익스트라 알고리즘, 이벤트 시뮬레이션, 작업 스케줄러처럼 "가장 중요한 것을 먼저"가 필요할 때 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">왜 BFS는 큐를, DFS는 스택을 쓰나요?</div>
+      <div class="a">
+        BFS는 가까운 곳부터 차례로 탐색해야 하기 때문에 "먼저 발견한 노드를 먼저 처리"하는 큐가 필요합니다.
+        DFS는 한 방향으로 끝까지 들어갔다가 막히면 되돌아오는 방식이라, "가장 최근에 발견한 노드를 먼저"인 스택이 자연스럽습니다.
+        DFS는 재귀로도 구현되는데 그 재귀가 결국 호출 스택을 쓰는 것과 같은 원리예요.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="stack.html">스택</a></li>
+      <li><a href="deque.html">덱</a></li>
+      <li><a href="linked-list.html">연결 리스트</a></li>
+      <li><a href="index.html">자료구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="stack.html">
+        <span class="label">이전</span>
+        ← 스택
+      </a>
+      <a href="index.html">📂 자료구조로</a>
+      <a class="next" href="deque.html">
+        <span class="label">다음</span>
+        덱 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

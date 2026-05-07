@@ -1,0 +1,143 @@
+/* =========================================================
+   concept.css — 개념 페이지 전용 스타일
+   ========================================================= */
+
+/* SVG 시각화 영역 */
+.viz {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  margin: 16px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+.viz svg {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+}
+.viz-caption {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* 단계별 시각화 (여러 개 나열) */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.steps .step {
+  flex: 1 1 220px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+}
+.steps .step .step-num {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.steps .step .step-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* SVG 공통 스타일 */
+.viz svg .node {
+  fill: var(--bg-card);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.viz svg .node-text {
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+.viz svg .arrow {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  fill: none;
+}
+.viz svg .label {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-sans);
+}
+.viz svg .highlight {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+/* 복잡도 / 비교 표 */
+table.complexity {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 14px;
+}
+table.complexity th,
+table.complexity td {
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  text-align: left;
+}
+table.complexity th {
+  background: var(--bg-elev);
+  font-weight: 600;
+}
+table.complexity td code {
+  font-size: 13px;
+}
+
+/* Q&A 박스 (면접 질문) */
+.qa {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin: 12px 0;
+  background: var(--bg-card);
+}
+.qa .q {
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.qa .q::before { content: "Q. "; }
+.qa .a::before { content: "A. "; color: var(--text-muted); font-weight: 700; }
+
+/* 관련 개념 칩 */
+.related-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.related-chips li { margin: 0; }
+.related-chips a {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+}
+.related-chips a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
