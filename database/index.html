@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>데이터베이스 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <span>데이터베이스</span>
+    </nav>
+
+    <h1>🗄️ 데이터베이스</h1>
+    <p class="lead">
+      데이터베이스(Database)는 많은 데이터를 안전하게 저장하고, 빠르게 찾고, 동시에 여러 사용자가 다뤄도 깨지지 않게 만드는 시스템입니다.
+      "어떻게 빨리 찾는지(인덱스)", "어떻게 일관성을 지키는지(트랜잭션·락·MVCC)", "어떻게 효율적으로 합치는지(조인·실행계획)" — 이 세 줄기를 따라가면 됩니다.
+      여기서는 면접·실무에서 가장 자주 등장하는 관계형 DB 핵심 개념을 시각화와 함께 정리합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>📚 학습 가이드 — 핵심 먼저, 그다음 심화</strong></p>
+      <p>
+        먼저 <em>핵심 개념</em>을 한 번 훑어 큰 그림을 만든 뒤, 깊이 알고 싶은 주제는 같은 카테고리의 <em>심화 / 상세</em>로 들어가세요.
+        예: 인덱스의 큰 그림 → B+Tree 내부 구조 / 격리 수준 → MVCC / WAL.
+      </p>
+    </div>
+
+    <h2 style="margin-top:32px; padding-bottom:6px; border-bottom:2px solid var(--accent);">
+      🧩 핵심 개념
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      DB를 처음 배우거나 면접 직전에 한 번 훑기 좋은 우선순위 개념들.
+    </p>
+
+    <section class="concept-section">
+      <h3>스키마 설계</h3>
+      <p>테이블을 어떻게 나눠야 중복과 이상(anomaly)을 줄일 수 있는가.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="normalization.html">정규화</a>
+          <span class="summary">함수 종속과 1NF~BCNF, 비정규화의 정당화.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>빠른 조회</h3>
+      <p>"왜 인덱스만 있으면 빠른가"를 자료구조 관점으로 이해하기.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="indexing.html">인덱스</a>
+          <span class="summary">B+Tree 동작, 클러스터 vs 논클러스터, 커버링/복합 인덱스, 인덱스를 못 쓰는 패턴.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>일관성과 동시성</h3>
+      <p>여러 사용자가 동시에 같은 데이터를 다뤄도 깨지지 않게 만드는 도구들.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="transaction-acid.html">트랜잭션과 ACID</a>
+          <span class="summary">원자성·일관성·격리성·지속성을 어떻게 보장하는지(WAL, 락).</span>
+        </li>
+        <li>
+          <a href="isolation-level.html">격리 수준</a>
+          <span class="summary">4단계 격리 수준과 발생 가능한 5가지 현상 매트릭스.</span>
+        </li>
+        <li>
+          <a href="lock.html">락</a>
+          <span class="summary">공유/배타, 행/페이지/테이블, 인텐션·gap·next-key 락, 데드락.</span>
+        </li>
+        <li>
+          <a href="mvcc.html">MVCC</a>
+          <span class="summary">잠그지 않고 읽기 — PostgreSQL과 Oracle의 두 가지 구현 방식.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>쿼리 실행</h3>
+      <p>옵티마이저가 어떤 결정을 내리고, 그것을 어떻게 읽는가.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="join-algorithm.html">조인 알고리즘</a>
+          <span class="summary">Nested Loop / Hash / Sort-Merge 단계별 시각화와 선택 기준.</span>
+        </li>
+        <li>
+          <a href="execution-plan.html">실행 계획(EXPLAIN) 읽기</a>
+          <span class="summary">Seq Scan / Index Scan / Bitmap, cost와 rows의 의미.</span>
+        </li>
+      </ul>
+    </section>
+
+    <h2 style="margin-top:48px; padding-bottom:6px; border-bottom:2px solid var(--text-muted);">
+      🔬 심화 / 상세
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      핵심 개념을 한 번 본 뒤, 면접에서 깊이 물어볼 만한 메커니즘을 별도 페이지로 정리합니다. (작성 예정)
+    </p>
+
+    <section class="concept-section">
+      <h3>스토리지 엔진 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>WAL과 체크포인트 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">Write-Ahead Logging의 동작과 복구 절차.</span>
+        </li>
+        <li class="todo">
+          <a>B+Tree 내부 구조 심층 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">페이지 분할/병합, fill factor, 인덱스 단편화.</span>
+        </li>
+        <li class="todo">
+          <a>인덱스 심화 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">함수 인덱스, 부분 인덱스, GiST/GIN, 멀티컬럼 정렬.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>분산 / 확장성 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>샤딩과 파티셔닝 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">수평/수직 분할, 라우팅 키 선택, 리밸런싱.</span>
+        </li>
+        <li class="todo">
+          <a>레플리케이션 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">동기/비동기, 마스터-슬레이브, 일관성 수준.</span>
+        </li>
+        <li class="todo">
+          <a>CAP / PACELC <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">분산 시스템의 트레이드오프와 사례 매핑.</span>
+        </li>
+        <li class="todo">
+          <a>분산 트랜잭션 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">2PC, 3PC, Saga, Outbox 패턴.</span>
+        </li>
+        <li class="todo">
+          <a>NoSQL 데이터 모델 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">Document / Key-Value / Wide-Column / Graph.</span>
+        </li>
+      </ul>
+    </section>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="../index.html">🏠 홈으로</a>
+      <span></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

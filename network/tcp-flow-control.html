@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TCP 흐름 제어 · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">네트워크</a>
+      <span class="sep">›</span>
+      <span>TCP 흐름 제어</span>
+    </nav>
+
+    <h1>TCP 흐름 제어(Flow Control)</h1>
+
+    <div class="definition">
+      <strong>흐름 제어</strong>는 수신자가 처리할 수 있는 속도에 맞게 송신자의 전송량을 조절해
+      <strong>수신 버퍼가 넘치지 않게</strong> 하는 메커니즘입니다.
+      핵심 도구는 <strong>슬라이딩 윈도우(Sliding Window)</strong>와 수신측이 광고하는 <strong>수신 윈도우(rwnd)</strong>입니다.
+      <em>네트워크 전체</em>가 아닌 <em>두 끝점 사이</em>의 균형을 다룹니다(전체 균형은 혼잡 제어가 담당).
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      TCP는 신뢰성을 위해 모든 바이트에 시퀀스 번호를 매기고 ACK를 받습니다.
+      그런데 수신자가 1초에 1MB만 처리할 수 있는데 송신자가 100MB/s로 들이부으면, 수신측 OS의 TCP 버퍼는 금방 가득 차고
+      그 위로 도착한 패킷은 그냥 <strong>버려집니다</strong>. 버려진 만큼 재전송이 일어나니 결국 처리량은 더 떨어집니다.
+    </p>
+    <p>
+      그래서 TCP는 매 ACK 패킷에 <strong>"내 수신 버퍼에 지금 N바이트 남았어"</strong>라는 정보를 같이 실어 보냅니다.
+      이게 헤더의 <strong>Window 필드(16비트)</strong>이고, 송신자는 이 값을 보고 <em>한 번에 in-flight 상태로 둘 수 있는 양의 상한</em>을 정합니다.
+    </p>
+    <p>
+      흐름 제어는 사람의 대화에 비유하면 <strong>받아쓰는 사람의 손 속도</strong>에 맞추는 것입니다.
+      말하는 사람이 아무리 빨리 말할 수 있어도, 받아쓰는 사람이 못 따라오면 의미가 없습니다.
+      "잠깐, 거기까지" 같은 신호로 잠시 멈추기도 합니다 — TCP에선 그게 <strong>Zero Window</strong>입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>흐름 제어 ≠ 혼잡 제어</strong></p>
+      <p>
+        둘 다 송신량을 줄이지만 <em>보고 있는 대상</em>이 다릅니다.
+        흐름 제어는 <strong>수신자의 버퍼</strong>를 보고(rwnd), 혼잡 제어는 <strong>네트워크 자체의 혼잡 신호</strong>(손실, RTT 증가, ECN)를 봅니다.
+        실제 송신 가능량은 <code>min(rwnd, cwnd)</code>입니다 — 둘 중 더 빡빡한 쪽이 이깁니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      TCP가 IP 위에 신뢰성을 얹는 프로토콜이라 해도, "신뢰성 있게 도착시킨다"는 것이
+      "수신자가 받아낼 수 있다"는 뜻은 아닙니다. 두 끝점의 처리 능력은 보통 비대칭입니다 — 강력한 서버가 작은 IoT 기기에 데이터를 보내거나,
+      여러 연결을 동시에 처리하느라 한 연결의 처리가 늦어지는 일은 흔합니다.
+    </p>
+    <p>
+      흐름 제어가 없으면 다음 두 문제가 동시에 생깁니다:
+    </p>
+    <ul>
+      <li><strong>수신측 버퍼 오버플로우</strong> — 도착한 패킷이 버려지고, 그만큼 송신측은 재전송한다. 시간·대역폭 낭비.</li>
+      <li><strong>피드백 부재</strong> — 송신자는 자신이 너무 빠른지 알 길이 없다. 일정 속도로 무작정 보낼 수밖에 없다.</li>
+    </ul>
+    <p>
+      슬라이딩 윈도우는 이 문제를 두 줄로 푸는 우아한 해법입니다 — <em>"내가 받을 수 있는 만큼만 광고하고, 너는 그만큼만 보내라"</em>.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 송수신 양쪽의 버퍼 모델</h3>
+    <p>
+      먼저 그림으로 잡아두면 나머지가 쉽습니다. TCP는 양쪽 끝에 <strong>송신 버퍼</strong>와 <strong>수신 버퍼</strong>를 둡니다.
+      송신 버퍼는 응용이 <code>write()</code>한 데이터를 쌓아두고, 수신 버퍼는 도착한 패킷을 응용이 <code>read()</code>로 가져갈 때까지 보관합니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="송수신 버퍼 모델">
+        <defs>
+          <marker id="fcA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <text class="label" x="80" y="25" font-weight="bold">송신측</text>
+        <rect class="node" x="40" y="40" width="220" height="60" rx="6"/>
+        <text class="node-text" x="150" y="63">App write()</text>
+        <text class="label" x="150" y="85" text-anchor="middle">앱 → 송신 버퍼</text>
+
+        <rect class="node highlight" x="40" y="115" width="220" height="60" rx="6"/>
+        <text class="node-text" x="150" y="138" fill="#1a1a1a">송신 버퍼</text>
+        <text class="label" x="150" y="160" text-anchor="middle" fill="#1a1a1a">in-flight 한도 = min(rwnd, cwnd)</text>
+
+        <text class="label" x="500" y="25" font-weight="bold">수신측</text>
+        <rect class="node highlight" x="380" y="40" width="220" height="60" rx="6"/>
+        <text class="node-text" x="490" y="63" fill="#1a1a1a">수신 버퍼</text>
+        <text class="label" x="490" y="85" text-anchor="middle" fill="#1a1a1a">남은 공간 = rwnd 광고</text>
+
+        <rect class="node" x="380" y="115" width="220" height="60" rx="6"/>
+        <text class="node-text" x="490" y="138">App read()</text>
+        <text class="label" x="490" y="160" text-anchor="middle">버퍼 → 앱 (소비)</text>
+
+        <line x1="260" y1="145" x2="380" y2="70" stroke="var(--accent)" stroke-width="2" marker-end="url(#fcA)"/>
+        <text class="label" x="320" y="105" text-anchor="middle">data + seq</text>
+        <line x1="380" y1="80" x2="260" y2="155" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#fcA)" stroke-dasharray="4 3"/>
+        <text class="label" x="320" y="195" text-anchor="middle" fill="var(--text-muted)">ACK + window=N</text>
+      </svg>
+      <span class="viz-caption">수신 버퍼의 빈 공간이 곧 광고되는 윈도우. 앱이 read를 늦게 하면 빈 공간이 줄고 윈도우도 줄어든다.</span>
+    </div>
+
+    <h3>2) 슬라이딩 윈도우 — 4가지 상태와 윈도우의 이동</h3>
+    <p>
+      송신측은 자기가 보낸 바이트를 4가지로 분류합니다:
+    </p>
+    <ol>
+      <li><strong>① 보냈고 ACK도 받은 바이트</strong> — 더 이상 신경 쓰지 않아도 됨</li>
+      <li><strong>② 보냈지만 아직 ACK 못 받은 바이트</strong> — 재전송에 대비해 보관 중 (in-flight)</li>
+      <li><strong>③ 아직 안 보냈지만 보낼 수 있는 바이트</strong> — rwnd 한도 안에 들어 있음</li>
+      <li><strong>④ rwnd 밖 — 아직 보낼 수 없는 바이트</strong></li>
+    </ol>
+    <p>
+      <strong>윈도우</strong>는 ②+③의 폭입니다. ACK가 오면 윈도우의 왼쪽 경계가 오른쪽으로 밀려나고, 동시에 오른쪽 경계도 같이 미끄러집니다 — 그래서 "슬라이딩".
+    </p>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="슬라이딩 윈도우 진행">
+        <text class="label" x="60" y="25" font-weight="bold">초기: rwnd=8, ACK=0까지 받음</text>
+
+        <g transform="translate(0,40)">
+          <rect class="node" x="40" y="0" width="40" height="36" rx="3"/><text class="label" x="60" y="22" text-anchor="middle">1</text>
+          <rect class="node" x="80" y="0" width="40" height="36" rx="3"/><text class="label" x="100" y="22" text-anchor="middle">2</text>
+          <rect class="node highlight" x="120" y="0" width="40" height="36" rx="3"/><text class="label" x="140" y="22" text-anchor="middle" fill="#1a1a1a">3</text>
+          <rect class="node highlight" x="160" y="0" width="40" height="36" rx="3"/><text class="label" x="180" y="22" text-anchor="middle" fill="#1a1a1a">4</text>
+          <rect class="node highlight" x="200" y="0" width="40" height="36" rx="3"/><text class="label" x="220" y="22" text-anchor="middle" fill="#1a1a1a">5</text>
+          <rect class="node highlight" x="240" y="0" width="40" height="36" rx="3"/><text class="label" x="260" y="22" text-anchor="middle" fill="#1a1a1a">6</text>
+          <rect class="node" x="280" y="0" width="40" height="36" rx="3"/><text class="label" x="300" y="22" text-anchor="middle">7</text>
+          <rect class="node" x="320" y="0" width="40" height="36" rx="3"/><text class="label" x="340" y="22" text-anchor="middle">8</text>
+          <rect class="node" x="360" y="0" width="40" height="36" rx="3"/><text class="label" x="380" y="22" text-anchor="middle">9</text>
+          <rect class="node" x="400" y="0" width="40" height="36" rx="3"/><text class="label" x="420" y="22" text-anchor="middle">10</text>
+          <rect class="node" x="440" y="0" width="40" height="36" rx="3" opacity="0.4"/><text class="label" x="460" y="22" text-anchor="middle">11</text>
+          <rect class="node" x="480" y="0" width="40" height="36" rx="3" opacity="0.4"/><text class="label" x="500" y="22" text-anchor="middle">12</text>
+          <text class="label" x="100" y="55" text-anchor="middle">① ACKed</text>
+          <text class="label" x="220" y="55" text-anchor="middle" fill="var(--accent)">② sent, waiting ACK</text>
+          <text class="label" x="380" y="55" text-anchor="middle">③ usable window</text>
+          <text class="label" x="500" y="55" text-anchor="middle">④ not yet</text>
+        </g>
+
+        <text class="label" x="60" y="125" font-weight="bold">ACK 4 도착 → 윈도우 우측으로 슬라이드</text>
+
+        <g transform="translate(0,140)">
+          <rect class="node" x="40" y="0" width="40" height="36" rx="3"/><text class="label" x="60" y="22" text-anchor="middle">1</text>
+          <rect class="node" x="80" y="0" width="40" height="36" rx="3"/><text class="label" x="100" y="22" text-anchor="middle">2</text>
+          <rect class="node" x="120" y="0" width="40" height="36" rx="3"/><text class="label" x="140" y="22" text-anchor="middle">3</text>
+          <rect class="node" x="160" y="0" width="40" height="36" rx="3"/><text class="label" x="180" y="22" text-anchor="middle">4</text>
+          <rect class="node highlight" x="200" y="0" width="40" height="36" rx="3"/><text class="label" x="220" y="22" text-anchor="middle" fill="#1a1a1a">5</text>
+          <rect class="node highlight" x="240" y="0" width="40" height="36" rx="3"/><text class="label" x="260" y="22" text-anchor="middle" fill="#1a1a1a">6</text>
+          <rect class="node highlight" x="280" y="0" width="40" height="36" rx="3"/><text class="label" x="300" y="22" text-anchor="middle" fill="#1a1a1a">7</text>
+          <rect class="node highlight" x="320" y="0" width="40" height="36" rx="3"/><text class="label" x="340" y="22" text-anchor="middle" fill="#1a1a1a">8</text>
+          <rect class="node" x="360" y="0" width="40" height="36" rx="3"/><text class="label" x="380" y="22" text-anchor="middle">9</text>
+          <rect class="node" x="400" y="0" width="40" height="36" rx="3"/><text class="label" x="420" y="22" text-anchor="middle">10</text>
+          <rect class="node" x="440" y="0" width="40" height="36" rx="3"/><text class="label" x="460" y="22" text-anchor="middle">11</text>
+          <rect class="node" x="480" y="0" width="40" height="36" rx="3"/><text class="label" x="500" y="22" text-anchor="middle">12</text>
+          <text class="label" x="120" y="55" text-anchor="middle">① ACKed</text>
+          <text class="label" x="280" y="55" text-anchor="middle" fill="var(--accent)">② in-flight</text>
+          <text class="label" x="430" y="55" text-anchor="middle">③ usable</text>
+        </g>
+
+        <text class="label" x="60" y="225" font-weight="bold">앱이 read 안 해서 rwnd가 8→4로 줄어듦 → 윈도우 축소</text>
+
+        <g transform="translate(0,240)">
+          <rect class="node" x="40" y="0" width="40" height="36" rx="3"/><text class="label" x="60" y="22" text-anchor="middle">1</text>
+          <rect class="node" x="80" y="0" width="40" height="36" rx="3"/><text class="label" x="100" y="22" text-anchor="middle">2</text>
+          <rect class="node" x="120" y="0" width="40" height="36" rx="3"/><text class="label" x="140" y="22" text-anchor="middle">3</text>
+          <rect class="node" x="160" y="0" width="40" height="36" rx="3"/><text class="label" x="180" y="22" text-anchor="middle">4</text>
+          <rect class="node highlight" x="200" y="0" width="40" height="36" rx="3"/><text class="label" x="220" y="22" text-anchor="middle" fill="#1a1a1a">5</text>
+          <rect class="node highlight" x="240" y="0" width="40" height="36" rx="3"/><text class="label" x="260" y="22" text-anchor="middle" fill="#1a1a1a">6</text>
+          <rect class="node highlight" x="280" y="0" width="40" height="36" rx="3"/><text class="label" x="300" y="22" text-anchor="middle" fill="#1a1a1a">7</text>
+          <rect class="node highlight" x="320" y="0" width="40" height="36" rx="3"/><text class="label" x="340" y="22" text-anchor="middle" fill="#1a1a1a">8</text>
+          <rect class="node" x="360" y="0" width="40" height="36" rx="3" opacity="0.4"/><text class="label" x="380" y="22" text-anchor="middle">9</text>
+          <rect class="node" x="400" y="0" width="40" height="36" rx="3" opacity="0.4"/><text class="label" x="420" y="22" text-anchor="middle">10</text>
+          <rect class="node" x="440" y="0" width="40" height="36" rx="3" opacity="0.4"/><text class="label" x="460" y="22" text-anchor="middle">11</text>
+          <text class="label" x="120" y="55" text-anchor="middle">① ACKed</text>
+          <text class="label" x="280" y="55" text-anchor="middle" fill="var(--accent)">② in-flight</text>
+          <text class="label" x="420" y="55" text-anchor="middle">③ 사용 불가</text>
+        </g>
+      </svg>
+      <span class="viz-caption">ACK는 윈도우를 오른쪽으로 밀고, rwnd 감소는 윈도우 폭 자체를 줄인다.</span>
+    </div>
+
+    <h3>3) Window Scale — 16비트의 한계 풀기</h3>
+    <p>
+      TCP 헤더의 Window 필드는 16비트, 즉 최대 65,535바이트(64KB)밖에 표현할 수 없습니다.
+      RTT가 100ms이고 가용 대역폭이 1Gbps인 회선이라면 이론상 한 번에 12.5MB를 in-flight 상태로 둘 수 있는데,
+      64KB 상한이 걸리면 처리량이 약 5Mbps 수준으로 떨어집니다 — 이걸 <strong>BDP(Bandwidth-Delay Product) 병목</strong>이라 합니다.
+    </p>
+    <p>
+      해결책이 <strong>Window Scale 옵션</strong>(RFC 7323)입니다. 핸드셰이크의 SYN/SYN+ACK에서
+      "내 윈도우 값에 2<sup>scale</sup>을 곱해서 해석해줘"라고 합의합니다. scale은 0~14, 그래서 윈도우 상한이 최대 1GB까지 늘어납니다.
+      이 협상은 핸드셰이크 때만 일어나고, 한 번 정해지면 연결 내내 고정입니다.
+    </p>
+
+    <h3>4) Zero Window와 Window Probe</h3>
+    <p>
+      수신 버퍼가 가득 차면 수신측은 ACK에 <code>window=0</code>을 실어 보냅니다.
+      송신측은 보내는 걸 멈춰야 하는데, 문제는 <em>다시 열렸다는 ACK 알림이 분실되면 영원히 멈춘다는</em> 위험입니다.
+      그래서 송신측은 <strong>Persist Timer</strong>를 두고 주기적으로 <strong>1바이트짜리 Window Probe</strong>를 보내,
+      "지금도 막혔어?"를 직접 확인합니다. 응답에 윈도우가 열려 있으면 다시 송신을 재개합니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="Zero Window와 Probe">
+        <defs>
+          <marker id="zwA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <line x1="120" y1="40" x2="120" y2="300" stroke="var(--border)" stroke-width="1"/>
+        <line x1="560" y1="40" x2="560" y2="300" stroke="var(--border)" stroke-width="1"/>
+        <text class="label" x="120" y="30" text-anchor="middle" font-weight="bold">Sender</text>
+        <text class="label" x="560" y="30" text-anchor="middle" font-weight="bold">Receiver (앱이 느림)</text>
+
+        <line x1="120" y1="60" x2="560" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#zwA)"/>
+        <text class="label" x="340" y="55" text-anchor="middle">DATA (윈도우 채움)</text>
+
+        <line x1="560" y1="100" x2="120" y2="115" stroke="var(--accent)" stroke-width="2" marker-end="url(#zwA)"/>
+        <text class="label" x="340" y="95" text-anchor="middle" fill="var(--accent)" font-weight="bold">ACK, window=0</text>
+
+        <text class="label" x="60" y="145" text-anchor="middle">Persist Timer 시작</text>
+
+        <line x1="120" y1="170" x2="560" y2="180" stroke="var(--accent)" stroke-width="2" marker-end="url(#zwA)"/>
+        <text class="label" x="340" y="165" text-anchor="middle">1-byte Probe</text>
+        <line x1="560" y1="200" x2="120" y2="210" stroke="var(--accent)" stroke-width="2" marker-end="url(#zwA)"/>
+        <text class="label" x="340" y="195" text-anchor="middle">ACK, window=0 (아직)</text>
+
+        <line x1="120" y1="240" x2="560" y2="250" stroke="var(--accent)" stroke-width="2" marker-end="url(#zwA)"/>
+        <text class="label" x="340" y="235" text-anchor="middle">1-byte Probe (백오프 후)</text>
+        <line x1="560" y1="270" x2="120" y2="280" stroke="var(--accent)" stroke-width="2" marker-end="url(#zwA)"/>
+        <text class="label" x="340" y="265" text-anchor="middle" fill="var(--accent)" font-weight="bold">ACK, window=4096 (열림!)</text>
+      </svg>
+      <span class="viz-caption">Zero Window 상태에서 송신은 멈추지만, Probe로 끊임없이 상태를 확인해 deadlock을 방지한다.</span>
+    </div>
+
+    <h3>5) Nagle 알고리즘 — 작은 패킷 묶기</h3>
+    <p>
+      <code>write(1)</code>, <code>write(1)</code>, <code>write(1)</code>처럼 1바이트씩 보내는 응용이 있다면 어떻게 될까요?
+      각 패킷마다 IP 20B + TCP 20B = 40바이트 헤더가 붙어 효율이 1/41로 떨어집니다.
+      <strong>Nagle 알고리즘</strong>은 이 문제를 다음 규칙으로 막습니다:
+    </p>
+    <blockquote style="border-left:3px solid var(--accent); padding-left:12px; margin:12px 0;">
+      "이전에 보낸 작은 세그먼트가 아직 ACK 안 됐다면, 새 데이터는 모아 두었다가 ① ACK가 오거나 ② MSS만큼 모일 때 함께 보낸다."
+    </blockquote>
+    <p>
+      쉽게 말해 "작은 거 두 번 연속 안 보낸다"는 규칙입니다. 효과는 좋지만 부작용이 있는데, 다음에 설명할 Delayed ACK와 결합되면 의도치 않은 지연이 생깁니다.
+    </p>
+
+    <h3>6) Delayed ACK — ACK 묶기</h3>
+    <p>
+      반대 방향의 절약도 있습니다. 수신측이 데이터를 받을 때마다 즉시 ACK를 보내면 ACK 수가 송신 데이터 수만큼 됩니다.
+      <strong>Delayed ACK</strong>는 ACK를 최대 200ms(또는 다음 세그먼트 도착 시까지) 모아서 한 번에 보내거나,
+      반대 방향으로 응답 데이터를 보낼 때 piggyback해서 같이 실어 보냅니다.
+      ACK 트래픽이 줄고, 작은 응답이 곧 보낼 거라면 RTT 한 번을 아낄 수 있습니다.
+    </p>
+
+    <h3>7) Nagle × Delayed ACK — 200ms 지연의 함정</h3>
+    <p>
+      두 최적화가 만나면 끔찍한 상호작용이 일어납니다. 다음 시나리오를 보세요:
+    </p>
+    <div class="viz">
+      <svg width="680" height="280" viewBox="0 0 680 280" role="img" aria-label="Nagle × Delayed ACK 지연">
+        <defs>
+          <marker id="ndA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <line x1="120" y1="40" x2="120" y2="260" stroke="var(--border)" stroke-width="1"/>
+        <line x1="560" y1="40" x2="560" y2="260" stroke="var(--border)" stroke-width="1"/>
+        <text class="label" x="120" y="30" text-anchor="middle" font-weight="bold">Sender (Nagle on)</text>
+        <text class="label" x="560" y="30" text-anchor="middle" font-weight="bold">Receiver (Delayed ACK)</text>
+
+        <line x1="120" y1="60" x2="560" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#ndA)"/>
+        <text class="label" x="340" y="55" text-anchor="middle">small write #1 (작아서 바로 보냄)</text>
+
+        <text class="label" x="40" y="105" text-anchor="middle" fill="var(--accent)">small write #2 도착<br/>but Nagle: ACK 기다려</text>
+        <text class="label" x="40" y="120" text-anchor="middle" fill="var(--accent)">→ 송신 보류</text>
+
+        <text class="label" x="640" y="105" text-anchor="middle" fill="var(--accent)">DelayedACK:</text>
+        <text class="label" x="640" y="120" text-anchor="middle" fill="var(--accent)">200ms 대기 또는</text>
+        <text class="label" x="640" y="135" text-anchor="middle" fill="var(--accent)">다음 데이터 도착까지</text>
+
+        <line x1="40" y1="165" x2="640" y2="165" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4 4"/>
+        <text class="label" x="340" y="180" text-anchor="middle" fill="var(--accent)" font-weight="bold">↕ 200ms deadlock</text>
+
+        <line x1="560" y1="210" x2="120" y2="225" stroke="var(--accent)" stroke-width="2" marker-end="url(#ndA)"/>
+        <text class="label" x="340" y="205" text-anchor="middle">ACK (200ms 후 강제 송신)</text>
+        <line x1="120" y1="240" x2="560" y2="255" stroke="var(--accent)" stroke-width="2" marker-end="url(#ndA)"/>
+        <text class="label" x="340" y="235" text-anchor="middle">small write #2 비로소 송신</text>
+      </svg>
+      <span class="viz-caption">송신측은 ACK 기다리고, 수신측은 다음 데이터 기다리고 — 둘 다 서로를 기다리는 교착.</span>
+    </div>
+    <p>
+      해결법은 흔히 두 가지입니다 — ① 작은 메시지를 자주 보내야 하는 응용(예: 게임, 원격 셸)에서는 <code>TCP_NODELAY</code>로 Nagle을 끄거나,
+      ② 응용 레벨에서 메시지를 모아 한 번에 <code>write</code>(<code>writev</code>)합니다.
+      현대 백엔드 프레임워크(Netty 등)는 기본적으로 <code>TCP_NODELAY</code>를 켜는 경우가 많습니다.
+    </p>
+
+    <h3>8) Silly Window Syndrome</h3>
+    <p>
+      "어리석은 윈도우 증후군"이라는 이름 그대로, <strong>아주 작은 윈도우에 맞춰 작은 세그먼트가 계속 오가는 비효율 상태</strong>입니다.
+      두 시나리오가 있습니다:
+    </p>
+    <ul>
+      <li><strong>수신측 원인</strong> — 앱이 1바이트씩만 read하면 윈도우가 매번 1바이트만 열림 → 송신측이 1바이트씩 보냄.
+        <em>해결</em>: 수신측은 윈도우가 충분히 커질 때까지(MSS의 절반 또는 버퍼의 절반) <code>window=0</code>으로 광고하거나 ACK 보류(Clark 알고리즘).</li>
+      <li><strong>송신측 원인</strong> — 앱이 1바이트씩 write할 때.
+        <em>해결</em>: 위에서 본 Nagle 알고리즘.</li>
+    </ul>
+
+    <h3>9) PSH 플래그 — "지금 당장 위로 올려라"</h3>
+    <p>
+      TCP 헤더의 <strong>PSH(Push) 플래그</strong>는 수신측에게 "버퍼에 더 모이지 말고 즉시 응용 계층으로 올려달라"는 힌트입니다.
+      대화형 응용(SSH의 키 입력 등)에서 응답성을 위해 사용됩니다. 다만 현대 OS에선 거의 항상 PSH가 켜져 있어 사실상 의미가 약해졌습니다.
+    </p>
+
+    <h3>10) Java 코드 — 옵션 제어</h3>
+<pre><code>// (1) Nagle 끄기 — 작은 메시지를 즉시 보내야 하는 응용
+Socket s = new Socket("server", 9000);
+s.setTcpNoDelay(true);                // TCP_NODELAY = 1 → Nagle off
+
+// (2) 송수신 버퍼 크기 — 흐름 제어 윈도우의 상한
+s.setSendBufferSize(256 * 1024);      // SO_SNDBUF
+s.setReceiveBufferSize(256 * 1024);   // SO_RCVBUF
+// 주의: 커널이 자동 튜닝하는 경우가 많아 setReceiveBufferSize는 힌트로 동작.
+
+// (3) 한 번에 묶어 보내기 — 응용 레벨 배칭
+ByteBuffer[] bufs = new ByteBuffer[]{
+    ByteBuffer.wrap(headerBytes),
+    ByteBuffer.wrap(bodyBytes)
+};
+s.getChannel().write(bufs);           // gather write — 시스템 콜 한 번
+</code></pre>
+<pre><code>// (4) 리눅스에서 현재 윈도우 상태 보기
+//   $ ss -tin                        → 각 연결의 rcv_space, snd_wnd, rcv_wnd 표시
+//   $ sysctl net.ipv4.tcp_window_scaling   → window scale 활성화 여부
+//   $ sysctl net.core.rmem_max             → 시스템 전체 RX 버퍼 상한
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>장치</th><th>좋은 점</th><th>비용 / 부작용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>슬라이딩 윈도우</td><td>수신 능력에 맞춰 자동 조절, in-flight 다중화로 처리량↑</td><td>윈도우 변수·타이머 관리 비용</td></tr>
+        <tr><td>Window Scale</td><td>고대역×고지연 회선에서 처리량 회복</td><td>핸드셰이크에서만 협상 가능, 한쪽이라도 미지원이면 무력화</td></tr>
+        <tr><td>Zero Window + Probe</td><td>버퍼 가득 시 송신 중단, deadlock 회피</td><td>Probe가 백오프되며 수신 재개가 늦어질 수 있음</td></tr>
+        <tr><td>Nagle</td><td>작은 패킷 묶어 헤더 비율 감소</td><td>Delayed ACK와 결합 시 200ms 지연(대화형 앱에 치명적)</td></tr>
+        <tr><td>Delayed ACK</td><td>ACK 트래픽 감소, piggyback 기회</td><td>송신측 RTT 추정 노이즈, Nagle과 충돌</td></tr>
+        <tr><td>Silly Window 방어</td><td>1바이트 핑퐁 방지</td><td>윈도우 광고 보수화로 응답성 약간 저하 가능</td></tr>
+      </tbody>
+    </table>
+    <p>
+      모두가 "묶어서 효율을 높이는" 방향이지만, 묶음의 크기·대기 시간이 곧 응답 지연이 됩니다.
+      <strong>처리량과 지연은 정확히 반대 방향</strong>이라는 점이 흐름 제어 튜닝의 핵심입니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>대용량 전송 튜닝</strong> — 대륙 간 데이터 동기화에서 처리량이 안 나오면 "BDP × Window Scale"부터 점검합니다. <code>net.ipv4.tcp_rmem</code>, <code>tcp_wmem</code> 조정이 단골.</li>
+      <li><strong>대화형 응용 응답성</strong> — SSH, 게임, RPC 클라이언트는 <code>TCP_NODELAY</code>로 Nagle을 끄는 게 거의 표준.</li>
+      <li><strong>HTTP 키-알라이브 + 가벼운 요청</strong> — 작은 요청이 자주 오갈 때 Nagle×Delayed ACK 지연이 잠복. Netty, Tomcat 등은 NODELAY 기본값.</li>
+      <li><strong>장애 진단</strong> — Wireshark에서 "TCP ZeroWindow", "TCP Window Update" 메시지가 보이면 수신측 처리 지연을 의심합니다.</li>
+      <li><strong>모바일/IoT</strong> — 수신 능력이 약한 단말로 보낼 때 흐름 제어가 자주 발동되어 처리량이 정체됩니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">흐름 제어와 혼잡 제어의 차이는 무엇인가요?</div>
+      <div class="a">
+        흐름 제어는 <strong>수신자의 버퍼</strong>를 보호하기 위해 송신량을 조절하는 메커니즘으로, 수신측이 광고하는 rwnd에 의존합니다.
+        혼잡 제어는 <strong>네트워크 전체의 혼잡</strong>을 막기 위해 송신측이 자체적으로 cwnd를 조절합니다.
+        실제 송신 가능량은 <code>min(rwnd, cwnd)</code>로 결정되어 둘 중 빡빡한 쪽이 이깁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">슬라이딩 윈도우는 어떻게 동작하나요?</div>
+      <div class="a">
+        송신측은 보낸 바이트를 ACK된 영역, in-flight 영역, 사용 가능 영역, 사용 불가 영역으로 나누어 관리합니다.
+        ACK가 도착하면 윈도우 왼쪽 경계가 오른쪽으로 밀리고, 동시에 새 데이터를 보낼 수 있는 오른쪽 경계도 함께 이동합니다.
+        rwnd 광고가 윈도우 폭 자체를 결정합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Window Scale 옵션은 왜 필요한가요?</div>
+      <div class="a">
+        TCP 헤더 Window 필드가 16비트(최대 64KB)라 BDP가 큰 회선(고대역×고지연)에서 처리량이 병목이 됩니다.
+        Window Scale은 핸드셰이크에서 "광고 값에 2^scale을 곱해 해석하라"고 합의해 윈도우 상한을 최대 1GB까지 늘립니다.
+        한 번 협상되면 연결 내내 고정이고, 한쪽이라도 미지원이면 둘 다 scale=0이 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Zero Window 상태에서 어떻게 deadlock을 막나요?</div>
+      <div class="a">
+        수신측이 윈도우가 다시 열릴 때 보내는 ACK가 분실되면 송신측이 영원히 기다릴 수 있습니다.
+        그래서 송신측은 Persist Timer를 두고 1바이트짜리 Window Probe를 주기적으로 보내, 수신측 상태를 직접 확인합니다.
+        백오프되는 간격으로 재시도하므로 자원도 거의 안 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Nagle 알고리즘은 무엇이고 언제 끄나요?</div>
+      <div class="a">
+        Nagle은 "이전 작은 세그먼트의 ACK가 안 왔다면 새 데이터는 모아 둔다"는 규칙으로 작은 패킷의 헤더 오버헤드를 줄입니다.
+        그러나 Delayed ACK와 결합되면 최대 200ms 지연이 발생할 수 있어, 작은 메시지를 즉시 보내야 하는 SSH·게임·RPC·대화형 응용에서는
+        <code>TCP_NODELAY</code>로 끄는 것이 일반적입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Silly Window Syndrome은 무엇이고 어떻게 막나요?</div>
+      <div class="a">
+        수신·송신측 어느 한쪽의 작은 단위 동작 때문에 작은 세그먼트가 계속 오가는 비효율 상태입니다.
+        수신측에서는 윈도우가 충분히 커지기 전엔 0으로 광고하거나 ACK를 늦추는 Clark 알고리즘으로,
+        송신측에서는 Nagle 알고리즘으로 막습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">처리량을 높이려면 송수신 버퍼만 키우면 되나요?</div>
+      <div class="a">
+        BDP가 작은 환경에서는 큰 의미 없고, 큰 BDP에서는 도움이 됩니다. 다만 ① 윈도우 스케일이 활성화되어야 하고, ② 양 끝의 sysctl과 소켓 옵션이 모두 충분히 커야 합니다.
+        그리고 결정 요소는 <code>min(rwnd, cwnd)</code>이므로 혼잡 제어가 cwnd를 못 키우는 환경에선 버퍼만 키워도 의미가 없습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="tcp-congestion-control.html">TCP 혼잡 제어</a></li>
+      <li><a href="tcp-udp.html">TCP vs UDP</a></li>
+      <li><a href="handshake.html">3-way / 4-way handshake</a></li>
+      <li><a href="osi-tcp-ip.html">OSI / TCP/IP 계층</a></li>
+      <li><a href="../operating-system/synchronization.html">동기화</a></li>
+      <li><a href="index.html">네트워크 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="handshake.html">
+        <span class="label">이전</span>
+        ← 3-way / 4-way handshake
+      </a>
+      <a href="index.html">📂 네트워크로</a>
+      <a class="next" href="tcp-congestion-control.html">
+        <span class="label">다음</span>
+        TCP 혼잡 제어 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

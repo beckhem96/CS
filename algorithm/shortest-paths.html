@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>벨만-포드 / 플로이드-워셜 · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>벨만-포드 / 플로이드-워셜</span>
+    </nav>
+
+    <h1>벨만-포드 / 플로이드-워셜</h1>
+
+    <div class="definition">
+      <strong>벨만-포드</strong>는 <strong>음수 가중치</strong>가 있는 그래프에서도 한 출발점의 최단 경로를 구하고,
+      <strong>음수 사이클</strong>까지 감지할 수 있는 알고리즘입니다.
+      <strong>플로이드-워셜</strong>은 모든 정점 쌍 사이의 최단 거리를 한 번에 구하는 O(V³) 알고리즘입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      다익스트라는 빠르지만 음수 간선이 있으면 깨집니다. 반면 벨만-포드는 느린 대신 더 튼튼합니다.
+      모든 간선을 여러 번 훑으면서 "이 간선을 지나가면 더 짧아질까?"를 반복 확인합니다.
+      정점이 V개라면, 사이클 없는 최단 경로는 간선을 최대 V-1개만 사용하므로 <strong>V-1번 전체 간선 완화</strong>를 반복하면 충분합니다.
+    </p>
+    <p>
+      플로이드-워셜은 관점이 다릅니다. "i에서 j로 갈 때, 중간에 k번 정점을 거쳐도 되는가?"를 하나씩 늘려갑니다.
+      출발점 하나가 아니라 <strong>모든 출발점과 모든 도착점</strong>의 최단 거리를 동시에 갱신합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>언제 무엇을 쓰나?</strong></p>
+      <ul>
+        <li><strong>다익스트라</strong> — 음수 없음, 한 출발점, 빠른 성능 필요.</li>
+        <li><strong>벨만-포드</strong> — 음수 간선 있음, 음수 사이클 감지 필요.</li>
+        <li><strong>플로이드-워셜</strong> — 정점 수가 작고, 모든 쌍 최단 거리가 필요.</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      현실의 비용은 항상 양수만 있는 게 아닙니다. 환율 차익, 할인/보상, 에너지 회수처럼 어떤 간선은 비용을 줄이는 효과를 가질 수 있습니다.
+      이런 그래프에서는 다익스트라의 "한 번 확정하면 끝"이라는 가정이 맞지 않습니다.
+    </p>
+    <p>
+      또 어떤 문제는 한 출발점이 아니라 <strong>모든 지점 사이의 거리</strong>가 필요합니다.
+      도시 간 최단 거리 표, 작은 규모 네트워크의 모든 지연시간 계산, 그래프의 전이 폐쇄 같은 문제는 플로이드-워셜이 단순하고 강력합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 벨만-포드 — 간선 완화 반복</h3>
+    <p>출발점 A에서 시작해 모든 간선을 반복해서 완화합니다. 음수 간선 C→B(-2) 때문에 B의 거리가 나중에 더 줄어들 수 있습니다.</p>
+
+    <div class="viz">
+      <svg width="640" height="230" viewBox="0 0 640 230" role="img" aria-label="벨만 포드 예시 그래프">
+        <defs>
+          <marker id="bfA" viewBox="0 0 10 10" refX="14" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+        <line x1="80" y1="90" x2="240" y2="60" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#bfA)"/>
+        <line x1="80" y1="90" x2="240" y2="160" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#bfA)"/>
+        <line x1="240" y1="160" x2="240" y2="60" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#bfA)"/>
+        <line x1="240" y1="60" x2="430" y2="90" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#bfA)"/>
+        <line x1="240" y1="160" x2="430" y2="90" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#bfA)"/>
+
+        <text class="label" x="155" y="65" fill="var(--accent)" font-weight="bold">4</text>
+        <text class="label" x="150" y="140" fill="var(--accent)" font-weight="bold">5</text>
+        <text class="label" x="255" y="110" fill="var(--danger)" font-weight="bold">-2</text>
+        <text class="label" x="335" y="60" fill="var(--accent)" font-weight="bold">3</text>
+        <text class="label" x="335" y="155" fill="var(--accent)" font-weight="bold">4</text>
+
+        <circle class="node" cx="80" cy="90" r="24"/><text class="node-text" x="80" y="90">A</text>
+        <circle class="node" cx="240" cy="60" r="24"/><text class="node-text" x="240" y="60">B</text>
+        <circle class="node" cx="240" cy="160" r="24"/><text class="node-text" x="240" y="160">C</text>
+        <circle class="node" cx="430" cy="90" r="24"/><text class="node-text" x="430" y="90">D</text>
+
+        <text class="label" x="20" y="210">A→B=4, A→C=5, C→B=-2라서 B는 4에서 3으로 갱신될 수 있다.</text>
+      </svg>
+      <span class="viz-caption">음수 간선이 있으면 나중에 더 짧은 경로가 발견될 수 있으므로 반복 완화가 필요하다.</span>
+    </div>
+
+    <table class="complexity">
+      <thead>
+        <tr><th>반복</th><th>A</th><th>B</th><th>C</th><th>D</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>초기</td><td>0</td><td>∞</td><td>∞</td><td>∞</td><td>출발점만 0</td></tr>
+        <tr><td>1회</td><td>0</td><td>3</td><td>5</td><td>7</td><td>A→B, A→C, C→B, B→D 갱신</td></tr>
+        <tr><td>2회</td><td>0</td><td>3</td><td>5</td><td>6</td><td>B가 3으로 줄어든 뒤 B→D로 D=6</td></tr>
+        <tr><td>3회</td><td>0</td><td>3</td><td>5</td><td>6</td><td>더 이상 변화 없음</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2) 음수 사이클 감지</h3>
+    <p>
+      V-1번 완화가 끝났는데도 한 번 더 완화했을 때 거리가 줄어든다면, 간선을 V개 이상 쓰는 더 짧은 경로가 있다는 뜻입니다.
+      이는 어떤 사이클을 돌수록 비용이 계속 줄어드는 <strong>음수 사이클</strong>이 존재한다는 뜻입니다.
+    </p>
+
+    <h3>3) 플로이드-워셜 — 중간 정점을 하나씩 허용</h3>
+    <p>
+      <code>dist[i][j]</code>를 i에서 j까지의 현재 최단 거리라고 하고, k를 0부터 V-1까지 늘립니다.
+      각 단계에서 "i에서 j로 바로 가는 것"과 "i → k → j로 가는 것" 중 더 짧은 값을 고릅니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="180" viewBox="0 0 640 180" role="img" aria-label="플로이드 워셜 점화식">
+        <circle class="node" cx="90" cy="90" r="24"/><text class="node-text" x="90" y="90">i</text>
+        <circle class="node highlight" cx="320" cy="50" r="24"/><text class="node-text" x="320" y="50" fill="#1a1a1a" font-weight="bold">k</text>
+        <circle class="node" cx="550" cy="90" r="24"/><text class="node-text" x="550" y="90">j</text>
+        <line x1="114" y1="90" x2="526" y2="90" class="arrow"/>
+        <line x1="112" y1="80" x2="296" y2="56" class="arrow"/>
+        <line x1="344" y1="56" x2="528" y2="80" class="arrow"/>
+        <text class="label" x="290" y="115" text-anchor="middle">dist[i][j]</text>
+        <text class="label" x="190" y="45" text-anchor="middle">dist[i][k]</text>
+        <text class="label" x="450" y="45" text-anchor="middle">dist[k][j]</text>
+        <text class="label" x="165" y="150">dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])</text>
+      </svg>
+      <span class="viz-caption">k를 경유지로 허용했을 때 더 짧아지는 모든 쌍을 동시에 갱신한다.</span>
+    </div>
+
+    <h3>4) Java 코드로 보기</h3>
+<pre><code>import java.util.*;
+
+class Edge {
+    int from, to, weight;
+    Edge(int f, int t, int w) { from = f; to = t; weight = w; }
+}
+
+// 벨만-포드: 음수 사이클이 있으면 null 반환
+long[] bellmanFord(int n, List&lt;Edge&gt; edges, int start) {
+    long INF = Long.MAX_VALUE / 4;
+    long[] dist = new long[n];
+    Arrays.fill(dist, INF);
+    dist[start] = 0;
+
+    for (int i = 0; i &lt; n - 1; i++) {
+        boolean updated = false;
+        for (Edge e : edges) {
+            if (dist[e.from] == INF) continue;
+            if (dist[e.to] &gt; dist[e.from] + e.weight) {
+                dist[e.to] = dist[e.from] + e.weight;
+                updated = true;
+            }
+        }
+        if (!updated) break;
+    }
+
+    for (Edge e : edges) {
+        if (dist[e.from] != INF &amp;&amp; dist[e.to] &gt; dist[e.from] + e.weight) {
+            return null; // 음수 사이클
+        }
+    }
+    return dist;
+}
+
+// 플로이드-워셜: 모든 쌍 최단 거리
+long[][] floydWarshall(long[][] dist) {
+    int n = dist.length;
+    long INF = Long.MAX_VALUE / 4;
+
+    for (int k = 0; k &lt; n; k++) {
+        for (int i = 0; i &lt; n; i++) {
+            if (dist[i][k] == INF) continue;
+            for (int j = 0; j &lt; n; j++) {
+                if (dist[k][j] == INF) continue;
+                dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);
+            }
+        }
+    }
+    return dist;
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>알고리즘</th><th>대상</th><th>시간</th><th>공간</th><th>특징</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>벨만-포드</td><td>한 출발점</td><td>O(VE)</td><td>O(V)</td><td>음수 간선, 음수 사이클 감지</td></tr>
+        <tr><td>플로이드-워셜</td><td>모든 쌍</td><td>O(V³)</td><td>O(V²)</td><td>구현 단순, V가 작을 때 좋음</td></tr>
+        <tr><td>다익스트라</td><td>한 출발점</td><td>O((V+E)logV)</td><td>O(V+E)</td><td>음수 간선 불가, 빠름</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>네트워크 라우팅</strong> — RIP 같은 거리 벡터 라우팅은 벨만-포드 계열 아이디어를 사용.</li>
+      <li><strong>환율 차익 탐지</strong> — 로그 변환 후 음수 사이클 탐지로 무위험 차익 가능 여부 확인.</li>
+      <li><strong>작은 그래프의 모든 쌍 거리</strong> — 도시 수가 적은 문제, 게임 맵의 전처리 거리표.</li>
+      <li><strong>전이 폐쇄</strong> — 플로이드-워셜 변형으로 도달 가능성 행렬 계산.</li>
+      <li><strong>음수 보상/할인 모델</strong> — 비용이 줄어드는 간선이 있는 최적화 문제.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">벨만-포드는 왜 V-1번만 반복하면 되나요?</div>
+      <div class="a">
+        사이클이 없는 최단 경로는 같은 정점을 두 번 방문할 필요가 없으므로 간선을 최대 V-1개만 사용합니다.
+        한 번의 반복은 최단 경로에서 사용할 수 있는 간선 수를 하나씩 늘리는 효과가 있습니다.
+        따라서 V-1번이면 모든 단순 경로의 최단 거리가 반영됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">음수 사이클은 어떻게 감지하나요?</div>
+      <div class="a">
+        V-1번 완화 후 한 번 더 모든 간선을 확인합니다. 이때도 어떤 거리든 줄어든다면,
+        간선을 V개 이상 사용해서 더 짧아진다는 뜻이고 이는 사이클을 포함한다는 뜻입니다.
+        그 사이클의 총 비용이 음수이기 때문에 돌수록 거리가 계속 줄어듭니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">플로이드-워셜은 언제 다익스트라 여러 번보다 낫나요?</div>
+      <div class="a">
+        정점 수가 작고 그래프가 밀집되어 있거나, 구현 단순성이 중요하고 모든 쌍 거리가 필요할 때 좋습니다.
+        V가 400 이하 정도인 알고리즘 문제에서는 O(V³)이 충분히 통과하는 경우가 많습니다.
+        반대로 V가 크고 간선이 희소하면 다익스트라를 여러 번 돌리는 편이 보통 더 효율적입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">플로이드-워셜에서도 음수 사이클을 알 수 있나요?</div>
+      <div class="a">
+        가능합니다. 알고리즘이 끝난 뒤 <code>dist[i][i] &lt; 0</code>인 정점이 있으면 i에서 출발해 다시 i로 돌아오는 음수 사이클이 있다는 뜻입니다.
+        자기 자신까지의 최단 거리는 원래 0이어야 하는데, 음수 사이클을 돌면 더 작아질 수 있기 때문입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="dijkstra.html">다익스트라</a></li>
+      <li><a href="bfs-dfs.html">BFS / DFS</a></li>
+      <li><a href="../data-structure/graph.html">그래프</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="backtracking.html">
+        <span class="label">이전</span>
+        ← 백트래킹
+      </a>
+      <a href="index.html">📂 알고리즘으로</a>
+      <a class="next" href="divide-and-conquer.html">
+        <span class="label">다음</span>
+        분할 정복 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

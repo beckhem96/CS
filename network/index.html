@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <span>네트워크</span>
+    </nav>
+
+    <h1>🌐 네트워크</h1>
+    <p class="lead">
+      네트워크(Network)는 떨어져 있는 컴퓨터들이 약속된 규칙에 따라 데이터를 주고받는 기술입니다.
+      웹 페이지를 여는 짧은 순간에도 DNS·TCP·TLS·HTTP가 차곡차곡 동작합니다.
+      여기서는 면접·실무에서 자주 등장하는 개념을 <strong>계층(Layer) 관점</strong>에서 정리합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>📚 학습 가이드 — 핵심 먼저, 그다음 심화</strong></p>
+      <p>
+        먼저 <em>핵심 개념</em>을 한 번 훑어 큰 그림을 만든 뒤, 깊이 알고 싶은 주제는 같은 카테고리의 <em>심화 / 상세</em>로 들어가세요.
+        핵심 페이지마다 관련된 심화 페이지로 가는 링크가 있습니다.
+      </p>
+    </div>
+
+    <h2 style="margin-top:32px; padding-bottom:6px; border-bottom:2px solid var(--accent);">
+      🧩 핵심 개념
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      네트워크를 처음 배우거나 면접 직전에 한 번 훑기 좋은 우선순위 개념들.
+    </p>
+
+    <section class="concept-section">
+      <h3>계층 모델</h3>
+      <p>네트워크는 책임을 나눠 쌓은 층 구조다. 각 계층이 어떤 일을 하는지 알면 나머지가 쉬워진다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="osi-tcp-ip.html">OSI 7계층 / TCP/IP 4계층</a>
+          <span class="summary">개념 모델(OSI)과 실제 모델(TCP/IP)의 매핑과 각 계층의 역할.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>전송 계층(Transport)</h3>
+      <p>애플리케이션과 네트워크 사이에서 신뢰성·속도·연결 관리를 담당하는 핵심 계층.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="tcp-udp.html">TCP vs UDP</a>
+          <span class="summary">신뢰성 있는 연결형(TCP)과 빠른 비연결형(UDP)의 차이와 선택 기준.</span>
+        </li>
+        <li>
+          <a href="handshake.html">3-way / 4-way handshake</a>
+          <span class="summary">TCP 연결을 여는 3단계, 닫는 4단계. SYN/ACK/FIN의 의미와 TIME_WAIT.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>응용 계층(Application)</h3>
+      <p>사용자에게 직접 보이는 프로토콜과 보안.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="http-https.html">HTTP / HTTPS</a>
+          <span class="summary">메시지 구조, 메서드, 상태 코드, 캐시, 무상태성, TLS로 만드는 HTTPS.</span>
+        </li>
+        <li>
+          <a href="http-versions.html">HTTP/1.1 vs 2 vs 3</a>
+          <span class="summary">keep-alive, 멀티플렉싱, HOL blocking, QUIC — 더 빠른 웹의 진화.</span>
+        </li>
+        <li>
+          <a href="dns.html">DNS</a>
+          <span class="summary">도메인 계층, 재귀/반복 질의, 레코드 종류, TTL과 캐시.</span>
+        </li>
+        <li>
+          <a href="cors.html">CORS</a>
+          <span class="summary">동일 출처 정책, preflight, 자주 헷갈리는 헤더와 credentials 동작.</span>
+        </li>
+        <li>
+          <a href="cookies-session-jwt.html">쿠키 / 세션 / JWT</a>
+          <span class="summary">상태 유지 방식 비교와 보안 이슈.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>네트워크 계층(Network)</h3>
+      <p>경로를 결정하고 사설망과 공용망을 잇는 도구.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="ip-cidr.html">IP 주소 / 서브넷 / CIDR</a>
+          <span class="summary">IPv4/IPv6, 서브넷 마스크 계산, 사설 IP 대역.</span>
+        </li>
+        <li>
+          <a href="routing-nat.html">라우팅 / NAT</a>
+          <span class="summary">라우팅 테이블, NAT의 종류, 포트포워딩, NAT traversal.</span>
+        </li>
+      </ul>
+    </section>
+
+    <h2 style="margin-top:48px; padding-bottom:6px; border-bottom:2px solid var(--text-muted);">
+      🔬 심화 / 상세
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      핵심 개념을 한 번 본 뒤, 면접에서 깊이 물어볼 만한 메커니즘을 별도 페이지로 정리합니다.
+    </p>
+
+    <section class="concept-section">
+      <h3>TCP 심화</h3>
+      <p>TCP의 핵심 메커니즘 — 신뢰성·속도·공정성을 만들어내는 알고리즘들.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="tcp-flow-control.html">TCP 흐름 제어</a>
+          <span class="summary">슬라이딩 윈도우, rwnd, Zero Window, Window Scale, Nagle, Delayed ACK, Silly Window.</span>
+        </li>
+        <li>
+          <a href="tcp-congestion-control.html">TCP 혼잡 제어</a>
+          <span class="summary">Slow Start, AIMD, Fast Retransmit/Recovery, Tahoe·Reno·Cubic·BBR, ECN.</span>
+        </li>
+        <li class="todo">
+          <a>TCP 재전송과 RTT <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">RTT 측정(Jacobson/Karn), RTO, SACK, F-RTO.</span>
+        </li>
+        <li class="todo">
+          <a>TCP 상태 머신 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">11개 상태 전이도, 동시 열기/닫기, half-close, RST.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>TLS / 보안 심화</h3>
+      <p>HTTPS 안쪽에서 일어나는 일과 인증서·암호화 협상의 디테일.</p>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>TLS 핸드셰이크 상세 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">TLS 1.2 vs 1.3 단계 비교, 인증서 체인, ECDHE, 0-RTT 보안 trade-off.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>응용 계층 심화</h3>
+      <p>특정 응용 프로토콜·메커니즘의 깊이 있는 동작.</p>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>QUIC 심화 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">UDP 위 멀티스트림, 0-RTT 재연결, 연결 마이그레이션.</span>
+        </li>
+        <li class="todo">
+          <a>WebSocket <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">HTTP 업그레이드, 프레이밍, ping/pong, SSE와의 차이.</span>
+        </li>
+        <li class="todo">
+          <a>DNS 보안과 캐시 포이즈닝 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">DNSSEC, DoH/DoT, 캐시 포이즈닝 공격과 방어.</span>
+        </li>
+      </ul>
+    </section>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="../index.html">🏠 홈으로</a>
+      <span></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

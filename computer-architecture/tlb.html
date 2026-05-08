@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TLB · 컴퓨터구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">컴퓨터구조</a>
+      <span class="sep">›</span>
+      <span>TLB</span>
+    </nav>
+
+    <h1>TLB(Translation Lookaside Buffer)</h1>
+
+    <div class="definition">
+      <strong>TLB</strong>는 최근 사용한 <strong>가상 페이지 번호(VPN) → 물리 프레임 번호(PFN)</strong> 변환 결과를 저장하는
+      MMU 내부의 작은 고속 캐시입니다. 주소 변환용 캐시라고 보면 됩니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      가상 메모리에서는 CPU가 만든 가상 주소를 물리 주소로 바꿔야 합니다. 이때 페이지 테이블을 매번 메모리에서 조회하면,
+      데이터 하나를 읽기 위해 주소 변환용 메모리 접근까지 추가되어 너무 느려집니다.
+      TLB는 이 변환 결과를 캐싱해 "이 가상 페이지는 저 물리 프레임"이라는 답을 빠르게 돌려줍니다.
+    </p>
+    <p>
+      비유하면, 페이지 테이블은 거대한 주소록이고 TLB는 책상 위에 적어둔 최근 연락처 메모입니다.
+      방금 전화한 사람에게 다시 전화할 때마다 두꺼운 주소록을 뒤질 필요 없이 메모에서 바로 찾는 셈입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>TLB hit / miss</strong></p>
+      <ul>
+        <li><strong>TLB hit</strong> — 변환 결과가 TLB에 있어 바로 물리 주소를 만든다.</li>
+        <li><strong>TLB miss</strong> — 페이지 테이블을 조회해야 한다. 이 과정이 느리고, 필요하면 page walk가 발생한다.</li>
+      </ul>
+      <p>캐시 hit rate가 좋아도 TLB miss가 많으면 메모리 접근이 느려질 수 있습니다.</p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      가상 메모리는 프로세스 격리와 편의성을 제공하지만, 주소 변환 비용이라는 대가가 있습니다.
+      CPU는 거의 모든 load/store마다 주소 변환을 해야 하므로, 이 비용이 크면 성능이 크게 떨어집니다.
+      TLB는 주소 변환 경로에서 가장 자주 쓰는 결과를 가까운 곳에 저장해 이 오버헤드를 줄입니다.
+    </p>
+    <p>
+      특히 큰 배열을 넓게 건너뛰며 접근하거나, 여러 큰 자료구조를 동시에 순회하면 한정된 TLB 항목으로 커버하지 못하는 페이지가 많아져
+      TLB miss가 증가합니다. 그래서 고성능 시스템에서는 캐시뿐 아니라 <strong>TLB 지역성</strong>도 중요합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 주소 변환 경로에서 TLB의 위치</h3>
+    <div class="viz">
+      <svg width="640" height="270" viewBox="0 0 640 270" role="img" aria-label="TLB 주소 변환 경로">
+        <defs>
+          <marker id="tlbA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="35" y="90" width="95" height="55" rx="8"/><text class="node-text" x="82" y="112">CPU</text><text class="label" x="82" y="132" text-anchor="middle">VA 생성</text>
+        <rect class="node highlight" x="190" y="55" width="115" height="55" rx="8"/><text class="node-text" x="248" y="78" fill="#1a1a1a" font-weight="bold">TLB</text><text class="label" x="248" y="98" text-anchor="middle" fill="#1a1a1a">빠른 변환</text>
+        <rect class="node" x="370" y="55" width="125" height="55" rx="8"/><text class="node-text" x="432" y="78">Page Table</text><text class="label" x="432" y="98" text-anchor="middle">느린 조회</text>
+        <rect class="node" x="520" y="90" width="85" height="55" rx="8"/><text class="node-text" x="562" y="112">RAM</text><text class="label" x="562" y="132" text-anchor="middle">PA 접근</text>
+
+        <line x1="130" y1="118" x2="190" y2="82" stroke="var(--accent)" stroke-width="2" marker-end="url(#tlbA)"/>
+        <path d="M 305 82 L 370 82" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#tlbA)"/>
+        <path d="M 305 98 C 385 165 475 160 520 120" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#tlbA)"/>
+        <line x1="495" y1="82" x2="520" y2="105" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#tlbA)"/>
+
+        <text class="label" x="320" y="180" fill="var(--accent)" text-anchor="middle">hit: TLB에서 PFN을 얻어 바로 RAM 접근</text>
+        <text class="label" x="320" y="205" text-anchor="middle">miss: 페이지 테이블 조회 후 TLB에 결과 저장</text>
+      </svg>
+      <span class="viz-caption">TLB는 페이지 테이블 조회를 생략하게 해주는 주소 변환 캐시다.</span>
+    </div>
+
+    <h3>2) TLB 엔트리 구조</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>필드</th><th>의미</th><th>왜 필요한가?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>VPN</td><td>가상 페이지 번호</td><td>검색 키</td></tr>
+        <tr><td>PFN</td><td>물리 프레임 번호</td><td>주소 변환 결과</td></tr>
+        <tr><td>ASID/PCID</td><td>주소 공간 식별자</td><td>프로세스가 달라도 같은 VPN이 충돌하지 않게 함</td></tr>
+        <tr><td>권한 비트</td><td>읽기/쓰기/실행 권한</td><td>보호 검사</td></tr>
+        <tr><td>Valid/Dirty</td><td>유효성/수정 여부</td><td>일관성 관리</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) TLB reach</h3>
+    <p>
+      <strong>TLB reach</strong>는 TLB가 한 번에 커버할 수 있는 메모리 범위입니다.
+      예를 들어 TLB 엔트리가 64개이고 페이지 크기가 4KB라면, 대략 256KB 범위를 빠르게 변환할 수 있습니다.
+      작업 집합이 이 범위를 크게 넘으면 TLB miss가 늘어날 수 있습니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="180" viewBox="0 0 640 180" role="img" aria-label="TLB reach">
+        <text class="label" x="20" y="25" font-weight="bold">TLB reach = 엔트리 수 × 페이지 크기</text>
+        <rect class="node" x="40" y="65" width="80" height="45" rx="6"/><text class="node-text" x="80" y="88">64 entries</text>
+        <text class="label" x="145" y="92">×</text>
+        <rect class="node" x="180" y="65" width="80" height="45" rx="6"/><text class="node-text" x="220" y="88">4KB</text>
+        <text class="label" x="285" y="92">=</text>
+        <rect class="node highlight" x="320" y="65" width="110" height="45" rx="6"/><text class="node-text" x="375" y="88" fill="#1a1a1a" font-weight="bold">256KB</text>
+        <text class="label" x="460" y="80">작업 집합이 이보다 크면</text>
+        <text class="label" x="460" y="104">TLB miss가 늘 수 있음</text>
+      </svg>
+      <span class="viz-caption">Huge page는 페이지 크기를 키워 TLB reach를 크게 늘리는 대표적인 방법이다.</span>
+    </div>
+
+    <h3>4) Java 코드와 TLB 관점</h3>
+<pre><code>// 큰 배열을 페이지마다 한 번씩 건드리는 패턴
+// 4096바이트 간격 접근은 캐시 라인뿐 아니라 페이지/TLB 관점에서도 중요하다.
+byte[] data = new byte[1024 * 1024 * 1024];
+long sum = 0;
+
+for (int i = 0; i &lt; data.length; i += 4096) {
+    sum += data[i];  // 매번 다른 페이지를 건드려 TLB pressure 증가 가능
+}
+
+// 연속적으로 촘촘히 접근하면 한 페이지 안에서 여러 캐시 라인을 활용하므로 TLB 효율이 좋다.
+for (int i = 0; i &lt; data.length; i++) {
+    sum += data[i];
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>요소</th><th>장점</th><th>trade-off</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TLB 크기 증가</td><td>miss 감소</td><td>검색 회로 복잡도/전력/지연 증가</td></tr>
+        <tr><td>Associativity 증가</td><td>충돌 miss 감소</td><td>하드웨어 비용 증가</td></tr>
+        <tr><td>Huge Page</td><td>TLB reach 증가</td><td>내부 단편화, 운영 복잡도</td></tr>
+        <tr><td>ASID/PCID</td><td>컨텍스트 스위치 시 TLB flush 감소</td><td>태그 저장 공간 증가</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>DB 버퍼풀 / 인메모리 캐시</strong> — 큰 메모리 영역을 다룰 때 TLB miss가 지연의 원인이 될 수 있습니다.</li>
+      <li><strong>Huge Page 설정</strong> — JVM, DB, Redis 같은 대용량 메모리 워크로드에서 TLB 효율을 높입니다.</li>
+      <li><strong>가상화</strong> — 게스트 가상 주소 → 게스트 물리 주소 → 호스트 물리 주소의 2단계 변환에서 TLB가 중요합니다.</li>
+      <li><strong>컨텍스트 스위칭</strong> — 프로세스 전환 시 TLB flush 비용이 성능에 영향을 줍니다.</li>
+      <li><strong>NUMA/고성능 서버</strong> — 메모리 지역성, 페이지 배치, TLB reach를 함께 고려합니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">TLB는 왜 필요한가요?</div>
+      <div class="a">
+        가상 주소를 물리 주소로 바꾸려면 페이지 테이블을 조회해야 하는데, 이를 매 메모리 접근마다 수행하면 너무 느립니다.
+        TLB는 최근 주소 변환 결과를 캐싱해 페이지 테이블 조회를 생략하게 해줍니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">TLB miss가 발생하면 어떻게 되나요?</div>
+      <div class="a">
+        하드웨어 또는 OS가 페이지 테이블을 조회해 변환 정보를 찾습니다. 페이지가 유효하면 그 결과를 TLB에 넣고 명령을 계속합니다.
+        페이지 자체가 메모리에 없거나 권한 문제가 있으면 page fault나 예외가 발생합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">TLB와 CPU cache는 어떻게 다른가요?</div>
+      <div class="a">
+        CPU cache는 실제 데이터나 명령어를 캐싱합니다. TLB는 데이터가 아니라 주소 변환 결과(VPN→PFN)를 캐싱합니다.
+        둘 다 지역성을 활용하지만, 캐싱 대상이 다릅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Huge page가 TLB 성능에 도움이 되는 이유는요?</div>
+      <div class="a">
+        한 TLB 엔트리가 커버하는 메모리 범위가 페이지 크기만큼 커지기 때문입니다.
+        4KB 페이지보다 2MB huge page를 쓰면 같은 엔트리 수로 훨씬 넓은 메모리를 변환할 수 있어 TLB miss가 줄어듭니다.
+        대신 내부 단편화와 운영 복잡도가 생길 수 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="virtual-memory.html">가상 메모리 / MMU</a></li>
+      <li><a href="cache-memory.html">캐시 메모리</a></li>
+      <li><a href="branch-prediction.html">CPU 분기 예측</a></li>
+      <li><a href="index.html">컴퓨터구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="interrupt.html">
+        <span class="label">이전</span>
+        ← 인터럽트
+      </a>
+      <a href="index.html">📂 컴퓨터구조로</a>
+      <a class="next" href="branch-prediction.html">
+        <span class="label">다음</span>
+        CPU 분기 예측 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

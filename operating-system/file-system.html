@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>파일 시스템 · 운영체제 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">운영체제</a>
+      <span class="sep">›</span>
+      <span>파일 시스템</span>
+    </nav>
+
+    <h1>파일 시스템(File System)</h1>
+
+    <div class="definition">
+      <strong>파일 시스템</strong>은 디스크 같은 저장 장치를
+      <strong>이름 있는 파일과 디렉터리의 계층 구조</strong>로 추상화하고,
+      메타데이터·블록 배치·접근 권한·일관성을 관리하는 OS 구성요소입니다.
+      대표 구조는 <strong>아이노드(inode)</strong>이며, 충돌에 견디기 위해 <strong>저널링(journaling)</strong>을 사용합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      디스크는 사실 거대한 1차원 블록 배열일 뿐입니다(예: 4KB짜리 블록이 수십억 개).
+      파일 시스템은 이 블록들 위에 "이름이 붙은 파일", "트리처럼 생긴 디렉터리"라는 환상을 만듭니다.
+      이를 위해 OS는 <strong>이름 → 메타데이터 → 데이터 블록 위치</strong>로 이어지는 매핑 구조를 디스크 위에 새깁니다.
+    </p>
+    <p>
+      유닉스 계열에서 그 핵심이 <strong>아이노드</strong>입니다.
+      아이노드는 파일 하나당 하나씩 존재하는 작은 메타데이터 구조로, 파일의 크기·소유자·권한·타임스탬프와
+      <strong>실제 데이터가 어느 디스크 블록에 있는지를 가리키는 포인터들</strong>을 담고 있습니다.
+      신기한 점은 <em>파일 이름이 아이노드 안에 없다</em>는 것입니다 — 이름은 디렉터리에 들어 있고, 디렉터리는 "이름 → 아이노드 번호" 매핑일 뿐입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>파일 시스템이 답해야 하는 4가지 질문</strong></p>
+      <p>
+        ① 이 이름은 어떤 파일을 가리키는가? ② 이 파일의 데이터는 디스크 어디에 있나?
+        ③ 빈 공간은 어디인가? ④ 도중에 전원이 나가도 자료가 깨지지 않는가?
+        모든 파일 시스템 설계는 이 네 질문에 답하는 자료구조의 조합입니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      디스크에는 운영체제·여러 프로그램·사용자 데이터가 동시에 살아갑니다.
+      파일 시스템이 없다면 누가 어떤 블록을 쓰는지 추적할 방법이 없고, 충돌 한 번에 모든 데이터가 뒤죽박죽이 됩니다.
+      또 디스크는 RAM과 달리 <strong>전원이 꺼져도 내용을 유지</strong>해야 하므로 정전·크래시 상황에서도 일관성을 유지하는 메커니즘이 필요합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 디스크 위의 큰 그림</h3>
+    <div class="viz">
+      <svg width="680" height="180" viewBox="0 0 680 180" role="img" aria-label="파일 시스템 디스크 레이아웃">
+        <rect class="node" x="40" y="50" width="120" height="80" rx="6"/>
+        <text class="node-text" x="100" y="80">Super</text>
+        <text class="node-text" x="100" y="100">Block</text>
+        <text class="label" x="100" y="150" text-anchor="middle">FS 메타정보</text>
+
+        <rect class="node" x="180" y="50" width="120" height="80" rx="6"/>
+        <text class="node-text" x="240" y="80">Inode</text>
+        <text class="node-text" x="240" y="100">Bitmap</text>
+        <text class="label" x="240" y="150" text-anchor="middle">아이노드 사용 여부</text>
+
+        <rect class="node" x="320" y="50" width="120" height="80" rx="6"/>
+        <text class="node-text" x="380" y="80">Block</text>
+        <text class="node-text" x="380" y="100">Bitmap</text>
+        <text class="label" x="380" y="150" text-anchor="middle">데이터 블록 사용 여부</text>
+
+        <rect class="node highlight" x="460" y="50" width="80" height="80" rx="6"/>
+        <text class="node-text" x="500" y="95" fill="#1a1a1a">Inode</text>
+        <text class="node-text" x="500" y="115" fill="#1a1a1a">Table</text>
+        <text class="label" x="500" y="150" text-anchor="middle">파일별 메타</text>
+
+        <rect class="node" x="560" y="50" width="100" height="80" rx="6"/>
+        <text class="node-text" x="610" y="80">Data</text>
+        <text class="node-text" x="610" y="100">Blocks</text>
+        <text class="label" x="610" y="150" text-anchor="middle">실제 내용</text>
+      </svg>
+      <span class="viz-caption">전형적인 유닉스 파일 시스템(ext2 계열)의 디스크 레이아웃.</span>
+    </div>
+
+    <h3>2) 아이노드와 디렉터리</h3>
+    <p>
+      디렉터리는 그 자체로 파일이며, 내용은 <strong>(파일 이름, 아이노드 번호) 쌍의 목록</strong>입니다.
+      아이노드는 데이터 블록 포인터를 직접·간접 형태로 가집니다 — 작은 파일은 직접 포인터 몇 개로 충분하고,
+      큰 파일은 간접·이중 간접 포인터를 통해 수많은 블록을 가리킬 수 있습니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="아이노드와 데이터 블록">
+        <defs>
+          <marker id="fsA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <text class="label" x="100" y="25" font-weight="bold">디렉터리 /home</text>
+        <rect class="node" x="40" y="40" width="180" height="120" rx="6"/>
+        <text class="label" x="60" y="70">"report.txt" → 42</text>
+        <text class="label" x="60" y="95">"todo.md"   → 17</text>
+        <text class="label" x="60" y="120">"photo.jpg" → 88</text>
+
+        <text class="label" x="320" y="25" font-weight="bold">Inode 42 (report.txt)</text>
+        <rect class="node highlight" x="260" y="40" width="200" height="220" rx="6"/>
+        <text class="label" x="280" y="70" fill="#1a1a1a">size: 12000 bytes</text>
+        <text class="label" x="280" y="95" fill="#1a1a1a">owner / perm / mtime</text>
+        <text class="label" x="280" y="125" fill="#1a1a1a">direct[0] → block 100</text>
+        <text class="label" x="280" y="150" fill="#1a1a1a">direct[1] → block 217</text>
+        <text class="label" x="280" y="175" fill="#1a1a1a">direct[2] → block 218</text>
+        <text class="label" x="280" y="205" fill="#1a1a1a">indirect → block 999</text>
+        <text class="label" x="280" y="240" fill="#1a1a1a">double indirect → ...</text>
+
+        <text class="label" x="580" y="25" font-weight="bold">데이터 블록</text>
+        <rect class="node" x="500" y="40" width="160" height="40" rx="4"/><text class="node-text" x="580" y="64">block 100</text>
+        <rect class="node" x="500" y="85" width="160" height="40" rx="4"/><text class="node-text" x="580" y="109">block 217</text>
+        <rect class="node" x="500" y="130" width="160" height="40" rx="4"/><text class="node-text" x="580" y="154">block 218</text>
+        <rect class="node" x="500" y="180" width="160" height="40" rx="4"/><text class="node-text" x="580" y="204">block 999</text>
+        <text class="label" x="580" y="240" text-anchor="middle">(간접 블록 안에 더 많은 포인터)</text>
+
+        <line x1="220" y1="80" x2="260" y2="80" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#fsA)"/>
+        <line x1="460" y1="125" x2="500" y2="60" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#fsA)"/>
+        <line x1="460" y1="150" x2="500" y2="105" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#fsA)"/>
+        <line x1="460" y1="175" x2="500" y2="150" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#fsA)"/>
+        <line x1="460" y1="205" x2="500" y2="200" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#fsA)"/>
+
+        <text class="label" x="340" y="295" text-anchor="middle">디렉터리는 (이름→아이노드)이고, 아이노드는 (메타+블록 포인터)다.</text>
+      </svg>
+      <span class="viz-caption">파일 이름은 디렉터리에, 메타와 블록 위치는 아이노드에 분리 저장된다.</span>
+    </div>
+
+    <h3>3) 하드 링크 vs 심볼릭 링크</h3>
+    <p>
+      이 분리 덕분에 같은 아이노드에 여러 이름을 붙일 수 있습니다.
+      <strong>하드 링크</strong>는 다른 디렉터리 항목이 같은 아이노드 번호를 가리키는 것이고,
+      <strong>심볼릭 링크(symlink)</strong>는 "다른 경로 문자열"을 내용으로 갖는 별도의 파일입니다.
+      하드 링크는 원본을 지워도 다른 링크가 남아 있으면 데이터가 살아 있고, 심볼릭 링크는 대상이 없어지면 깨진 링크가 됩니다.
+    </p>
+
+    <h3>4) 저널링 — 충돌에서 살아남기</h3>
+    <p>
+      파일 하나를 만드는 작업조차 사실은 여러 디스크 쓰기로 이루어집니다(아이노드 할당, 비트맵 갱신, 디렉터리 갱신, 데이터 쓰기...).
+      도중에 전원이 나가면 일부만 반영되어 파일 시스템이 일관성을 잃을 수 있습니다.
+      <strong>저널링</strong>은 이 변경들을 먼저 <em>저널 영역(로그)</em>에 한 덩어리로 기록한 뒤, 안전하게 본 영역에 반영하는 방식입니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="저널링 단계">
+        <defs>
+          <marker id="jrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="40" y="60" width="160" height="80" rx="8"/>
+        <text class="node-text" x="120" y="95">1) Begin</text>
+        <text class="label" x="120" y="120" text-anchor="middle">변경 묶음을 저널에 기록</text>
+
+        <rect class="node highlight" x="260" y="60" width="160" height="80" rx="8"/>
+        <text class="node-text" x="340" y="95" fill="#1a1a1a">2) Commit</text>
+        <text class="label" x="340" y="120" text-anchor="middle" fill="#1a1a1a">완료 표시(원자적)</text>
+
+        <rect class="node" x="480" y="60" width="160" height="80" rx="8"/>
+        <text class="node-text" x="560" y="95">3) Checkpoint</text>
+        <text class="label" x="560" y="120" text-anchor="middle">실제 위치에 반영</text>
+
+        <line x1="200" y1="100" x2="260" y2="100" stroke="var(--accent)" stroke-width="2" marker-end="url(#jrA)"/>
+        <line x1="420" y1="100" x2="480" y2="100" stroke="var(--accent)" stroke-width="2" marker-end="url(#jrA)"/>
+
+        <text class="label" x="340" y="190" text-anchor="middle">크래시 시: commit 이전이면 롤백, 이후면 재적용(replay) → 일관성 유지</text>
+      </svg>
+      <span class="viz-caption">저널이 있으면 fsck로 디스크 전체를 훑지 않아도 빠르게 복구할 수 있다.</span>
+    </div>
+
+    <p>
+      저널링은 무엇까지 로그에 적느냐에 따라 모드가 나뉩니다:
+    </p>
+    <ul>
+      <li><strong>Writeback</strong> — 메타데이터만 저널링. 빠르지만 데이터 자체는 일관성을 보장하지 않음.</li>
+      <li><strong>Ordered</strong> — 메타데이터 저널링 + 데이터는 메타 커밋 전에 먼저 디스크에 쓴다. ext4 기본값.</li>
+      <li><strong>Journal</strong> — 데이터까지 저널에 기록. 가장 안전하지만 두 번 쓰는 셈이라 느림.</li>
+    </ul>
+
+    <h3>5) Java/리눅스 관점</h3>
+<pre><code>// Java NIO에서 fsync 호출 — 파일 시스템 캐시까지 강제로 디스크에 내림
+import java.nio.channels.*;
+import java.nio.file.*;
+try (FileChannel ch = FileChannel.open(Paths.get("data.log"),
+        StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+    ch.write(java.nio.ByteBuffer.wrap("hello\n".getBytes()));
+    ch.force(true); // fsync — 메타데이터까지 디스크 내구성 보장
+}
+
+// 리눅스 명령어로 살펴보기
+//   $ stat report.txt        → 아이노드 번호, 링크 수, 크기, 권한 확인
+//   $ ls -i                  → 디렉터리 항목의 아이노드 번호 표시
+//   $ ln file1 file2         → 하드 링크 (같은 아이노드)
+//   $ ln -s file1 file2      → 심볼릭 링크 (다른 아이노드, 경로 문자열)
+//   $ tune2fs -l /dev/sda1   → 슈퍼블록 정보 출력
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>블록 크기</strong> — 크면 큰 파일에 유리(포인터 적게)하지만 작은 파일에서 내부 단편화가 큽니다. 4KB가 일반적인 절충.</li>
+      <li><strong>저널링 모드</strong> — 안전성과 쓰기 성능은 반비례합니다. Ordered가 균형점.</li>
+      <li><strong>아이노드 수</strong> — 포맷 시 결정되는 경우가 많아 작은 파일이 너무 많으면 용량은 남았는데 아이노드가 부족해질 수 있습니다.</li>
+      <li><strong>디렉터리 자료구조</strong> — 단순 리스트는 큰 디렉터리에서 느립니다. ext4는 HTree(B-Tree 변형), XFS는 B+Tree로 검색을 가속합니다.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>리눅스 ext4 / XFS / Btrfs / ZFS</strong> — 일반 서버 파일 시스템. ZFS와 Btrfs는 CoW + 스냅샷.</li>
+      <li><strong>윈도우 NTFS</strong> — MFT 기반, 저널링과 ACL 지원.</li>
+      <li><strong>분산 파일 시스템</strong> — HDFS, Ceph, GCS는 같은 추상화를 네트워크 위에서 제공합니다.</li>
+      <li><strong>DB 내구성</strong> — RDBMS는 fsync 호출과 파일 시스템의 저널 보장을 함께 활용해 ACID의 D(durability)를 구현합니다.</li>
+      <li><strong>컨테이너 이미지</strong> — overlayfs는 여러 레이어를 union mount해 같은 디렉터리 트리처럼 보이게 합니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">아이노드가 무엇이고 무엇을 담고 있나요?</div>
+      <div class="a">
+        파일 하나당 하나씩 있는 메타데이터 구조입니다. 파일 크기, 소유자, 권한, 타임스탬프, 그리고 데이터가 들어 있는 디스크 블록의 포인터들을 담습니다.
+        파일 이름은 아이노드가 아닌 디렉터리 항목에 들어 있다는 점이 중요합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">하드 링크와 심볼릭 링크의 차이는 무엇인가요?</div>
+      <div class="a">
+        하드 링크는 같은 아이노드를 가리키는 또 다른 디렉터리 항목입니다. 원본을 지워도 다른 이름이 남아 있으면 데이터가 살아 있고, 같은 파일 시스템 내에서만 가능합니다.
+        심볼릭 링크는 대상 경로를 내용으로 갖는 별도의 파일이라 다른 파일 시스템도 가리킬 수 있지만, 대상이 사라지면 깨진 링크가 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">저널링은 왜 필요하고 어떻게 동작하나요?</div>
+      <div class="a">
+        파일 시스템 변경은 여러 디스크 쓰기로 이루어져 도중 크래시 시 일관성이 깨질 수 있습니다.
+        저널링은 변경을 한 덩어리로 저널 영역에 먼저 기록하고 commit 후 본 영역에 반영하는 방식이라, 크래시 후엔 commit 여부에 따라 재적용 또는 폐기로 빠르게 복구할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q"><code>fsync</code>를 왜 호출해야 하나요?</div>
+      <div class="a">
+        쓰기 시스템 콜이 성공해도 데이터는 OS 페이지 캐시에 머무를 수 있어 전원이 나가면 사라질 수 있습니다.
+        <code>fsync</code>는 해당 파일의 데이터와 메타데이터를 강제로 디스크에 내려 내구성을 보장합니다. DB의 트랜잭션 커밋이 fsync에 의존합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">디스크 용량은 남았는데 "No space left on device"가 뜰 수 있나요?</div>
+      <div class="a">
+        있습니다. 아이노드 개수가 포맷 시 정해져 있어, 매우 작은 파일이 엄청나게 많으면 데이터 블록은 남았는데 아이노드가 다 떨어져 발생합니다.
+        <code>df -i</code>로 확인할 수 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="paging-segmentation.html">페이징 / 세그먼테이션</a></li>
+      <li><a href="page-replacement.html">페이지 교체 알고리즘</a></li>
+      <li><a href="../data-structure/b-tree.html">B-Tree / B+Tree</a></li>
+      <li><a href="synchronization.html">동기화</a></li>
+      <li><a href="index.html">운영체제 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="page-replacement.html">
+        <span class="label">이전</span>
+        ← 페이지 교체 알고리즘
+      </a>
+      <a href="index.html">📂 운영체제로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

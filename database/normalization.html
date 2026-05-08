@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>정규화 · 데이터베이스 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">데이터베이스</a>
+      <span class="sep">›</span>
+      <span>정규화</span>
+    </nav>
+
+    <h1>정규화(Normalization)</h1>
+
+    <div class="definition">
+      <strong>정규화</strong>는 테이블을 더 작은 단위로 쪼개 <strong>중복을 제거</strong>하고, 결과적으로
+      삽입·수정·삭제 시 데이터가 어긋나는 <strong>이상(anomaly)</strong>을 막는 설계 절차입니다.
+      판단 기준은 "어떤 열이 어떤 열을 결정하는가" — 즉 <strong>함수 종속(Functional Dependency)</strong>입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      한 테이블에 너무 많은 정보를 넣으면 같은 사실이 여러 행에 중복되어 저장됩니다.
+      이 상태에서 어떤 행을 고치면 다른 행과 어긋나고, 어떤 행을 지우면 멀쩡한 정보까지 함께 사라지죠.
+      정규화는 "한 테이블은 <em>한 가지 주제</em>에 대한 사실만 담는다"는 원칙을 단계적으로 적용해 이를 방지합니다.
+    </p>
+    <p>
+      각 단계는 이전 단계를 만족한 위에서 더 강한 조건을 추가합니다.
+      현실 설계는 보통 <strong>3NF 또는 BCNF</strong>까지 진행한 뒤, 성능을 위해 일부를 의도적으로 비정규화합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>비유 — 학원 출석부</strong></p>
+      <p>
+        한 종이에 학생 정보·강의 정보·수강 정보를 다 적으면, 학생이 강의를 5개 들으면 학생 이름·연락처도 5번 적게 됩니다.
+        연락처가 바뀌면 5번을 다 고쳐야 하고, 한 군데만 고치면 어떤 곳은 옛날 번호, 어떤 곳은 새 번호로 어긋나게 됩니다.
+        학생 표 / 강의 표 / 수강 표로 나누면 이런 일이 사라지죠. 정규화의 핵심도 이것입니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가? — 이상 현상(Anomaly)</h2>
+    <p>중복을 그냥 두면 다음 세 가지 이상이 발생합니다.</p>
+    <ul>
+      <li><strong>삽입 이상(Insertion anomaly)</strong> — 학생이 아직 어떤 강의도 안 듣는다면, 학생 정보를 넣을 자리가 없다.</li>
+      <li><strong>수정 이상(Update anomaly)</strong> — 학생 연락처가 바뀌면 그 학생이 등장하는 모든 행을 다 고쳐야 하고, 한 군데라도 빠지면 데이터가 어긋난다.</li>
+      <li><strong>삭제 이상(Deletion anomaly)</strong> — 학생이 마지막 강의를 취소하면 행 자체가 사라져 학생 자체의 존재까지 같이 사라진다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 함수 종속(FD)이란?</h3>
+    <p>
+      "X가 정해지면 Y도 하나로 정해진다"를 <code>X → Y</code>로 표기하고 X는 결정자, Y는 종속자라고 부릅니다.
+      예: <code>학번 → 학생이름</code>, <code>(학번, 강의코드) → 성적</code>.
+      정규화는 본질적으로 <strong>이 종속 관계를 깔끔하게 정리</strong>하는 작업입니다.
+    </p>
+
+    <h3>2) 단계별 변화 시각화</h3>
+    <div class="viz">
+      <svg width="780" height="420" viewBox="0 0 780 420" role="img" aria-label="정규화 단계별 테이블 분리">
+        <!-- 0) 비정규형 -->
+        <text x="120" y="22" font-weight="bold" fill="var(--accent)" font-size="13">① 비정규형 — 한 칸에 여러 값</text>
+        <rect x="20" y="32" width="320" height="92" fill="var(--bg-card)" stroke="var(--border)"/>
+        <line x1="20" y1="56" x2="340" y2="56" stroke="var(--border)"/>
+        <text x="40" y="50" font-size="12" font-weight="bold">학번</text>
+        <text x="120" y="50" font-size="12" font-weight="bold">이름</text>
+        <text x="200" y="50" font-size="12" font-weight="bold">강의(다중값)</text>
+        <text x="40" y="76" font-size="12">100</text>
+        <text x="120" y="76" font-size="12">민수</text>
+        <text x="200" y="76" font-size="12">DB, OS, 알고리즘</text>
+        <text x="40" y="98" font-size="12">101</text>
+        <text x="120" y="98" font-size="12">지영</text>
+        <text x="200" y="98" font-size="12">네트워크, DB</text>
+
+        <!-- 1) 1NF -->
+        <text x="500" y="22" font-weight="bold" fill="var(--accent)" font-size="13">② 1NF — 원자값으로 분해</text>
+        <rect x="400" y="32" width="320" height="142" fill="var(--bg-card)" stroke="var(--border)"/>
+        <line x1="400" y1="56" x2="720" y2="56" stroke="var(--border)"/>
+        <text x="420" y="50" font-size="12" font-weight="bold">학번</text>
+        <text x="500" y="50" font-size="12" font-weight="bold">이름</text>
+        <text x="600" y="50" font-size="12" font-weight="bold">강의</text>
+        <text x="420" y="76" font-size="12">100</text><text x="500" y="76" font-size="12">민수</text><text x="600" y="76" font-size="12">DB</text>
+        <text x="420" y="94" font-size="12">100</text><text x="500" y="94" font-size="12">민수</text><text x="600" y="94" font-size="12">OS</text>
+        <text x="420" y="112" font-size="12">100</text><text x="500" y="112" font-size="12">민수</text><text x="600" y="112" font-size="12">알고리즘</text>
+        <text x="420" y="130" font-size="12">101</text><text x="500" y="130" font-size="12">지영</text><text x="600" y="130" font-size="12">네트워크</text>
+        <text x="420" y="148" font-size="12">101</text><text x="500" y="148" font-size="12">지영</text><text x="600" y="148" font-size="12">DB</text>
+        <text x="420" y="168" font-size="11" fill="var(--text-muted)">→ 이름이 중복(부분 함수 종속)</text>
+
+        <!-- 2) 2NF/3NF -->
+        <text x="120" y="200" font-weight="bold" fill="var(--accent)" font-size="13">③ 2NF·3NF — 결정자별로 테이블 분리</text>
+
+        <rect x="20" y="220" width="180" height="100" fill="var(--bg-card)" stroke="var(--border)"/>
+        <line x1="20" y1="244" x2="200" y2="244" stroke="var(--border)"/>
+        <text x="50" y="238" font-size="12" font-weight="bold">학번</text>
+        <text x="120" y="238" font-size="12" font-weight="bold">이름</text>
+        <text x="50" y="262" font-size="12">100</text><text x="120" y="262" font-size="12">민수</text>
+        <text x="50" y="280" font-size="12">101</text><text x="120" y="280" font-size="12">지영</text>
+        <text x="110" y="305" font-size="11" text-anchor="middle" fill="var(--text-muted)">학생 (학번 → 이름)</text>
+
+        <rect x="220" y="220" width="180" height="100" fill="var(--bg-card)" stroke="var(--border)"/>
+        <line x1="220" y1="244" x2="400" y2="244" stroke="var(--border)"/>
+        <text x="240" y="238" font-size="12" font-weight="bold">강의코드</text>
+        <text x="320" y="238" font-size="12" font-weight="bold">강의명</text>
+        <text x="240" y="262" font-size="12">D01</text><text x="320" y="262" font-size="12">DB</text>
+        <text x="240" y="280" font-size="12">O01</text><text x="320" y="280" font-size="12">OS</text>
+        <text x="310" y="305" font-size="11" text-anchor="middle" fill="var(--text-muted)">강의 (강의코드 → 강의명)</text>
+
+        <rect x="420" y="220" width="220" height="100" fill="var(--bg-card)" stroke="var(--border)"/>
+        <line x1="420" y1="244" x2="640" y2="244" stroke="var(--border)"/>
+        <text x="445" y="238" font-size="12" font-weight="bold">학번</text>
+        <text x="510" y="238" font-size="12" font-weight="bold">강의코드</text>
+        <text x="595" y="238" font-size="12" font-weight="bold">성적</text>
+        <text x="445" y="262" font-size="12">100</text><text x="510" y="262" font-size="12">D01</text><text x="595" y="262" font-size="12">A</text>
+        <text x="445" y="280" font-size="12">100</text><text x="510" y="280" font-size="12">O01</text><text x="595" y="280" font-size="12">B+</text>
+        <text x="530" y="305" font-size="11" text-anchor="middle" fill="var(--text-muted)">수강 ((학번,강의코드) → 성적)</text>
+
+        <text x="380" y="370" text-anchor="middle" font-size="13" fill="var(--text-muted)">
+          → 결정자 단위로 분리하면 어떤 사실도 두 곳에 적히지 않는다.
+        </text>
+      </svg>
+      <span class="viz-caption">정규화는 "한 테이블 = 한 결정자 = 한 가지 사실"이 되도록 단계적으로 분리하는 작업이다.</span>
+    </div>
+
+    <h3>3) 1NF — 원자값(Atomic)</h3>
+    <p>
+      모든 컬럼이 더 이상 쪼갤 수 없는 단일 값이어야 합니다. "DB, OS, 알고리즘" 같은 다중값이나 반복 그룹이 있으면 1NF가 아닙니다.
+      이걸 깨면 <code>WHERE 강의 = 'DB'</code> 같은 자연스러운 검색이 어려워집니다.
+    </p>
+<pre><code>-- 1NF 위반: 한 칸에 콤마로 여러 값
+| 학번 | 강의                  |
+| 100  | DB, OS, 알고리즘      |
+
+-- 1NF 만족: 한 행 = 한 사실
+| 학번 | 강의      |
+| 100  | DB        |
+| 100  | OS        |
+| 100  | 알고리즘  |
+</code></pre>
+
+    <h3>4) 2NF — 부분 함수 종속 제거</h3>
+    <p>
+      복합 키에서 키의 <em>일부</em>만으로 결정되는 비키 컬럼이 있으면 2NF 위반입니다.
+      앞 예에서 <code>(학번, 강의코드) → 성적</code>은 키 전체에 의존하지만, <code>학번 → 이름</code>은 키의 일부에만 의존합니다.
+      이 경우 <strong>학생 테이블</strong>로 분리합니다.
+    </p>
+
+    <h3>5) 3NF — 이행 종속 제거</h3>
+    <p>
+      비키 컬럼이 다른 비키 컬럼을 통해 키에 종속되는 경우(<code>키 → A → B</code>)를 막습니다.
+      예: <code>학번 → 학과 → 학과사무실</code>이면 학과사무실은 학과를 통해서만 결정되므로,
+      <strong>학과 테이블</strong>로 분리해야 합니다.
+    </p>
+<pre><code>-- 3NF 위반: 학과사무실은 학과에 의존, 학번에는 이행적으로 의존
+학생(학번 PK, 이름, 학과, 학과사무실)
+
+-- 3NF 만족
+학생(학번 PK, 이름, 학과 FK)
+학과(학과 PK, 학과사무실)
+</code></pre>
+
+    <h3>6) BCNF — 모든 결정자가 후보키</h3>
+    <p>
+      3NF를 만족해도 결정자가 후보키가 아닐 때가 있습니다.
+      예: <code>(학생, 과목) → 교수</code>이면서 <code>교수 → 과목</code>인 경우, 교수는 과목을 결정하지만 후보키는 아닙니다.
+      이때 BCNF로 분해해 모든 결정자가 키가 되도록 만듭니다.
+    </p>
+
+    <h3>7) 4NF / 5NF — 다치 종속과 조인 종속</h3>
+    <p>
+      한 키에 두 개의 독립적인 다중값이 함께 들어가면 4NF 위반입니다(예: 학생의 취미와 자격증을 한 테이블에 함께 두면 행이 곱으로 늘어남).
+      5NF는 더 일반적인 조인 종속을 다루는데, 실무에서는 거의 등장하지 않습니다.
+    </p>
+
+    <h3>8) 비정규화(Denormalization)</h3>
+    <p>
+      정규화로 테이블이 잘게 쪼개지면 조인이 늘어 읽기 비용이 커집니다.
+      대규모 읽기 위주 서비스나 분석 쿼리에서는 일부러 중복을 허용해 조인을 줄입니다 — 단, <strong>일관성을 어떻게 유지할지를 함께 설계</strong>해야 합니다(트리거, 캐시 무효화, 배치 갱신 등).
+    </p>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>관점</th><th>고도화된 정규화(BCNF~)</th><th>비정규화</th><th>왜 그런가?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>저장 공간</td><td>적음(중복 제거)</td><td>큼(복제)</td><td>같은 사실이 여러 군데 저장</td></tr>
+        <tr><td>쓰기 일관성</td><td>쉬움(한 곳만 수정)</td><td>어려움(여러 곳 갱신)</td><td>중복된 행을 모두 동기화해야</td></tr>
+        <tr><td>읽기 성능</td><td>조인 多 → 느릴 수 있음</td><td>조인 少 → 빠름</td><td>JOIN은 정렬·해시 비용 동반</td></tr>
+        <tr><td>설계 복잡도</td><td>스키마 명확</td><td>중복 위치를 추적해야</td><td>비정규화는 의도적 중복 관리 비용을 만든다</td></tr>
+        <tr><td>대표 사용처</td><td>OLTP, 마스터 데이터</td><td>OLAP, 캐시 테이블</td><td>업무 패턴이 쓰기 vs 읽기 중심인지</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>OLTP 서비스</strong> — 결제·회원·주문처럼 일관성이 중요한 시스템은 보통 3NF/BCNF로 시작.</li>
+      <li><strong>분석/리포팅(OLAP)</strong> — 스타 스키마는 의도적 비정규화. 팩트 테이블에 차원 일부를 복제해 조인 비용을 줄임.</li>
+      <li><strong>캐시 테이블 / 머티리얼라이즈드 뷰</strong> — 정규화된 원본은 그대로 두고, 자주 조회되는 집계만 별도로 비정규화해 보관.</li>
+      <li><strong>도메인 모델링</strong> — DDD의 애그리거트 경계를 잡을 때 함수 종속 분석이 출발점이 된다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">정규화가 왜 필요한가요?</div>
+      <div class="a">
+        한 테이블에 여러 주제의 사실을 섞어 두면 같은 정보가 중복되어 삽입·수정·삭제 시 이상이 발생합니다.
+        한 컬럼이 다른 컬럼에 종속되는 관계(함수 종속)를 기준으로 테이블을 분리해 "한 테이블은 한 가지 주제만 담는다"를 만드는 절차가 정규화입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">2NF와 3NF의 차이를 예시로 설명해 주세요.</div>
+      <div class="a">
+        2NF는 <em>복합 키</em>의 일부에만 의존하는 비키 컬럼을 제거합니다. 예: <code>(학번, 강의코드) → 이름</code>에서 이름은 학번에만 의존하므로 학생 테이블로 분리.
+        3NF는 비키 컬럼이 <em>다른 비키 컬럼</em>을 통해 결정되는 경우를 제거합니다. 예: <code>학번 → 학과 → 학과사무실</code>에서 학과사무실은 학과에 의존하므로 학과 테이블로 분리합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">3NF와 BCNF의 차이는 뭔가요?</div>
+      <div class="a">
+        3NF까지는 후보키가 아닌 결정자가 존재할 수 있지만, BCNF는 <strong>모든 결정자가 후보키</strong>여야 합니다.
+        예: <code>(학생, 과목) → 교수</code>이면서 <code>교수 → 과목</code>인 경우 3NF는 만족할 수 있지만, 교수가 후보키가 아니어서 BCNF 위반입니다.
+        BCNF로 분해하면 종속 관계가 더 깔끔해지지만, 일부 함수 종속이 보존되지 않을 수 있어 항상 분해가 가능한 것은 아닙니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">언제 비정규화를 정당화할 수 있나요?</div>
+      <div class="a">
+        읽기가 압도적으로 많고, 조인 비용이 응답 시간의 병목이 되며, <strong>일관성 갱신을 어떻게 유지할지</strong>가 명확할 때 정당화됩니다.
+        대표 사례는 OLAP 스타 스키마, 자주 조회되는 집계 컬럼 캐싱, 검색용 머티리얼라이즈드 뷰입니다. 무작정 조인이 싫어서 합치는 건 부채로 돌아옵니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">정규화와 NoSQL의 임베디드 문서 모델은 어떻게 다른가요?</div>
+      <div class="a">
+        관계형의 정규화는 <em>중복 제거</em>가 우선이고, NoSQL의 문서 모델은 <em>한 번에 읽을 단위</em>가 우선입니다.
+        예를 들어 주문 안에 상품 라인을 임베드하면 한 쿼리로 다 읽지만, 상품 정보가 변경되면 모든 주문을 갱신해야 합니다.
+        결국 둘 다 같은 trade-off(쓰기 일관성 vs 읽기 비용)를 다루는 다른 출발점일 뿐입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="indexing.html">인덱스</a></li>
+      <li><a href="join-algorithm.html">조인 알고리즘</a></li>
+      <li><a href="execution-plan.html">실행 계획</a></li>
+      <li><a href="index.html">데이터베이스 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="index.html">📂 데이터베이스로</a>
+      <a class="next" href="indexing.html">
+        <span class="label">다음</span>
+        인덱스 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

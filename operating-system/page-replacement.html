@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>페이지 교체 알고리즘 · 운영체제 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">운영체제</a>
+      <span class="sep">›</span>
+      <span>페이지 교체 알고리즘</span>
+    </nav>
+
+    <h1>페이지 교체 알고리즘(Page Replacement)</h1>
+
+    <div class="definition">
+      <strong>페이지 교체 알고리즘</strong>은 빈 프레임이 없을 때
+      <strong>어떤 페이지를 메모리에서 내보낼지(victim)</strong> 고르는 정책입니다.
+      목표는 <strong>페이지 폴트 횟수를 최소화</strong>해 불필요한 디스크 I/O를 줄이는 것입니다.
+      대표 알고리즘은 FIFO, LRU, LFU, Clock(2nd chance)입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      가상 메모리는 "실제 메모리보다 큰 프로그램"을 돌릴 수 있게 해 주는 마법 같은 기능이지만,
+      그 마법은 결국 디스크와 메모리 사이를 오가는 <strong>스왑(swap)</strong>으로 이루어집니다.
+      메모리에 빈 프레임이 없을 때 새 페이지를 들여오려면, 누군가 한 명을 내보내야 합니다.
+    </p>
+    <p>
+      문제는 <em>누구를 내보낼 것인가?</em> 입니다.
+      가장 이상적인 답은 "앞으로 가장 오랫동안 안 쓰일 페이지"이지만, OS는 미래를 모릅니다.
+      그래서 과거 패턴으로 미래를 예측하는 여러 정책이 등장합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>좋은 페이지 교체 알고리즘이란?</strong></p>
+      <p>
+        페이지 폴트율이 낮아야 하고, 그것을 위한 추적 비용(타임스탬프 갱신, 카운터 등)이 너무 비싸지 않아야 합니다.
+        실무 OS는 정확한 LRU를 흉내 내면서도 비용을 낮춘 <strong>Clock 계열</strong>을 주로 씁니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      디스크 접근은 메모리 접근보다 약 10만 배 느립니다. 페이지 폴트가 한 번 일어나면 명령어 한 줄이 수백만 사이클 동안 멈춥니다.
+      교체 정책이 한 번 잘못되면 막 내보낸 페이지를 곧바로 다시 읽어 와야 하는 일이 생기고, 이것이 누적되면
+      <strong>스래싱(thrashing)</strong> — CPU가 일은 안 하고 페이지 입출력만 반복하는 상태 — 가 됩니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <p>
+      이 페이지에서는 같은 참조 문자열에 대해 알고리즘별 동작을 비교합니다.<br>
+      <strong>참조 순서:</strong> <code>1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5</code> · <strong>프레임 수:</strong> 3
+    </p>
+
+    <h3>1) FIFO — 가장 먼저 들어온 페이지를 내보낸다</h3>
+    <p>
+      들어온 순서를 큐로 기록해 두고, 교체가 필요하면 큐 맨 앞 페이지를 내보냅니다.
+      구현은 가장 단순하지만 <strong>Belady 변칙</strong>(프레임 수를 늘렸는데 폴트가 더 많아지는 현상)이 일어날 수 있습니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="FIFO 시나리오">
+        <text class="label" x="50" y="30" font-weight="bold">FIFO — 폴트 9회</text>
+        <text class="label" x="50" y="60">참조</text>
+        <text class="label" x="50" y="95">F1</text>
+        <text class="label" x="50" y="125">F2</text>
+        <text class="label" x="50" y="155">F3</text>
+        <text class="label" x="50" y="190" fill="var(--accent)">결과</text>
+
+        <g font-size="13" font-family="var(--font-mono)" text-anchor="middle">
+          <text class="label" x="120" y="60">1</text><text class="label" x="120" y="95">1</text><text class="label" x="120" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="160" y="60">2</text><text class="label" x="160" y="95">1</text><text class="label" x="160" y="125">2</text><text class="label" x="160" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="200" y="60">3</text><text class="label" x="200" y="95">1</text><text class="label" x="200" y="125">2</text><text class="label" x="200" y="155">3</text><text class="label" x="200" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="240" y="60">4</text><text class="label" x="240" y="95">4</text><text class="label" x="240" y="125">2</text><text class="label" x="240" y="155">3</text><text class="label" x="240" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="280" y="60">1</text><text class="label" x="280" y="95">4</text><text class="label" x="280" y="125">1</text><text class="label" x="280" y="155">3</text><text class="label" x="280" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="320" y="60">2</text><text class="label" x="320" y="95">4</text><text class="label" x="320" y="125">1</text><text class="label" x="320" y="155">2</text><text class="label" x="320" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="360" y="60">5</text><text class="label" x="360" y="95">5</text><text class="label" x="360" y="125">1</text><text class="label" x="360" y="155">2</text><text class="label" x="360" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="400" y="60">1</text><text class="label" x="400" y="95">5</text><text class="label" x="400" y="125">1</text><text class="label" x="400" y="155">2</text><text class="label" x="400" y="190">H</text>
+          <text class="label" x="440" y="60">2</text><text class="label" x="440" y="95">5</text><text class="label" x="440" y="125">1</text><text class="label" x="440" y="155">2</text><text class="label" x="440" y="190">H</text>
+          <text class="label" x="480" y="60">3</text><text class="label" x="480" y="95">5</text><text class="label" x="480" y="125">3</text><text class="label" x="480" y="155">2</text><text class="label" x="480" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="520" y="60">4</text><text class="label" x="520" y="95">5</text><text class="label" x="520" y="125">3</text><text class="label" x="520" y="155">4</text><text class="label" x="520" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="560" y="60">5</text><text class="label" x="560" y="95">5</text><text class="label" x="560" y="125">3</text><text class="label" x="560" y="155">4</text><text class="label" x="560" y="190">H</text>
+        </g>
+        <line x1="80" y1="70" x2="600" y2="70" stroke="var(--border)" stroke-width="1"/>
+        <line x1="80" y1="170" x2="600" y2="170" stroke="var(--border)" stroke-width="1"/>
+      </svg>
+      <span class="viz-caption">F = 페이지 폴트, H = 히트. 가장 오래 메모리에 있던 페이지부터 내보낸다.</span>
+    </div>
+
+    <h3>2) LRU — 가장 오래 안 쓰인 페이지를 내보낸다</h3>
+    <p>
+      <strong>Least Recently Used</strong>. "최근 안 쓴 건 앞으로도 안 쓸 가능성이 크다"라는 지역성(locality) 가정을 따릅니다.
+      성능은 좋지만 매 접근마다 사용 시각을 갱신하거나 양방향 연결 리스트로 노드를 맨 앞으로 옮겨야 해서 비용이 큽니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="LRU 시나리오">
+        <text class="label" x="50" y="30" font-weight="bold">LRU — 폴트 10회</text>
+        <text class="label" x="50" y="60">참조</text>
+        <text class="label" x="50" y="95">F1</text>
+        <text class="label" x="50" y="125">F2</text>
+        <text class="label" x="50" y="155">F3</text>
+        <text class="label" x="50" y="190" fill="var(--accent)">결과</text>
+
+        <g font-size="13" font-family="var(--font-mono)" text-anchor="middle">
+          <text class="label" x="120" y="60">1</text><text class="label" x="120" y="95">1</text><text class="label" x="120" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="160" y="60">2</text><text class="label" x="160" y="95">1</text><text class="label" x="160" y="125">2</text><text class="label" x="160" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="200" y="60">3</text><text class="label" x="200" y="95">1</text><text class="label" x="200" y="125">2</text><text class="label" x="200" y="155">3</text><text class="label" x="200" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="240" y="60">4</text><text class="label" x="240" y="95">4</text><text class="label" x="240" y="125">2</text><text class="label" x="240" y="155">3</text><text class="label" x="240" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="280" y="60">1</text><text class="label" x="280" y="95">4</text><text class="label" x="280" y="125">1</text><text class="label" x="280" y="155">3</text><text class="label" x="280" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="320" y="60">2</text><text class="label" x="320" y="95">4</text><text class="label" x="320" y="125">1</text><text class="label" x="320" y="155">2</text><text class="label" x="320" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="360" y="60">5</text><text class="label" x="360" y="95">5</text><text class="label" x="360" y="125">1</text><text class="label" x="360" y="155">2</text><text class="label" x="360" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="400" y="60">1</text><text class="label" x="400" y="95">5</text><text class="label" x="400" y="125">1</text><text class="label" x="400" y="155">2</text><text class="label" x="400" y="190">H</text>
+          <text class="label" x="440" y="60">2</text><text class="label" x="440" y="95">5</text><text class="label" x="440" y="125">1</text><text class="label" x="440" y="155">2</text><text class="label" x="440" y="190">H</text>
+          <text class="label" x="480" y="60">3</text><text class="label" x="480" y="95">3</text><text class="label" x="480" y="125">1</text><text class="label" x="480" y="155">2</text><text class="label" x="480" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="520" y="60">4</text><text class="label" x="520" y="95">3</text><text class="label" x="520" y="125">4</text><text class="label" x="520" y="155">2</text><text class="label" x="520" y="190" fill="var(--accent)">F</text>
+          <text class="label" x="560" y="60">5</text><text class="label" x="560" y="95">3</text><text class="label" x="560" y="125">4</text><text class="label" x="560" y="155">5</text><text class="label" x="560" y="190" fill="var(--accent)">F</text>
+        </g>
+        <line x1="80" y1="70" x2="600" y2="70" stroke="var(--border)" stroke-width="1"/>
+        <line x1="80" y1="170" x2="600" y2="170" stroke="var(--border)" stroke-width="1"/>
+      </svg>
+      <span class="viz-caption">참조될 때마다 해당 페이지가 "가장 최근"으로 갱신된다. 교체 시 가장 오래 사용 안 된 페이지를 내보낸다.</span>
+    </div>
+
+    <h3>3) Clock(2nd chance) — LRU의 근사, OS 표준</h3>
+    <p>
+      페이지를 원형 큐에 두고 각 페이지에 <strong>참조 비트(reference bit)</strong>를 둡니다.
+      교체 후보를 가리키는 시계 바늘이 돌면서, 참조 비트가 1이면 0으로 지우고 한 번 더 기회를 주고,
+      0인 페이지를 만나면 그것을 내보냅니다. <em>최근에 한 번이라도 쓴 페이지는 살려 둔다</em>는 점에서 LRU와 비슷한 효과를 내면서 구현이 훨씬 가볍습니다.
+    </p>
+    <div class="viz">
+      <svg width="600" height="280" viewBox="0 0 600 280" role="img" aria-label="Clock 알고리즘">
+        <defs>
+          <marker id="clA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <circle cx="300" cy="140" r="100" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+
+        <rect class="node" x="280" y="30" width="40" height="40" rx="6"/><text class="node-text" x="300" y="55">A</text>
+        <text class="label" x="300" y="22" text-anchor="middle">ref=1</text>
+        <rect class="node highlight" x="380" y="120" width="40" height="40" rx="6"/><text class="node-text" x="400" y="145" fill="#1a1a1a">B</text>
+        <text class="label" x="430" y="145" text-anchor="middle">ref=0</text>
+        <rect class="node" x="280" y="210" width="40" height="40" rx="6"/><text class="node-text" x="300" y="235">C</text>
+        <text class="label" x="300" y="270" text-anchor="middle">ref=1</text>
+        <rect class="node" x="180" y="120" width="40" height="40" rx="6"/><text class="node-text" x="200" y="145">D</text>
+        <text class="label" x="160" y="145" text-anchor="middle">ref=1</text>
+
+        <line x1="300" y1="140" x2="380" y2="140" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#clA)"/>
+        <text class="label" x="300" y="158" text-anchor="middle" font-weight="bold">시계 바늘</text>
+
+        <text class="label" x="300" y="180" text-anchor="middle" fill="var(--accent)">B(ref=0) 발견 → 교체!</text>
+      </svg>
+      <span class="viz-caption">바늘이 돌며 ref=1을 만나면 0으로 바꾸고 다음으로, ref=0을 만나면 그 페이지를 victim으로 선택한다.</span>
+    </div>
+
+    <h3>4) LFU — 가장 적게 쓰인 페이지를 내보낸다</h3>
+    <p>
+      <strong>Least Frequently Used</strong>. 각 페이지의 참조 횟수를 세고, 가장 적게 쓰인 것을 내보냅니다.
+      "자주 쓰이는 건 앞으로도 자주 쓰일 것"이라는 가정인데, 과거에 잠깐 폭발적으로 쓰였다가 지금은 안 쓰는 페이지가 카운터에 박혀
+      잘 안 빠지는 <strong>cache pollution</strong> 문제가 있습니다. 그래서 OS 페이지 교체보다는 캐시(예: Redis maxmemory-policy)에서 더 흔합니다.
+    </p>
+
+    <h3>5) 전체 비교</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>알고리즘</th><th>핵심 아이디어</th><th>예시 폴트(위 시나리오)</th><th>구현 비용</th><th>특징</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>OPT(이론적 최적)</td><td>앞으로 가장 늦게 쓰일 것</td><td>7회</td><td>구현 불가(미래 필요)</td><td>비교 기준선</td></tr>
+        <tr><td>FIFO</td><td>가장 먼저 들어온 것</td><td>9회</td><td>매우 낮음</td><td>Belady 변칙 가능</td></tr>
+        <tr><td>LRU</td><td>가장 오래 안 쓰인 것</td><td>10회</td><td>높음(타임스탬프/리스트)</td><td>지역성에 강함</td></tr>
+        <tr><td>Clock</td><td>참조 비트로 LRU 근사</td><td>≈ LRU</td><td>중간</td><td>실무 OS 표준</td></tr>
+        <tr><td>LFU</td><td>가장 적게 쓰인 것</td><td>가변</td><td>중간(카운터)</td><td>캐시 오염 위험</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6) Java 코드 — LRU 캐시(LinkedHashMap)</h3>
+<pre><code>// 페이지 교체 그 자체는 OS 일이지만, 같은 아이디어가 애플리케이션 캐시에 그대로 쓰인다.
+import java.util.*;
+
+class LRUCache&lt;K, V&gt; extends LinkedHashMap&lt;K, V&gt; {
+    private final int capacity;
+    public LRUCache(int capacity) {
+        super(capacity, 0.75f, true); // accessOrder = true → 접근 시 맨 뒤로 이동
+        this.capacity = capacity;
+    }
+    @Override
+    protected boolean removeEldestEntry(Map.Entry&lt;K, V&gt; eldest) {
+        return size() &gt; capacity;     // 가장 오래 안 쓰인 항목 제거
+    }
+}
+
+LRUCache&lt;Integer, String&gt; cache = new LRUCache&lt;&gt;(3);
+cache.put(1, "A"); cache.put(2, "B"); cache.put(3, "C");
+cache.get(1);                          // 1을 최근으로 갱신
+cache.put(4, "D");                     // 2가 victim으로 evict
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>FIFO</strong>는 큐 하나면 충분하지만 사용 패턴을 무시해 폴트율이 나쁠 수 있습니다.</li>
+      <li><strong>정확한 LRU</strong>는 매 접근마다 O(1)에 갱신하려면 해시맵 + 양방향 연결 리스트가 필요합니다(메모리 +α).</li>
+      <li><strong>Clock</strong>은 참조 비트 1개만 있으면 되므로 하드웨어가 자동으로 세팅해 주는 비트를 그대로 활용할 수 있어 매우 저렴합니다. 그래서 리눅스를 비롯한 실제 OS가 이 계열을 변형해 사용합니다.</li>
+      <li><strong>LFU</strong>는 카운터 갱신 자체는 O(1)이지만 최소 카운트를 빠르게 찾으려면 추가 자료구조(min-heap, 이중 LinkedHashSet)가 필요합니다.</li>
+    </ul>
+
+    <p>
+      실험적으로 <strong>OPT &lt; LRU/Clock &lt; FIFO</strong> 순으로 폴트가 적은 경우가 많지만, 참조 패턴에 따라 역전될 수 있습니다.
+      위 예시에서는 참조 문자열의 형태상 FIFO가 LRU보다 운 좋게 폴트가 적게 나왔습니다 — 알고리즘의 본질은 평균 동작이지 한 시나리오의 결과가 아니라는 점을 기억해야 합니다.
+    </p>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>리눅스 페이지 캐시</strong> — active/inactive 두 개의 LRU 리스트로 변형 LRU(2Q-like)를 구현합니다.</li>
+      <li><strong>Redis maxmemory-policy</strong> — <code>allkeys-lru</code>, <code>allkeys-lfu</code> 등 페이지 교체와 같은 아이디어를 캐시 키 제거에 적용합니다.</li>
+      <li><strong>DB 버퍼 풀</strong> — PostgreSQL은 Clock-Sweep, MySQL InnoDB는 LRU의 변형(midpoint insertion)을 씁니다.</li>
+      <li><strong>JVM JIT 코드 캐시</strong>, <strong>브라우저 BFCache</strong> 등 거의 모든 캐시 컴포넌트의 핵심 정책.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">LRU와 LFU의 차이는 무엇인가요?</div>
+      <div class="a">
+        LRU는 "최근에 쓴 정도(시간)"를, LFU는 "사용 빈도(횟수)"를 기준으로 victim을 고릅니다.
+        LRU는 최근에 갑자기 인기를 잃은 페이지에 강하고, LFU는 옛날에 인기 있다가 지금은 안 쓰는 페이지가 안 빠지는 약점이 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Belady 변칙(anomaly)이 무엇인가요?</div>
+      <div class="a">
+        FIFO에서 프레임 수를 늘렸는데 페이지 폴트가 오히려 더 많이 발생하는 직관에 어긋난 현상입니다.
+        Stack property(메모리 늘었을 때 작은 메모리의 페이지 집합이 큰 메모리의 부분집합인 성질)를 갖지 않는 알고리즘에서 일어날 수 있고, LRU는 이 성질을 만족해 변칙이 없습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">실제 OS는 왜 정확한 LRU 대신 Clock을 쓰나요?</div>
+      <div class="a">
+        정확한 LRU는 매 메모리 접근마다 자료구조를 갱신해야 하는데, 이건 모든 load/store 명령에 추가 작업을 붙이는 셈이라 비현실적입니다.
+        Clock은 하드웨어가 자동으로 세팅해 주는 참조 비트만 보고 LRU에 가까운 동작을 만들기 때문에 거의 비용 없이 동작합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">스래싱(thrashing)은 무엇이고 어떻게 막나요?</div>
+      <div class="a">
+        프로세스가 동시에 다루는 페이지(working set)가 가용 프레임보다 많아 페이지 폴트가 끊임없이 일어나는 상태입니다.
+        OS는 working set 모델로 필요한 프레임을 추정하거나 PFF(Page Fault Frequency)를 기준으로 다중 프로그래밍 정도를 줄여 막습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">디스크에 다시 써야 할 페이지(dirty page) 처리는 어떻게 다른가요?</div>
+      <div class="a">
+        clean 페이지는 디스크에 그대로 있으니 그냥 버리면 되지만, dirty 페이지는 내보내기 전에 디스크에 써야 하므로 비용이 더 큽니다.
+        그래서 일부 알고리즘은 dirty/clean 비트를 함께 보고 같은 ref=0이라면 clean 페이지를 우선 내보냅니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="paging-segmentation.html">페이징 / 세그먼테이션</a></li>
+      <li><a href="../computer-architecture/virtual-memory.html">가상 메모리 / MMU</a></li>
+      <li><a href="../computer-architecture/cache-memory.html">캐시 메모리</a></li>
+      <li><a href="../data-structure/hash-table.html">해시 테이블</a></li>
+      <li><a href="index.html">운영체제 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="paging-segmentation.html">
+        <span class="label">이전</span>
+        ← 페이징/세그먼테이션
+      </a>
+      <a href="index.html">📂 운영체제로</a>
+      <a class="next" href="file-system.html">
+        <span class="label">다음</span>
+        파일 시스템 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

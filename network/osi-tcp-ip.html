@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OSI 7계층 / TCP/IP 4계층 · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">네트워크</a>
+      <span class="sep">›</span>
+      <span>OSI 7계층 / TCP/IP 4계층</span>
+    </nav>
+
+    <h1>OSI 7계층 / TCP/IP 4계층</h1>
+
+    <div class="definition">
+      <strong>OSI 7계층</strong>은 네트워크 통신을 7개의 책임으로 나눈 <strong>이론적 참조 모델</strong>이고,
+      <strong>TCP/IP 4계층</strong>은 실제 인터넷이 사용하는 <strong>구현 모델</strong>입니다.
+      각 계층은 자기 책임만 다하고 위·아래 계층의 내부 사정은 모르기 때문에, 한 계층의 기술을 바꿔도 다른 계층이 영향받지 않습니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      네트워크 통신을 한 덩어리로 짜면 너무 복잡합니다. 케이블 신호 처리, 경로 찾기, 신뢰성 보장, 데이터 표현, 화면 표시 같은
+      성격이 다른 일들을 한꺼번에 해야 하니까요. 그래서 <strong>책임을 분리해 층층이 쌓는</strong> 방식으로 설계합니다.
+      이게 계층 모델입니다.
+    </p>
+    <p>
+      층을 나누면 좋은 점은 <strong>한 층만 바꿔도 된다</strong>는 것입니다. 예를 들어 케이블이 광섬유로 바뀌어도(Layer 1)
+      그 위에서 동작하는 TCP·HTTP는 그대로입니다. 반대로 HTTP를 HTTP/2로 올려도 IP·이더넷은 변하지 않습니다.
+    </p>
+    <p>
+      OSI 모델은 1984년에 표준화된 <em>참조용 그림</em>이고, 우리가 실제로 쓰는 인터넷은 그것보다 일찍 나온 TCP/IP 모델입니다.
+      그래서 둘은 비슷하지만 일치하지 않습니다 — OSI는 7계층, TCP/IP는 4계층(또는 5계층으로 세분)입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>왜 굳이 둘 다 외우나?</strong></p>
+      <p>
+        실무에선 TCP/IP만으로도 충분하지만, 면접에선 "L4 스위치", "L7 로드밸런서" 같은 표현이 OSI 번호를 그대로 쓰기 때문에
+        7계층의 이름과 위치를 알면 의사소통이 편합니다. <em>L4 = 전송, L7 = 응용</em>이라고만 외워둬도 절반은 끝납니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      계층 모델은 단순한 분류가 아니라 <strong>설계 원칙</strong>입니다. 각 계층은 위 계층에 일정한 서비스를 제공하고,
+      아래 계층은 블랙박스로 취급합니다. 덕분에:
+    </p>
+    <ul>
+      <li><strong>개별 진화</strong>가 가능합니다. IPv4 → IPv6, HTTP/1.1 → HTTP/2 → HTTP/3 모두 다른 계층에 영향이 적었습니다.</li>
+      <li><strong>장비 분업</strong>이 가능합니다. 라우터(L3), 스위치(L2), 로드밸런서(L4/L7), 방화벽 등 각자 자기 계층만 봅니다.</li>
+      <li><strong>문제 격리</strong>가 쉽습니다. 인터넷이 안 된다 → ping(L3) 되나? → DNS(L7) 되나? → HTTP(L7) 응답이 오나?</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 두 모델의 매핑</h3>
+    <div class="viz">
+      <svg width="680" height="450" viewBox="0 0 680 450" role="img" aria-label="OSI와 TCP/IP 계층 매핑">
+        <text class="label" x="120" y="25" font-weight="bold" font-size="14">OSI 7계층</text>
+        <text class="label" x="430" y="25" font-weight="bold" font-size="14">TCP/IP 4계층</text>
+        <text class="label" x="600" y="25" font-weight="bold" font-size="14">대표 프로토콜</text>
+
+        <rect class="node" x="40" y="40" width="240" height="50" rx="6"/>
+        <text class="node-text" x="160" y="62">7. 응용(Application)</text>
+        <text class="label" x="160" y="80" text-anchor="middle">사용자에게 보이는 서비스</text>
+        <rect class="node" x="40" y="92" width="240" height="50" rx="6"/>
+        <text class="node-text" x="160" y="114">6. 표현(Presentation)</text>
+        <text class="label" x="160" y="132" text-anchor="middle">인코딩·암호화·압축</text>
+        <rect class="node" x="40" y="144" width="240" height="50" rx="6"/>
+        <text class="node-text" x="160" y="166">5. 세션(Session)</text>
+        <text class="label" x="160" y="184" text-anchor="middle">대화 시작·유지·종료</text>
+
+        <rect class="node highlight" x="40" y="196" width="240" height="50" rx="6"/>
+        <text class="node-text" x="160" y="218" fill="#1a1a1a">4. 전송(Transport)</text>
+        <text class="label" x="160" y="236" text-anchor="middle" fill="#1a1a1a">포트, 신뢰성, 흐름 제어</text>
+
+        <rect class="node" x="40" y="248" width="240" height="50" rx="6"/>
+        <text class="node-text" x="160" y="270">3. 네트워크(Network)</text>
+        <text class="label" x="160" y="288" text-anchor="middle">IP 주소, 라우팅</text>
+        <rect class="node" x="40" y="300" width="240" height="50" rx="6"/>
+        <text class="node-text" x="160" y="322">2. 데이터링크(Data Link)</text>
+        <text class="label" x="160" y="340" text-anchor="middle">MAC 주소, 프레임</text>
+        <rect class="node" x="40" y="352" width="240" height="50" rx="6"/>
+        <text class="node-text" x="160" y="374">1. 물리(Physical)</text>
+        <text class="label" x="160" y="392" text-anchor="middle">전기 신호·광·전파</text>
+
+        <rect class="node" x="340" y="40" width="220" height="154" rx="6"/>
+        <text class="node-text" x="450" y="115">응용(Application)</text>
+        <text class="label" x="450" y="135" text-anchor="middle">OSI 5+6+7 묶음</text>
+
+        <rect class="node highlight" x="340" y="196" width="220" height="50" rx="6"/>
+        <text class="node-text" x="450" y="225" fill="#1a1a1a">전송(Transport)</text>
+
+        <rect class="node" x="340" y="248" width="220" height="50" rx="6"/>
+        <text class="node-text" x="450" y="277">인터넷(Internet)</text>
+
+        <rect class="node" x="340" y="300" width="220" height="102" rx="6"/>
+        <text class="node-text" x="450" y="345">네트워크 액세스</text>
+        <text class="label" x="450" y="365" text-anchor="middle">OSI 1+2 묶음</text>
+
+        <text class="label" x="600" y="65"  font-family="var(--font-mono)">HTTP, FTP, DNS</text>
+        <text class="label" x="600" y="115" font-family="var(--font-mono)">TLS, JPEG</text>
+        <text class="label" x="600" y="170" font-family="var(--font-mono)">RPC, NetBIOS</text>
+        <text class="label" x="600" y="220" font-family="var(--font-mono)" fill="var(--accent)">TCP, UDP</text>
+        <text class="label" x="600" y="273" font-family="var(--font-mono)">IP, ICMP</text>
+        <text class="label" x="600" y="325" font-family="var(--font-mono)">Ethernet, ARP</text>
+        <text class="label" x="600" y="378" font-family="var(--font-mono)">Cable, Wi-Fi</text>
+
+        <text class="label" x="340" y="430" font-size="12" fill="var(--text-muted)">※ 5계층 모델에서는 "데이터링크 + 물리"로 분리하기도 함</text>
+      </svg>
+      <span class="viz-caption">OSI는 책임을 7개로 잘게 나눴고, TCP/IP는 응용 3개와 하위 2개를 묶어 4개로 단순화했다.</span>
+    </div>
+
+    <h3>2) 각 계층의 책임</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>계층</th><th>주요 단위</th><th>주소</th><th>대표적인 일</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>응용(L7)</td><td>메시지</td><td>URL, 도메인</td><td>HTTP 요청, 이메일, DNS 질의</td></tr>
+        <tr><td>표현(L6)</td><td>데이터</td><td>—</td><td>UTF-8 인코딩, TLS 암호화, 압축</td></tr>
+        <tr><td>세션(L5)</td><td>—</td><td>—</td><td>대화 시작·종료, 동기화 지점</td></tr>
+        <tr><td>전송(L4)</td><td>세그먼트(TCP) / 데이터그램(UDP)</td><td>포트 번호</td><td>신뢰성, 흐름 제어, 혼잡 제어</td></tr>
+        <tr><td>네트워크(L3)</td><td>패킷</td><td>IP 주소</td><td>라우팅, 단편화</td></tr>
+        <tr><td>데이터링크(L2)</td><td>프레임</td><td>MAC 주소</td><td>같은 링크 내 전달, 오류 검출</td></tr>
+        <tr><td>물리(L1)</td><td>비트</td><td>—</td><td>전기/빛 신호로 변환해 매체에 흘림</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) 캡슐화와 역캡슐화 — 데이터가 옷을 갈아입는 과정</h3>
+    <p>
+      위에서 내려갈 때마다 각 계층은 자기 헤더를 앞에 붙입니다(캡슐화).
+      받는 쪽은 반대로 한 겹씩 헤더를 벗기며 위로 올립니다(역캡슐화).
+      이 양파 같은 구조 덕분에 각 계층은 자기 헤더만 보고 자기 일에 집중할 수 있습니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="280" viewBox="0 0 680 280" role="img" aria-label="캡슐화 과정">
+        <defs>
+          <marker id="encA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <text class="label" x="60" y="25" font-weight="bold">송신측 — 위에서 아래로</text>
+
+        <rect class="node" x="40" y="50" width="600" height="32" rx="4"/>
+        <text class="label" x="340" y="71" text-anchor="middle">L7 데이터 (예: GET /index.html HTTP/1.1)</text>
+
+        <rect class="node" x="40" y="90" width="600" height="32" rx="4"/>
+        <rect class="node highlight" x="40" y="90" width="80" height="32" rx="4"/>
+        <text class="label" x="80" y="111" text-anchor="middle" fill="#1a1a1a">TCP</text>
+        <text class="label" x="380" y="111" text-anchor="middle">L4 세그먼트 = TCP 헤더 + L7 데이터</text>
+
+        <rect class="node" x="40" y="130" width="600" height="32" rx="4"/>
+        <rect class="node highlight" x="40" y="130" width="80" height="32" rx="4"/>
+        <text class="label" x="80" y="151" text-anchor="middle" fill="#1a1a1a">IP</text>
+        <rect class="node highlight" x="120" y="130" width="80" height="32" rx="4" opacity="0.7"/>
+        <text class="label" x="160" y="151" text-anchor="middle" fill="#1a1a1a">TCP</text>
+        <text class="label" x="420" y="151" text-anchor="middle">L3 패킷 = IP 헤더 + 위 전체</text>
+
+        <rect class="node" x="40" y="170" width="600" height="32" rx="4"/>
+        <rect class="node highlight" x="40" y="170" width="80" height="32" rx="4"/>
+        <text class="label" x="80" y="191" text-anchor="middle" fill="#1a1a1a">Eth</text>
+        <rect class="node highlight" x="120" y="170" width="80" height="32" rx="4" opacity="0.7"/>
+        <text class="label" x="160" y="191" text-anchor="middle" fill="#1a1a1a">IP</text>
+        <rect class="node highlight" x="200" y="170" width="80" height="32" rx="4" opacity="0.5"/>
+        <text class="label" x="240" y="191" text-anchor="middle" fill="#1a1a1a">TCP</text>
+        <text class="label" x="460" y="191" text-anchor="middle">L2 프레임 = 이더넷 헤더 + 위 전체</text>
+
+        <text class="label" x="340" y="240" text-anchor="middle">수신측은 거꾸로 한 겹씩 벗긴다 — 이를 역캡슐화(decapsulation)</text>
+        <line x1="340" y1="220" x2="340" y2="262" stroke="var(--accent)" stroke-width="2" marker-end="url(#encA)"/>
+      </svg>
+      <span class="viz-caption">각 계층은 자기 헤더만 붙이고 위 계층 내용은 페이로드로 본다.</span>
+    </div>
+
+    <h3>4) 실생활 예: 웹 페이지 요청</h3>
+    <ol>
+      <li><strong>L7 응용</strong> — 브라우저가 <code>GET /index.html</code> 메시지 작성</li>
+      <li><strong>L6 표현</strong> — TLS로 암호화(HTTPS면)</li>
+      <li><strong>L4 전송</strong> — TCP가 출발/도착 포트 붙이고(예: 서버 443) 신뢰성 보장</li>
+      <li><strong>L3 네트워크</strong> — IP가 출발/목적지 IP 붙이고 경로 결정</li>
+      <li><strong>L2 데이터링크</strong> — 다음 라우터 MAC 주소 붙이기</li>
+      <li><strong>L1 물리</strong> — 비트를 전기 신호로 케이블에 흘려보냄</li>
+    </ol>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>오버헤드</strong> — 각 계층 헤더가 더해져 페이로드 비율이 줄어듭니다. 1500바이트 이더넷 프레임에서 헤더 합이 보통 약 50~80바이트.</li>
+      <li><strong>지연(latency)</strong> — 캡슐화/역캡슐화·복사·체크섬 계산이 모두 비용입니다. 그래서 고성능 NIC는 일부 작업을 하드웨어로 오프로드합니다.</li>
+      <li><strong>유연성 vs 단순함</strong> — OSI는 책임이 명확하지만 실제 구현은 어색하고, TCP/IP는 단순해 빠르게 보급됐지만 응용 안에 표현·세션이 섞여 있습니다.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>L4 vs L7 로드밸런서</strong> — L4는 IP/포트만 보고 빠르게 분배, L7은 HTTP 헤더·쿠키·URL을 보고 라우팅합니다. AWS의 NLB/ALB가 정확히 이 차이.</li>
+      <li><strong>L7 방화벽 / WAF</strong> — HTTP 메시지를 해석해 SQL 인젝션 같은 공격을 막습니다.</li>
+      <li><strong>네트워크 디버깅</strong> — <code>tcpdump</code>, <code>wireshark</code>로 각 계층 헤더를 펼쳐 보며 문제 위치를 좁힙니다.</li>
+      <li><strong>장애 진단</strong> — "ping은 되는데 HTTP만 안 된다"면 L3는 되고 L7이 문제, 같은 식으로 계층 단위로 잘라서 봅니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">OSI 7계층을 위에서부터 말해보세요.</div>
+      <div class="a">
+        응용 - 표현 - 세션 - 전송 - 네트워크 - 데이터링크 - 물리입니다.
+        각 계층은 자기 책임만 다하고 인접 계층에만 의존하므로, 한 계층의 기술을 바꿔도 다른 계층이 영향받지 않습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">OSI 모델과 TCP/IP 모델의 차이는 무엇인가요?</div>
+      <div class="a">
+        OSI는 7계층의 이론적 참조 모델이고, TCP/IP는 응용 3계층(5+6+7)을 하나로 합치고 하위 2계층(1+2)을 묶어 4계층으로 단순화한 실제 구현 모델입니다.
+        실제 인터넷은 TCP/IP 모델로 동작합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">L4 스위치와 L7 로드밸런서는 어떻게 다른가요?</div>
+      <div class="a">
+        L4는 IP와 포트만 보고 빠르게 트래픽을 분산합니다. 콘텐츠를 보지 않으니 가볍습니다.
+        L7은 HTTP 메서드·헤더·쿠키·URL 같은 응용 계층 정보를 해석해 더 똑똑하게 라우팅합니다(예: <code>/api/*</code>는 A 그룹, <code>/img/*</code>는 B 그룹). 대신 비용이 큽니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">캡슐화(encapsulation)란 무엇이고 왜 하나요?</div>
+      <div class="a">
+        각 계층이 위에서 받은 데이터에 자기 헤더를 붙여 아래 계층으로 전달하는 과정입니다.
+        덕분에 각 계층은 자기 헤더만 다루면 되고, 한 계층의 변경이 다른 계층에 영향을 주지 않아 모듈성과 진화 가능성이 보장됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">"인터넷이 안 된다"는 사용자 신고를 받았다면 어떻게 좁혀 가나요?</div>
+      <div class="a">
+        계층별로 잘라 봅니다. 케이블/Wi-Fi 신호(L1·L2) → <code>ip addr</code>로 IP 받았는지(L3) → <code>ping 8.8.8.8</code>(L3 도달성) →
+        <code>nslookup</code>으로 DNS(L7) → <code>curl</code>로 HTTP(L7). 어디서 끊기는지 찾으면 원인 계층이 좁혀집니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="tcp-udp.html">TCP vs UDP</a></li>
+      <li><a href="handshake.html">3-way / 4-way handshake</a></li>
+      <li><a href="index.html">네트워크 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span class="prev"></span>
+      <a href="index.html">📂 네트워크로</a>
+      <a class="next" href="tcp-udp.html">
+        <span class="label">다음</span>
+        TCP vs UDP →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

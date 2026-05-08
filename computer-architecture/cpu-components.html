@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPU 구성 요소 · 컴퓨터구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">컴퓨터구조</a>
+      <span class="sep">›</span>
+      <span>CPU 구성 요소</span>
+    </nav>
+
+    <h1>CPU 구성 요소</h1>
+
+    <div class="definition">
+      <strong>CPU(Central Processing Unit)</strong>는 프로그램의 명령어를 가져와 해석하고 실행하는 컴퓨터의 핵심 장치입니다.
+      크게 <strong>제어 장치(Control Unit)</strong>, <strong>산술 논리 장치(ALU)</strong>, <strong>레지스터(Register)</strong>, <strong>버스(Bus)</strong>가 협력해 동작합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      CPU를 작은 공장으로 생각하면 쉽습니다. 제어 장치는 공장장처럼 "이번엔 뭘 해야 하는지" 지시하고,
+      ALU는 계산 담당 작업대, 레지스터는 바로 옆에 놓인 작은 메모장, 버스는 부품과 결과가 이동하는 통로입니다.
+      프로그램의 모든 명령어는 결국 이 공장 안에서 아주 작은 단계들로 쪼개져 처리됩니다.
+    </p>
+
+    <ul>
+      <li><strong>제어 장치(Control Unit, CU)</strong> — 명령어를 해석하고 CPU 내부 부품에 제어 신호를 보냅니다.</li>
+      <li><strong>ALU(Arithmetic Logic Unit)</strong> — 덧셈, 뺄셈, AND/OR, 비교 같은 산술·논리 연산을 수행합니다.</li>
+      <li><strong>레지스터(Register)</strong> — CPU 내부의 초고속 저장 공간. 현재 명령어, 주소, 연산 대상, 결과 등을 잠깐 저장합니다.</li>
+      <li><strong>버스(Bus)</strong> — 데이터, 주소, 제어 신호가 이동하는 통로입니다.</li>
+      <li><strong>클록(Clock)</strong> — CPU 내부 동작의 박자. 한 박자마다 작은 동작들이 진행됩니다.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>CPU는 혼자 일하지 않는다</strong></p>
+      <p>
+        CPU는 메모리에서 명령어와 데이터를 가져오고, I/O 장치와도 통신합니다.
+        그래서 CPU 성능은 클록 속도만으로 결정되지 않습니다. 캐시, 메모리 지연, 파이프라인, 코어 수, 명령어 집합, 분기 예측 등
+        여러 요소가 함께 성능을 만듭니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      개발자는 보통 고급 언어로 코드를 작성하지만, 그 코드는 결국 기계어 명령어로 바뀌어 CPU에서 실행됩니다.
+      CPU 구성 요소를 알면 "왜 레지스터 접근은 빠르고 메모리 접근은 느린지", "왜 반복문 순서가 성능에 영향을 주는지",
+      "왜 캐시 미스가 큰 병목인지"를 더 정확히 이해할 수 있습니다.
+    </p>
+    <p>
+      특히 백엔드 성능 최적화, 동시성, JVM/JIT, 데이터베이스 인덱스/버퍼풀, 네트워크 패킷 처리 같은 분야에서는
+      하드웨어의 기본 흐름을 이해하는 것이 성능 감각의 바탕이 됩니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) CPU 내부 구성도</h3>
+    <div class="viz">
+      <svg width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="CPU 내부 구성 요소">
+        <defs>
+          <marker id="cpuA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+
+        <rect x="50" y="40" width="420" height="260" rx="12" fill="var(--bg-elev)" stroke="var(--border-strong)" stroke-width="2"/>
+        <text class="label" x="70" y="68" font-weight="bold">CPU</text>
+
+        <rect class="node" x="90" y="95" width="130" height="70" rx="8"/>
+        <text class="node-text" x="155" y="120">Control Unit</text>
+        <text class="label" x="155" y="145" text-anchor="middle">명령어 해석/제어</text>
+
+        <rect class="node" x="290" y="95" width="130" height="70" rx="8"/>
+        <text class="node-text" x="355" y="120">ALU</text>
+        <text class="label" x="355" y="145" text-anchor="middle">계산/비교</text>
+
+        <rect class="node" x="90" y="205" width="330" height="55" rx="8"/>
+        <text class="node-text" x="255" y="225">Registers</text>
+        <text class="label" x="255" y="247" text-anchor="middle">PC, IR, MAR, MDR, ACC, 범용 레지스터</text>
+
+        <line x1="220" y1="130" x2="290" y2="130" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#cpuA)"/>
+        <line x1="355" y1="165" x2="300" y2="205" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#cpuA)"/>
+        <line x1="180" y1="205" x2="155" y2="165" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#cpuA)"/>
+
+        <rect x="510" y="80" width="90" height="70" rx="8" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text class="node-text" x="555" y="105">Memory</text>
+        <text class="label" x="555" y="130" text-anchor="middle">명령어/데이터</text>
+
+        <rect x="510" y="205" width="90" height="70" rx="8" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text class="node-text" x="555" y="230">I/O</text>
+        <text class="label" x="555" y="255" text-anchor="middle">장치</text>
+
+        <line x1="470" y1="115" x2="510" y2="115" stroke="var(--accent)" stroke-width="2" marker-end="url(#cpuA)"/>
+        <line x1="470" y1="240" x2="510" y2="240" stroke="var(--accent)" stroke-width="2" marker-end="url(#cpuA)"/>
+        <text class="label" x="480" y="180" fill="var(--accent)">System Bus</text>
+
+        <text class="label" x="50" y="330">CPU 내부는 레지스터를 중심으로 명령어 해석(CU)과 연산(ALU)이 반복되는 구조다.</text>
+      </svg>
+      <span class="viz-caption">CPU는 계산 장치만이 아니라, 해석·저장·이동·제어가 결합된 실행 엔진이다.</span>
+    </div>
+
+    <h3>2) 주요 레지스터</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>레지스터</th><th>역할</th><th>비유</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>PC (Program Counter)</td><td>다음에 가져올 명령어 주소</td><td>책갈피</td></tr>
+        <tr><td>IR (Instruction Register)</td><td>현재 실행 중인 명령어</td><td>지금 읽는 문장</td></tr>
+        <tr><td>MAR (Memory Address Register)</td><td>메모리에 접근할 주소</td><td>배송 주소</td></tr>
+        <tr><td>MDR/MBR</td><td>메모리에서 읽거나 쓸 데이터</td><td>배송 상자</td></tr>
+        <tr><td>ACC / 범용 레지스터</td><td>연산 대상과 결과 저장</td><td>작업대 위 메모장</td></tr>
+        <tr><td>Flag Register</td><td>연산 결과 상태(0, 음수, carry 등)</td><td>상태 표시등</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) 간단한 명령어 실행 흐름</h3>
+    <p><code>ADD R1, R2</code> 같은 명령어를 실행한다고 해봅시다.</p>
+    <ol>
+      <li>PC가 가리키는 주소에서 명령어를 가져와 IR에 저장합니다.</li>
+      <li>제어 장치가 IR을 해석해 "R1과 R2를 더하라"는 신호를 만듭니다.</li>
+      <li>레지스터 파일에서 R1, R2 값을 ALU로 보냅니다.</li>
+      <li>ALU가 덧셈을 수행하고 결과를 다시 R1에 씁니다.</li>
+      <li>Flag 레지스터를 갱신하고 PC를 다음 명령어로 이동합니다.</li>
+    </ol>
+
+    <h3>4) Java 코드와 하드웨어 관점</h3>
+<pre><code>// Java 코드
+int c = a + b;
+
+// 매우 단순화한 CPU 내부 흐름
+// 1. a, b 값을 메모리/캐시에서 레지스터로 load
+// 2. ALU가 add 수행
+// 3. 결과를 레지스터 c 또는 메모리 위치에 store
+
+// 실제 JIT 컴파일 후에는 대략 이런 기계어 흐름으로 변환될 수 있음
+// load  R1, [a]
+// load  R2, [b]
+// add   R3, R1, R2
+// store [c], R3
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <p>
+      CPU 구성 요소는 알고리즘처럼 O 표기법으로만 설명하기보다 <strong>속도·비용·용량 trade-off</strong>로 보는 게 맞습니다.
+    </p>
+    <table class="complexity">
+      <thead>
+        <tr><th>구성 요소</th><th>장점</th><th>trade-off</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>레지스터</td><td>가장 빠름</td><td>개수가 매우 적고 CPU 설계 비용 증가</td></tr>
+        <tr><td>ALU</td><td>산술/논리 연산 고속 처리</td><td>복잡한 연산은 여러 사이클 또는 별도 유닛 필요</td></tr>
+        <tr><td>제어 장치</td><td>명령어 실행 흐름 관리</td><td>파이프라인/분기 예측이 들어가면 설계 복잡도 증가</td></tr>
+        <tr><td>버스</td><td>부품 간 연결 단순화</td><td>폭과 대역폭이 병목이 될 수 있음</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>성능 분석</strong> — CPU bound인지 memory bound인지 구분할 때 기반 지식이 됩니다.</li>
+      <li><strong>JVM/JIT 이해</strong> — Java 코드가 레지스터와 기계어로 바뀌는 과정을 이해할 수 있습니다.</li>
+      <li><strong>동시성</strong> — 원자적 연산, 메모리 배리어, 캐시 일관성 이해에 필요합니다.</li>
+      <li><strong>시스템 프로그래밍</strong> — 컴파일러, OS, 드라이버, 임베디드 개발에서 직접적으로 중요합니다.</li>
+      <li><strong>DB/네트워크 최적화</strong> — 데이터 배치, 캐시 친화성, 배치 처리 단위 결정에 영향을 줍니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">CPU의 핵심 구성 요소를 설명해 주세요.</div>
+      <div class="a">
+        제어 장치, ALU, 레지스터, 버스가 핵심입니다. 제어 장치는 명령어를 해석하고 제어 신호를 만들고,
+        ALU는 산술·논리 연산을 수행합니다. 레지스터는 CPU 내부의 초고속 임시 저장소이고,
+        버스는 데이터와 주소, 제어 신호가 이동하는 통로입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">레지스터와 캐시의 차이는 무엇인가요?</div>
+      <div class="a">
+        레지스터는 CPU 코어 내부에서 명령어가 직접 사용하는 가장 작은 저장 공간입니다.
+        캐시는 CPU와 메인 메모리 사이에 있는 더 큰 고속 저장소로, 자주 쓰는 메모리 데이터를 자동으로 보관합니다.
+        레지스터는 컴파일러/명령어가 직접 다루고, 캐시는 하드웨어가 지역성에 따라 자동 관리한다는 차이가 큽니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">클록 속도가 높으면 항상 CPU가 빠른가요?</div>
+      <div class="a">
+        아닙니다. 클록은 초당 박자 수일 뿐이고, 한 박자에 얼마나 많은 일을 하는지(IPC), 캐시 미스가 얼마나 나는지,
+        파이프라인이 얼마나 잘 유지되는지, 코어 수와 병렬성이 어떤지에 따라 실제 성능이 달라집니다.
+        그래서 GHz만으로 CPU 성능을 비교하면 부정확합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ALU와 제어 장치는 어떻게 다르나요?</div>
+      <div class="a">
+        ALU는 실제 계산을 하는 부품입니다. 더하기, 빼기, AND/OR, 비교 같은 연산을 수행합니다.
+        제어 장치는 어떤 데이터를 어디서 가져와 ALU에 넣고, 결과를 어디에 저장할지 지시하는 부품입니다.
+        즉 ALU가 작업자라면 제어 장치는 작업 지시자에 가깝습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="instruction-cycle.html">명령어 사이클</a></li>
+      <li><a href="cache-memory.html">캐시 메모리</a></li>
+      <li><a href="index.html">컴퓨터구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span class="prev"></span>
+      <a href="index.html">📂 컴퓨터구조로</a>
+      <a class="next" href="instruction-cycle.html">
+        <span class="label">다음</span>
+        명령어 사이클 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

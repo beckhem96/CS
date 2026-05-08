@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>라우팅 / NAT · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">네트워크</a><span class="sep">›</span><span>라우팅 / NAT</span></nav>
+    <h1>라우팅(Routing) / NAT</h1>
+    <div class="definition"><strong>라우팅</strong>은 목적지 IP 주소를 보고 패킷을 다음 어디로 보낼지 결정하는 과정입니다. <strong>NAT(Network Address Translation)</strong>는 사설 IP와 공인 IP 사이에서 주소와 포트를 바꿔 여러 내부 장치가 하나의 공인 IP를 공유하게 하는 기술입니다.</div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>인터넷은 하나의 거대한 도로망입니다. 내 컴퓨터가 어떤 서버로 패킷을 보내면, 그 패킷은 여러 라우터를 지나 목적지까지 갑니다. 각 라우터는 전체 경로를 다 아는 게 아니라, 자기 라우팅 테이블에서 <strong>가장 구체적으로 맞는 경로(Longest Prefix Match)</strong>를 찾아 다음 홉(next hop)으로 넘깁니다.</p>
+    <p>NAT는 주소 부족 때문에 널리 쓰이게 됐습니다. 집 안의 노트북, 휴대폰, TV는 모두 사설 IP를 쓰지만 인터넷에는 공유기 하나의 공인 IP로 나갑니다. 공유기는 내부 주소와 포트를 외부 주소와 포트로 바꾸고, 되돌아오는 응답을 다시 원래 내부 장치로 돌려보냅니다.</p>
+
+    <div class="callout"><p><strong>라우팅은 "길 찾기", NAT는 "주소 바꾸기"</strong></p><p>라우팅은 패킷을 어느 방향으로 보낼지 결정하는 일이고, NAT는 패킷 안의 출발지/목적지 주소·포트를 수정하는 일입니다. 공유기는 보통 둘을 동시에 합니다.</p></div>
+
+    <h2>왜 필요한가?</h2>
+    <p>라우팅이 없으면 인터넷은 동작할 수 없습니다. 모든 장치가 서로 직접 연결되어 있지 않기 때문에, 중간 라우터들이 목적지 네트워크까지 패킷을 이어 전달해야 합니다. CIDR 덕분에 라우터는 개별 IP가 아니라 네트워크 묶음 단위로 경로를 관리합니다.</p>
+    <p>NAT는 IPv4 주소 부족을 완화했고, 내부망을 외부에서 직접 보이지 않게 만드는 부수적 보호 효과도 있습니다. 하지만 NAT는 end-to-end 원칙을 깨기 때문에 P2P, VoIP, 게임, WebRTC 같은 양방향 통신을 어렵게 만듭니다.</p>
+
+    <h2>어떻게 동작하는가?</h2>
+    <h3>1) 라우팅 테이블과 Longest Prefix Match</h3>
+    <p>라우터는 목적지 IP와 라우팅 테이블의 prefix를 비교합니다. 여러 경로가 매칭되면 <strong>가장 긴 prefix</strong>, 즉 가장 구체적인 경로를 선택합니다.</p>
+    <table class="complexity"><thead><tr><th>Destination</th><th>Next Hop</th><th>Interface</th></tr></thead><tbody><tr><td>0.0.0.0/0</td><td>203.0.113.1</td><td>eth0</td></tr><tr><td>10.0.0.0/8</td><td>10.0.0.1</td><td>eth1</td></tr><tr><td>10.1.0.0/16</td><td>10.1.0.1</td><td>eth2</td></tr><tr><td>10.1.2.0/24</td><td>10.1.2.1</td><td>eth3</td></tr></tbody></table>
+    <p>목적지가 <code>10.1.2.42</code>라면 네 경로 중 <code>10.1.2.0/24</code>가 가장 길게 매칭되므로 eth3로 나갑니다.</p>
+
+    <h3>2) 패킷이 여러 라우터를 지나는 과정</h3>
+    <div class="viz"><svg width="680" height="250" viewBox="0 0 680 250" role="img" aria-label="routing path"><defs><marker id="rtA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs><rect class="node" x="30" y="90" width="100" height="55" rx="8"/><text class="node-text" x="80" y="122">Client</text><rect class="node highlight" x="180" y="90" width="100" height="55" rx="8"/><text class="node-text" x="230" y="122" fill="#1a1a1a">Router A</text><rect class="node" x="330" y="90" width="100" height="55" rx="8"/><text class="node-text" x="380" y="122">Router B</text><rect class="node" x="480" y="90" width="100" height="55" rx="8"/><text class="node-text" x="530" y="122">Router C</text><rect class="node highlight" x="610" y="90" width="60" height="55" rx="8"/><text class="label" x="640" y="122" text-anchor="middle" fill="#1a1a1a">Server</text><line x1="130" y1="118" x2="180" y2="118" stroke="var(--accent)" stroke-width="2" marker-end="url(#rtA)"/><line x1="280" y1="118" x2="330" y2="118" stroke="var(--accent)" stroke-width="2" marker-end="url(#rtA)"/><line x1="430" y1="118" x2="480" y2="118" stroke="var(--accent)" stroke-width="2" marker-end="url(#rtA)"/><line x1="580" y1="118" x2="610" y2="118" stroke="var(--accent)" stroke-width="2" marker-end="url(#rtA)"/><text class="label" x="340" y="65" text-anchor="middle">각 라우터는 목적지 IP를 보고 "다음 홉"만 결정</text><text class="label" x="340" y="190" text-anchor="middle">IP 헤더의 TTL은 홉마다 1씩 감소. 0이 되면 폐기해 루프를 막는다.</text></svg></div>
+
+    <h3>3) 정적 라우팅과 동적 라우팅</h3>
+    <ul><li><strong>정적 라우팅</strong>: 운영자가 직접 경로를 설정. 단순하고 예측 가능하지만 장애 대응이 수동.</li><li><strong>동적 라우팅</strong>: 라우터끼리 프로토콜로 경로 정보를 교환. 장애 시 자동 우회 가능.</li></ul>
+    <table class="complexity"><thead><tr><th>프로토콜</th><th>범위</th><th>방식</th><th>특징</th></tr></thead><tbody><tr><td>RIP</td><td>내부</td><td>Distance Vector</td><td>단순, hop count 기준, 현재는 거의 안 씀</td></tr><tr><td>OSPF</td><td>내부</td><td>Link State</td><td>조직 내부망에서 빠른 수렴</td></tr><tr><td>BGP</td><td>인터넷</td><td>Path Vector</td><td>AS 간 라우팅, 정책 기반</td></tr></tbody></table>
+
+    <h3>4) NAT의 기본 — SNAT/PAT</h3>
+    <p>가정 공유기의 일반 NAT는 대부분 <strong>PAT(Port Address Translation)</strong>입니다. 여러 내부 장치가 하나의 공인 IP를 공유하므로, 포트까지 바꿔 매핑 테이블을 만듭니다.</p>
+    <div class="viz"><svg width="680" height="300" viewBox="0 0 680 300" role="img" aria-label="NAT table"><defs><marker id="natA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs><rect class="node" x="40" y="55" width="130" height="60" rx="8"/><text class="label" x="105" y="82" text-anchor="middle">PC</text><text class="label" x="105" y="102" text-anchor="middle">192.168.0.10:5000</text><rect class="node" x="40" y="150" width="130" height="60" rx="8"/><text class="label" x="105" y="177" text-anchor="middle">Phone</text><text class="label" x="105" y="197" text-anchor="middle">192.168.0.11:5000</text><rect class="node highlight" x="270" y="95" width="150" height="80" rx="8"/><text class="node-text" x="345" y="125" fill="#1a1a1a">NAT Router</text><text class="label" x="345" y="150" text-anchor="middle" fill="#1a1a1a">203.0.113.5</text><rect class="node" x="520" y="105" width="120" height="60" rx="8"/><text class="node-text" x="580" y="140">Server</text><line x1="170" y1="85" x2="270" y2="120" stroke="var(--accent)" stroke-width="2" marker-end="url(#natA)"/><line x1="170" y1="180" x2="270" y2="150" stroke="var(--accent)" stroke-width="2" marker-end="url(#natA)"/><line x1="420" y1="135" x2="520" y2="135" stroke="var(--accent)" stroke-width="2" marker-end="url(#natA)"/><text class="label" x="345" y="220" text-anchor="middle">192.168.0.10:5000 → 203.0.113.5:40001</text><text class="label" x="345" y="240" text-anchor="middle">192.168.0.11:5000 → 203.0.113.5:40002</text></svg><span class="viz-caption">외부에서 보면 둘 다 203.0.113.5지만, 포트가 달라 NAT가 내부 장치를 구분한다.</span></div>
+
+    <h3>5) NAT 종류</h3>
+    <table class="complexity"><thead><tr><th>종류</th><th>방향</th><th>의미</th><th>예시</th></tr></thead><tbody><tr><td>SNAT</td><td>나가는 트래픽</td><td>출발지 주소 변경</td><td>사설 IP → 공인 IP</td></tr><tr><td>DNAT</td><td>들어오는 트래픽</td><td>목적지 주소 변경</td><td>공인 IP:80 → 내부 서버:8080</td></tr><tr><td>PAT/NAPT</td><td>양방향</td><td>주소 + 포트 변경</td><td>가정 공유기</td></tr><tr><td>1:1 NAT</td><td>고정 매핑</td><td>공인 IP 하나 ↔ 사설 IP 하나</td><td>서버 공개</td></tr></tbody></table>
+
+    <h3>6) 포트포워딩과 헤어핀 NAT</h3>
+    <p><strong>포트포워딩</strong>은 외부에서 들어온 특정 포트를 내부 서버로 보내는 DNAT 규칙입니다. 예를 들어 공유기의 <code>203.0.113.5:443</code>을 내부 <code>192.168.0.20:8443</code>으로 전달합니다.</p>
+    <p><strong>헤어핀 NAT</strong>은 내부 클라이언트가 공유기의 공인 IP로 내부 서버에 접속할 때, 공유기가 다시 내부로 돌려보내는 기능입니다. 지원하지 않으면 내부에서는 도메인 접속이 안 되고, 외부에서는 되는 이상한 현상이 생깁니다.</p>
+
+    <h3>7) NAT traversal — STUN / TURN / ICE</h3>
+    <p>NAT는 외부에서 내부로 먼저 들어오는 연결을 어렵게 만듭니다. WebRTC, VoIP, P2P 게임은 이를 우회해야 합니다.</p>
+    <ul><li><strong>STUN</strong>: "내가 외부에서 어떤 IP:포트로 보이니?"를 알려주는 서버.</li><li><strong>TURN</strong>: 직접 연결이 실패하면 중계 서버가 트래픽을 대신 전달.</li><li><strong>ICE</strong>: 여러 후보 경로(host, srflx, relay)를 모아 가장 좋은 연결을 선택하는 절차.</li></ul>
+    <p>STUN은 싸고 빠르지만 NAT 종류에 따라 실패할 수 있고, TURN은 거의 항상 되지만 서버 비용과 지연이 큽니다.</p>
+
+    <h3>8) 리눅스 명령어</h3>
+<pre><code># 라우팅 테이블 확인
+ip route
+# default via 192.168.0.1 dev wlan0
+# 10.0.0.0/8 via 10.0.0.1 dev eth1
+
+# 특정 목적지로 어떤 경로를 쓰는지
+ip route get 8.8.8.8
+
+# 경로 추적
+traceroute example.com
+mtr example.com
+
+# NAT 규칙 확인(nftables 권장, iptables도 흔함)
+nft list ruleset
+iptables -t nat -L -n -v</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul><li><strong>라우팅 테이블 집약</strong>은 메모리와 조회 비용을 줄이지만, 너무 큰 prefix는 세밀한 제어가 어렵습니다.</li><li><strong>동적 라우팅</strong>은 장애 복구가 빠르지만 설정 복잡도와 잘못된 광고 위험이 있습니다.</li><li><strong>NAT</strong>는 IPv4 주소를 절약하지만, 연결 상태 테이블을 유지해야 하므로 장비 자원을 씁니다.</li><li><strong>NAT traversal</strong>은 P2P 연결 성공률을 높이지만 TURN 중계는 비용·지연이 큽니다.</li></ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul><li><strong>클라우드 VPC</strong> — public subnet은 인터넷 게이트웨이, private subnet은 NAT Gateway를 통해 외부로 나감.</li><li><strong>사내망</strong> — OSPF/BGP로 내부 라우팅, 방화벽에서 NAT 정책.</li><li><strong>쿠버네티스</strong> — Service NAT, kube-proxy, CNI 라우팅.</li><li><strong>WebRTC</strong> — STUN/TURN/ICE가 NAT 뒤 사용자끼리 연결을 만듦.</li><li><strong>장애 진단</strong> — traceroute, mtr, ip route get으로 어디서 막히는지 확인.</li></ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+    <div class="qa"><div class="q">라우팅에서 Longest Prefix Match란?</div><div class="a">여러 경로가 목적지 IP와 매칭될 때 prefix 길이가 가장 긴, 즉 가장 구체적인 경로를 선택하는 규칙입니다. 10.1.2.42는 10.0.0.0/8보다 10.1.2.0/24가 더 구체적이므로 /24 경로를 씁니다.</div></div>
+    <div class="qa"><div class="q">기본 게이트웨이는 무엇인가요?</div><div class="a">로컬 라우팅 테이블에 더 구체적인 경로가 없을 때 보내는 다음 홉입니다. 보통 <code>0.0.0.0/0</code> 경로로 표현하며, 집에서는 공유기가 기본 게이트웨이입니다.</div></div>
+    <div class="qa"><div class="q">SNAT와 DNAT의 차이는?</div><div class="a">SNAT는 나가는 패킷의 출발지 주소를 바꿉니다. 사설 IP가 인터넷에 나갈 때 공인 IP로 바꾸는 게 대표적입니다. DNAT는 들어오는 패킷의 목적지 주소를 바꿉니다. 포트포워딩이 대표 예입니다.</div></div>
+    <div class="qa"><div class="q">NAT가 P2P를 어렵게 만드는 이유는?</div><div class="a">NAT 장비는 내부에서 먼저 만든 매핑이 있어야 외부 응답을 돌려보낼 수 있습니다. 외부 피어가 먼저 내부 장치로 연결하려 하면 매핑이 없어 차단됩니다. 그래서 STUN/TURN/ICE 같은 NAT traversal이 필요합니다.</div></div>
+    <div class="qa"><div class="q">traceroute는 어떻게 경로를 알아내나요?</div><div class="a">TTL을 1부터 증가시키며 패킷을 보냅니다. 각 라우터는 TTL이 0이 되면 ICMP Time Exceeded를 돌려주고, traceroute는 그 응답의 출발지 IP를 기록해 경로를 추정합니다.</div></div>
+    <div class="qa"><div class="q">NAT는 보안 장비인가요?</div><div class="a">NAT는 원래 주소 변환 기술이지 방화벽이 아닙니다. 내부 주소를 숨기고 외부에서 직접 들어오는 연결을 어렵게 만드는 부수 효과가 있지만, 접근 제어는 방화벽 정책으로 별도 관리해야 합니다.</div></div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips"><li><a href="ip-cidr.html">IP 주소 / CIDR</a></li><li><a href="tcp-udp.html">TCP vs UDP</a></li><li><a href="dns.html">DNS</a></li><li><a href="index.html">네트워크 목록</a></li></ul>
+    <nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="ip-cidr.html"><span class="label">이전</span>← IP 주소 / CIDR</a><a href="index.html">📂 네트워크로</a><span class="next"></span></nav>
+  </main>
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

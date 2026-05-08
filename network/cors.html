@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORS · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">네트워크</a><span class="sep">›</span><span>CORS</span>
+    </nav>
+
+    <h1>CORS(Cross-Origin Resource Sharing)</h1>
+
+    <div class="definition">
+      <strong>CORS</strong>는 브라우저가 <strong>다른 출처(Origin)</strong>의 서버 자원에 접근할 수 있도록 허용 여부를 검사하는 보안 메커니즘입니다.
+      기본 원칙은 <strong>Same-Origin Policy</strong>(동일 출처 정책)로 막고, 서버가 <code>Access-Control-*</code> 헤더로 명시적으로 허용하면 브라우저가 응답을 JavaScript에 넘겨줍니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      CORS는 서버끼리 통신할 때 생기는 문제가 아니라 <strong>브라우저가 끼어 있을 때만</strong> 생기는 문제입니다.
+      서버 A가 서버 B를 호출하는 건 마음대로 가능하지만, 브라우저 안의 JavaScript가 다른 출처의 API를 호출하면 브라우저가 보안 검사를 합니다.
+    </p>
+    <p>
+      여기서 출처(Origin)는 <strong>프로토콜 + 호스트 + 포트</strong> 세 가지가 모두 같은 경우에만 동일합니다.
+      <code>https://example.com</code>과 <code>http://example.com</code>은 프로토콜이 다르고,
+      <code>https://example.com</code>과 <code>https://api.example.com</code>은 호스트가 다르므로 다른 출처입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>CORS 오류는 서버가 응답을 안 한 게 아니다</strong></p>
+      <p>
+        서버가 200 OK를 보내도, 브라우저가 CORS 헤더를 보고 "이 응답은 JS에 보여주면 안 돼"라고 판단하면 콘솔에 CORS 오류를 띄웁니다.
+        Network 탭에는 응답이 보이는데 코드에서는 실패하는 이유가 바로 이겁니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      Same-Origin Policy가 없으면 악성 사이트가 사용자의 브라우저 권한을 빌려 은행·메일·사내 시스템에 요청을 보내고 응답을 읽을 수 있습니다.
+      사용자는 이미 해당 서비스에 로그인되어 있으므로 쿠키가 자동으로 붙고, 악성 JS는 민감한 데이터를 훔칠 수 있습니다.
+    </p>
+    <p>
+      다만 현대 웹은 프론트엔드와 API 서버의 도메인이 다른 경우가 많습니다. 그래서 완전히 막는 대신, <strong>서버가 허용한 출처만 예외적으로 열어주는 방식</strong>이 CORS입니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 동일 출처와 교차 출처</h3>
+    <div class="viz">
+      <svg width="680" height="230" viewBox="0 0 680 230" role="img" aria-label="Origin 비교">
+        <rect class="node highlight" x="40" y="40" width="260" height="60" rx="8"/><text class="node-text" x="170" y="70" fill="#1a1a1a">https://app.example.com</text><text class="label" x="170" y="90" text-anchor="middle" fill="#1a1a1a">현재 페이지</text>
+        <rect class="node" x="380" y="25" width="250" height="45" rx="8"/><text class="label" x="505" y="53" text-anchor="middle">https://app.example.com/api</text><text class="label" x="645" y="53" fill="var(--accent)">동일</text>
+        <rect class="node" x="380" y="85" width="250" height="45" rx="8"/><text class="label" x="505" y="113" text-anchor="middle">https://api.example.com</text><text class="label" x="645" y="113" fill="#ff9966">호스트 다름</text>
+        <rect class="node" x="380" y="145" width="250" height="45" rx="8"/><text class="label" x="505" y="173" text-anchor="middle">http://app.example.com</text><text class="label" x="645" y="173" fill="#ff9966">프로토콜 다름</text>
+        <text class="label" x="340" y="215" text-anchor="middle">프로토콜 · 호스트 · 포트가 모두 같아야 Same-Origin</text>
+      </svg>
+      <span class="viz-caption">서브도메인만 달라도 다른 출처다. 쿠키 Domain 설정과 CORS Origin은 별개의 개념이다.</span>
+    </div>
+
+    <h3>2) Simple Request</h3>
+    <p>
+      브라우저가 바로 본 요청을 보내는 경우입니다. 조건은 꽤 제한적입니다:
+    </p>
+    <ul>
+      <li>메서드가 <code>GET</code>, <code>HEAD</code>, <code>POST</code> 중 하나</li>
+      <li>직접 설정한 헤더가 CORS-safelisted 헤더뿐 (<code>Accept</code>, <code>Content-Language</code> 등)</li>
+      <li><code>Content-Type</code>이 <code>application/x-www-form-urlencoded</code>, <code>multipart/form-data</code>, <code>text/plain</code> 중 하나</li>
+    </ul>
+    <p>
+      서버가 응답에 <code>Access-Control-Allow-Origin: https://app.example.com</code>을 주면 성공하고, 없으면 브라우저가 응답을 JS에 넘기지 않습니다.
+    </p>
+
+    <h3>3) Preflight Request</h3>
+    <p>
+      <code>PUT</code>, <code>DELETE</code>, <code>Authorization</code> 헤더, <code>application/json</code> 같은 요청은 실제 요청 전에
+      브라우저가 <strong>OPTIONS preflight</strong>를 먼저 보냅니다. "이런 요청을 보내도 돼?"라고 서버에 사전 허가를 받는 단계입니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="330" viewBox="0 0 680 330" role="img" aria-label="CORS preflight flow">
+        <defs><marker id="corsA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs>
+        <line x1="110" y1="40" x2="110" y2="300" stroke="var(--border)"/><line x1="560" y1="40" x2="560" y2="300" stroke="var(--border)"/>
+        <text class="label" x="110" y="30" text-anchor="middle" font-weight="bold">Browser</text><text class="label" x="560" y="30" text-anchor="middle" font-weight="bold">API Server</text>
+        <line x1="110" y1="80" x2="560" y2="100" stroke="var(--accent)" stroke-width="2" marker-end="url(#corsA)"/>
+        <text class="label" x="335" y="75" text-anchor="middle">OPTIONS /users/42</text>
+        <text class="label" x="335" y="95" text-anchor="middle" font-family="var(--font-mono)" font-size="12">Origin, Access-Control-Request-Method, -Headers</text>
+        <line x1="560" y1="135" x2="110" y2="155" stroke="var(--accent)" stroke-width="2" marker-end="url(#corsA)"/>
+        <text class="label" x="335" y="130" text-anchor="middle">204 No Content</text>
+        <text class="label" x="335" y="150" text-anchor="middle" font-family="var(--font-mono)" font-size="12">Allow-Origin / Allow-Methods / Allow-Headers</text>
+        <line x1="110" y1="210" x2="560" y2="230" stroke="var(--accent)" stroke-width="2" marker-end="url(#corsA)"/>
+        <text class="label" x="335" y="205" text-anchor="middle">PUT /users/42 (실제 요청)</text>
+        <line x1="560" y1="265" x2="110" y2="285" stroke="var(--accent)" stroke-width="2" marker-end="url(#corsA)"/>
+        <text class="label" x="335" y="260" text-anchor="middle">200 OK + Allow-Origin</text>
+      </svg>
+      <span class="viz-caption">preflight는 브라우저가 자동으로 보내며, 응용 코드에서 직접 OPTIONS를 작성하는 것이 아니다.</span>
+    </div>
+
+    <h3>4) 핵심 CORS 헤더</h3>
+    <table class="complexity">
+      <thead><tr><th>헤더</th><th>방향</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>Origin</td><td>요청</td><td>요청을 시작한 출처. 브라우저가 자동 설정</td></tr>
+        <tr><td>Access-Control-Allow-Origin</td><td>응답</td><td>허용할 출처. <code>*</code> 또는 특정 Origin</td></tr>
+        <tr><td>Access-Control-Allow-Methods</td><td>preflight 응답</td><td>허용 메서드 목록</td></tr>
+        <tr><td>Access-Control-Allow-Headers</td><td>preflight 응답</td><td>허용 요청 헤더 목록</td></tr>
+        <tr><td>Access-Control-Allow-Credentials</td><td>응답</td><td>쿠키/인증정보 포함 요청 허용 여부</td></tr>
+        <tr><td>Access-Control-Max-Age</td><td>preflight 응답</td><td>preflight 결과 캐시 시간</td></tr>
+        <tr><td>Access-Control-Expose-Headers</td><td>응답</td><td>JS에서 읽을 수 있게 노출할 응답 헤더</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5) Credentials 모드의 함정</h3>
+    <p>
+      쿠키나 HTTP 인증 정보를 교차 출처 요청에 포함하려면 프론트와 서버가 둘 다 명시해야 합니다.
+    </p>
+<pre><code>// 브라우저 fetch
+fetch("https://api.example.com/me", {
+  credentials: "include"
+});
+</code></pre>
+<pre><code>HTTP/1.1 200 OK
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Credentials: true
+</code></pre>
+    <p>
+      이때 <strong><code>Access-Control-Allow-Origin: *</code>와 credentials는 같이 쓸 수 없습니다</strong>.
+      쿠키를 포함한다는 건 사용자 권한을 싣는다는 뜻이라, 모든 출처(<code>*</code>)에 열면 위험하기 때문입니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="200" viewBox="0 0 680 200" role="img" aria-label="CORS credentials rules">
+        <rect class="node" x="40" y="45" width="280" height="90" rx="8"/>
+        <text class="label" x="180" y="75" text-anchor="middle" font-weight="bold" fill="var(--accent)">가능</text>
+        <text class="label" x="180" y="105" text-anchor="middle" font-family="var(--font-mono)">Allow-Origin: https://app.example.com</text>
+        <text class="label" x="180" y="125" text-anchor="middle" font-family="var(--font-mono)">Allow-Credentials: true</text>
+        <rect class="node" x="360" y="45" width="280" height="90" rx="8"/>
+        <text class="label" x="500" y="75" text-anchor="middle" fill="#ff6b6b" font-weight="bold">불가능</text>
+        <text class="label" x="500" y="105" text-anchor="middle" font-family="var(--font-mono)">Allow-Origin: *</text>
+        <text class="label" x="500" y="125" text-anchor="middle" font-family="var(--font-mono)">Allow-Credentials: true</text>
+        <text class="label" x="340" y="170" text-anchor="middle">credentials 요청은 반드시 특정 Origin을 그대로 echo해야 한다.</text>
+      </svg>
+    </div>
+
+    <h3>6) Java/Spring 예시</h3>
+<pre><code>// Spring MVC 예시 — 특정 출처만 허용
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+            .allowedOrigins("https://app.example.com")
+            .allowedMethods("GET", "POST", "PUT", "DELETE")
+            .allowedHeaders("Authorization", "Content-Type")
+            .allowCredentials(true)
+            .maxAge(3600);
+    }
+}
+</code></pre>
+<pre><code>// 위험한 설정 — 인증이 필요한 API에 쓰면 안 됨
+registry.addMapping("/**")
+    .allowedOriginPatterns("*")
+    .allowedMethods("*")
+    .allowCredentials(true); // 동적 echo와 결합하면 거의 모든 사이트에 쿠키 API를 열 수 있음</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead><tr><th>선택</th><th>장점</th><th>주의점</th></tr></thead>
+      <tbody>
+        <tr><td>특정 Origin allowlist</td><td>가장 안전, 운영 제어 쉬움</td><td>환경별 도메인(dev/stage/prod) 관리 필요</td></tr>
+        <tr><td><code>*</code> 허용</td><td>공개 API에 편함</td><td>credentials 불가, 민감 API엔 금지</td></tr>
+        <tr><td>preflight cache</td><td>OPTIONS 왕복 감소</td><td>정책 변경 반영 지연</td></tr>
+        <tr><td>credentials include</td><td>쿠키 기반 인증 가능</td><td>CSRF와 결합될 수 있어 SameSite/CSRF token 필요</td></tr>
+        <tr><td>프록시로 동일 출처화</td><td>CORS 자체 회피, 배포 단순</td><td>프록시 운영 비용, 라우팅 복잡도</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>SPA + API 서버 분리</strong> — <code>app.example.com</code>에서 <code>api.example.com</code> 호출.</li>
+      <li><strong>로컬 개발</strong> — <code>localhost:3000</code> 프론트가 <code>localhost:8080</code> 백엔드 호출. 포트가 달라 다른 Origin.</li>
+      <li><strong>CDN 정적 자원</strong> — 폰트·이미지·스크립트는 CORS 정책이 필요할 수 있음.</li>
+      <li><strong>사내 API 보안</strong> — allowlist를 정확히 두고, 인증 API엔 <code>*</code> 금지.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+    <div class="qa"><div class="q">CORS는 왜 브라우저에서만 문제가 되나요?</div><div class="a">CORS는 브라우저의 보안 정책입니다. 서버끼리의 HTTP 호출에는 Same-Origin Policy가 적용되지 않습니다. 브라우저가 악성 JS가 사용자의 인증 쿠키를 악용해 다른 출처의 응답을 읽는 것을 막기 위해 검사합니다.</div></div>
+    <div class="qa"><div class="q">Origin은 무엇으로 구성되나요?</div><div class="a">프로토콜, 호스트, 포트 세 가지입니다. 셋 중 하나라도 다르면 다른 Origin입니다. 경로(path)는 Origin에 포함되지 않습니다.</div></div>
+    <div class="qa"><div class="q">preflight는 언제 발생하나요?</div><div class="a">simple request 조건을 벗어날 때 발생합니다. 예를 들어 PUT/DELETE, Authorization 헤더, application/json Content-Type을 쓰면 브라우저가 실제 요청 전에 OPTIONS로 허가를 확인합니다.</div></div>
+    <div class="qa"><div class="q"><code>Access-Control-Allow-Origin: *</code>와 쿠키를 같이 쓸 수 있나요?</div><div class="a">불가능합니다. credentials 요청은 서버가 특정 Origin을 명시해야 하고 <code>Access-Control-Allow-Credentials: true</code>도 필요합니다. 모든 출처에 인증 정보를 노출하면 위험하기 때문입니다.</div></div>
+    <div class="qa"><div class="q">CORS와 CSRF는 어떤 관계인가요?</div><div class="a">CORS는 교차 출처 응답을 JS가 읽는 것을 통제하고, CSRF는 사용자의 쿠키를 이용해 원치 않는 요청을 보내는 공격입니다. CORS가 CSRF를 완전히 막아주지 않습니다. SameSite 쿠키와 CSRF token이 별도로 필요합니다.</div></div>
+    <div class="qa"><div class="q">왜 Postman에서는 되는데 브라우저에서는 CORS 오류가 나나요?</div><div class="a">Postman은 브라우저가 아니므로 Same-Origin Policy를 적용하지 않습니다. 서버 응답 자체는 정상이어도 브라우저가 CORS 헤더 부족으로 JS 접근을 막을 수 있습니다.</div></div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="http-https.html">HTTP / HTTPS</a></li><li><a href="cookies-session-jwt.html">쿠키 / 세션 / JWT</a></li><li><a href="dns.html">DNS</a></li><li><a href="index.html">네트워크 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="dns.html"><span class="label">이전</span>← DNS</a>
+      <a href="index.html">📂 네트워크로</a>
+      <a class="next" href="cookies-session-jwt.html"><span class="label">다음</span>쿠키 / 세션 / JWT →</a>
+    </nav>
+  </main>
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

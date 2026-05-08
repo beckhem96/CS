@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>격리 수준 · 데이터베이스 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">데이터베이스</a>
+      <span class="sep">›</span>
+      <span>격리 수준</span>
+    </nav>
+
+    <h1>격리 수준(Isolation Level)</h1>
+
+    <div class="definition">
+      <strong>격리 수준</strong>은 동시에 실행되는 트랜잭션이 서로를 얼마나 "차단"할지 정하는 단계입니다.
+      ANSI SQL이 정의한 4단계 — <strong>READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE</strong>는
+      각 단계마다 허용되는 이상 현상(Dirty Read, Non-repeatable Read, Phantom 등)이 정확히 정해져 있습니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      트랜잭션을 완벽히 격리하면 결과는 정확하지만 동시성이 0에 수렴해 처리량이 망가집니다.
+      현실에서는 일부 이상을 허용하는 대신 처리량을 얻는 절충을 하고, 그 단계가 격리 수준입니다.
+    </p>
+    <p>
+      각 격리 수준은 "이 단계에서는 어떤 이상 현상까지 막아준다"의 약속입니다.
+      그래서 격리 수준을 외울 때는 <strong>"이 단계에서 무엇을 막아주고 무엇이 여전히 발생하는가"</strong>로 묶어서 외워야 의미가 있습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>비유 — 도서관 자리 예약</strong></p>
+      <p>
+        같은 자리를 두 사람이 동시에 예약하면 충돌합니다. 격리 수준은 그 충돌을 어떻게 다룰지의 정책 — 줄을 세울지, 늦게 온 사람만 자리를 옮길지, 아니면 둘 다 앉히고 싸움이 나면 한 명을 내보낼지 — 와 비슷합니다.
+        엄격할수록 조용하고, 느슨할수록 빠르지만 가끔 헷갈립니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>동시성과 정확성의 조율</strong> — 모두 SERIALIZABLE이면 안전하지만 처리량이 낮다.</li>
+      <li><strong>도메인별 다른 정합성 요구</strong> — 잔액 갱신은 엄격하게, 통계 집계는 느슨하게.</li>
+      <li><strong>장애 복구 시 일관성</strong> — 격리가 약하면 재시도·보상 로직이 더 복잡해진다.</li>
+      <li><strong>락과 MVCC의 행동 결정</strong> — 격리 수준이 곧 옵티마이저·스토리지 엔진의 동작을 좌우.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 동시성 이상 현상 5가지</h3>
+
+    <h4>Dirty Read — 커밋되지 않은 값 읽기</h4>
+    <div class="viz">
+      <svg width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="Dirty Read">
+        <line x1="80"  y1="20" x2="80"  y2="140" stroke="var(--border)"/>
+        <line x1="560" y1="20" x2="560" y2="140" stroke="var(--border)"/>
+        <text x="80"  y="14" text-anchor="middle" font-weight="bold">T1</text>
+        <text x="560" y="14" text-anchor="middle" font-weight="bold">T2</text>
+
+        <text x="80"  y="40" text-anchor="middle" font-size="12" fill="var(--accent)">UPDATE bal=200</text>
+        <text x="80"  y="58" text-anchor="middle" font-size="11" fill="var(--text-muted)">(아직 커밋 X)</text>
+
+        <text x="560" y="80" text-anchor="middle" font-size="12">SELECT bal → 200</text>
+        <text x="560" y="98" text-anchor="middle" font-size="11" fill="var(--text-muted)">(미커밋 값을 봄)</text>
+
+        <text x="80"  y="120" text-anchor="middle" font-size="12" fill="#e74c3c">ROLLBACK</text>
+        <text x="320" y="145" text-anchor="middle" font-size="12" fill="#e74c3c">→ T2가 본 200은 존재하지 않는 값</text>
+      </svg>
+      <span class="viz-caption">아직 커밋되지 않은 변경을 다른 트랜잭션이 읽으면 그 값이 사실이 아닐 수 있다.</span>
+    </div>
+
+    <h4>Non-repeatable Read — 같은 행을 두 번 읽었더니 다른 값</h4>
+    <div class="viz">
+      <svg width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="Non-repeatable Read">
+        <line x1="80"  y1="20" x2="80"  y2="140" stroke="var(--border)"/>
+        <line x1="560" y1="20" x2="560" y2="140" stroke="var(--border)"/>
+        <text x="80"  y="14" text-anchor="middle" font-weight="bold">T1</text>
+        <text x="560" y="14" text-anchor="middle" font-weight="bold">T2</text>
+
+        <text x="80"  y="42" text-anchor="middle" font-size="12">SELECT bal → 100</text>
+
+        <text x="560" y="70" text-anchor="middle" font-size="12" fill="var(--accent)">UPDATE bal=200</text>
+        <text x="560" y="88" text-anchor="middle" font-size="12" fill="var(--accent)">COMMIT</text>
+
+        <text x="80"  y="120" text-anchor="middle" font-size="12" fill="#e74c3c">SELECT bal → 200</text>
+        <text x="320" y="145" text-anchor="middle" font-size="12" fill="#e74c3c">→ 같은 행을 두 번 읽었는데 값이 달라짐</text>
+      </svg>
+      <span class="viz-caption">같은 행에 대한 두 번째 읽기 결과가 첫 번째와 다른 현상.</span>
+    </div>
+
+    <h4>Phantom Read — 같은 조건 검색에 행이 새로 생기거나 사라짐</h4>
+    <div class="viz">
+      <svg width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="Phantom Read">
+        <line x1="80"  y1="20" x2="80"  y2="140" stroke="var(--border)"/>
+        <line x1="560" y1="20" x2="560" y2="140" stroke="var(--border)"/>
+        <text x="80"  y="14" text-anchor="middle" font-weight="bold">T1</text>
+        <text x="560" y="14" text-anchor="middle" font-weight="bold">T2</text>
+
+        <text x="80"  y="42" text-anchor="middle" font-size="12">SELECT count(*) WHERE age &gt; 30 → 5</text>
+
+        <text x="560" y="70" text-anchor="middle" font-size="12" fill="var(--accent)">INSERT (age=35)</text>
+        <text x="560" y="88" text-anchor="middle" font-size="12" fill="var(--accent)">COMMIT</text>
+
+        <text x="80"  y="120" text-anchor="middle" font-size="12" fill="#e74c3c">SELECT count(*) WHERE age &gt; 30 → 6</text>
+        <text x="320" y="145" text-anchor="middle" font-size="12" fill="#e74c3c">→ 같은 조건의 결과 행 수가 달라짐</text>
+      </svg>
+      <span class="viz-caption">같은 조건의 두 번째 SELECT에 "있던 행이 없거나 없던 행이 생기는" 현상.</span>
+    </div>
+
+    <h4>Lost Update — 한쪽의 갱신이 다른 쪽에 의해 덮여 사라짐</h4>
+    <p>
+      두 트랜잭션이 같은 행을 읽고 각자 계산해서 갱신하면, 나중에 쓴 쪽이 먼저 쓴 변화를 덮어버립니다.
+      <code>balance = balance + 10</code>처럼 SQL 한 줄로 쓰면 일어나지 않지만,
+      애플리케이션이 읽고-계산하고-쓰는 패턴(read-modify-write)일 때 흔히 발생합니다.
+    </p>
+
+    <h4>Write Skew — 두 트랜잭션이 서로 다른 행을 갱신했는데, 묶어서 보면 불변식이 깨짐</h4>
+    <p>
+      예: "의사가 최소 1명 이상 당직이어야 한다" 규칙이 있는데, 두 의사가 동시에 본인의 당직을 해제하는 경우.
+      각자는 다른 행을 갱신했지만, 둘 다 커밋되면 당직 의사가 0명이 됩니다. 이건 단순한 락으로는 못 막고, SERIALIZABLE까지 가야 막힙니다.
+    </p>
+
+    <h3>2) 격리 수준별 허용/차단 매트릭스</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>격리 수준</th><th>Dirty Read</th><th>Non-repeatable</th><th>Phantom</th><th>Lost Update</th><th>Write Skew</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>READ UNCOMMITTED</td><td>발생</td><td>발생</td><td>발생</td><td>발생</td><td>발생</td></tr>
+        <tr><td>READ COMMITTED</td><td>차단</td><td>발생</td><td>발생</td><td>발생</td><td>발생</td></tr>
+        <tr><td>REPEATABLE READ</td><td>차단</td><td>차단</td><td>일부* 발생</td><td>차단**</td><td>발생</td></tr>
+        <tr><td>SERIALIZABLE</td><td>차단</td><td>차단</td><td>차단</td><td>차단</td><td>차단</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px; color:var(--text-muted)">
+      * MySQL InnoDB는 REPEATABLE READ에서도 next-key 락으로 Phantom을 사실상 차단. PostgreSQL의 REPEATABLE READ는 스냅샷이라 같은 효과.<br/>
+      ** 구현마다 다름. PostgreSQL REPEATABLE READ는 충돌하면 직렬화 실패로 abort, MySQL은 락으로 직렬화.
+    </p>
+
+    <h3>3) 격리 수준별 동작</h3>
+
+    <h4>READ UNCOMMITTED</h4>
+    <p>다른 트랜잭션의 미커밋 변경을 그대로 읽습니다. 거의 사용하지 않으며, 통계용 dirty read 같이 정확성이 덜 중요한 곳에만 쓰입니다.</p>
+
+    <h4>READ COMMITTED</h4>
+    <p>
+      읽기 시점마다 "그 순간 커밋된 최신 값"을 봅니다. <strong>대부분의 RDBMS의 기본값</strong>(PostgreSQL, Oracle, SQL Server).
+      Dirty read는 못 보지만, 같은 트랜잭션 안에서 같은 행을 다시 읽으면 다른 값이 나올 수 있습니다.
+    </p>
+
+    <h4>REPEATABLE READ</h4>
+    <p>
+      트랜잭션 시작 시점의 <strong>일관된 스냅샷</strong>을 보고, 트랜잭션 동안 그 스냅샷이 바뀌지 않습니다.
+      MySQL InnoDB의 기본값. PostgreSQL은 스냅샷이 시간에 고정되어 Phantom도 자연스럽게 막히고, 충돌 시 직렬화 실패로 abort합니다.
+      MySQL InnoDB는 next-key 락으로 인덱스 범위에 새 행이 끼어드는 것을 막습니다.
+    </p>
+
+    <h4>SERIALIZABLE</h4>
+    <p>
+      모든 트랜잭션이 마치 한 번에 하나씩 차례로 실행된 것처럼 보이도록 보장합니다.
+      MySQL은 SELECT에 자동 공유 락을 걸어 직렬화하고, PostgreSQL은 <strong>SSI(Serializable Snapshot Isolation)</strong>로 충돌이 감지되면 직렬화 실패를 던져 재시도하게 합니다.
+      가장 안전하지만 충돌 시 retry 로직이 필요합니다.
+    </p>
+
+    <h3>4) 격리 수준 설정 SQL</h3>
+<pre><code>-- 표준 SQL
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+-- 세션 단위
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+-- Spring
+@Transactional(isolation = Isolation.REPEATABLE_READ)
+public void someBusinessOp() { ... }
+</code></pre>
+
+    <h3>5) 어떻게 막을까 — Lost Update 방지</h3>
+    <p>Lost Update는 격리 수준만으로 안 막히는 케이스가 많습니다. 다음 셋 중 하나를 명시적으로 적용합니다.</p>
+<pre><code>-- 1) 비관적 락 (FOR UPDATE)
+BEGIN;
+SELECT balance FROM account WHERE id='A' FOR UPDATE;  -- 행 락
+-- 애플리케이션에서 계산
+UPDATE account SET balance = ? WHERE id='A';
+COMMIT;
+
+-- 2) 낙관적 락 (버전 컬럼)
+UPDATE account
+SET balance = ?, version = version + 1
+WHERE id='A' AND version = 5;   -- 영향 받은 행이 0이면 충돌 → 재시도
+
+-- 3) 원자적 SQL
+UPDATE account SET balance = balance - 10 WHERE id='A';
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>격리 수준</th><th>처리량</th><th>지연(대기/재시도)</th><th>구현 복잡도</th><th>왜 그런가?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>READ UNCOMMITTED</td><td>매우 높음</td><td>거의 없음</td><td>낮음</td><td>락 거의 X. 정확성 거의 안 보장</td></tr>
+        <tr><td>READ COMMITTED</td><td>높음</td><td>낮음</td><td>중</td><td>읽기 시점 락만, 대부분의 OLTP에 적합</td></tr>
+        <tr><td>REPEATABLE READ</td><td>중</td><td>중</td><td>중~상</td><td>스냅샷 유지 비용, MVCC GC 필요</td></tr>
+        <tr><td>SERIALIZABLE</td><td>낮음</td><td>높음(직렬화 실패 시 재시도)</td><td>상</td><td>충돌 탐지·재시도 로직 추가 필요</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>일반 웹 서비스 OLTP</strong> — READ COMMITTED가 무난한 기본값.</li>
+      <li><strong>일관된 보고서 / 정산</strong> — REPEATABLE READ로 트랜잭션 동안 데이터 흔들림 방지.</li>
+      <li><strong>금융 정합성 / 재고 → 주문</strong> — SERIALIZABLE 또는 명시적 락(FOR UPDATE) 사용.</li>
+      <li><strong>분산 환경</strong> — 격리만으로 부족하므로 Saga·Outbox·이벤트 소싱으로 보완.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">격리 수준 4단계와 발생 가능한 이상 현상을 매핑해 보세요.</div>
+      <div class="a">
+        READ UNCOMMITTED: Dirty Read·Non-repeatable·Phantom 모두 발생.
+        READ COMMITTED: Dirty만 차단.
+        REPEATABLE READ: Non-repeatable까지 차단. Phantom은 표준상 발생 가능하지만 MySQL InnoDB는 next-key로, PostgreSQL은 스냅샷으로 사실상 차단.
+        SERIALIZABLE: 모두 차단(Lost Update, Write Skew 포함).
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">MySQL과 PostgreSQL의 기본 격리 수준이 다른 이유는?</div>
+      <div class="a">
+        MySQL InnoDB는 REPEATABLE READ를 기본으로 두고 next-key 락으로 Phantom까지 막아 안정적인 동작을 보장합니다.
+        PostgreSQL은 READ COMMITTED를 기본으로 동시성과 단순성을 우선하고, 더 강한 보장이 필요하면 명시적으로 올리도록 권장합니다.
+        둘 다 자기 구현 방식(MVCC + 락 vs 순수 MVCC)에 가장 잘 맞는 기본값입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Lost Update를 어떻게 막을 수 있나요?</div>
+      <div class="a">
+        세 가지 방법이 있습니다.
+        ① 비관적 락(<code>SELECT ... FOR UPDATE</code>)으로 읽는 즉시 행을 잠근다.
+        ② 낙관적 락(version 컬럼)으로 UPDATE 시점에 충돌을 감지해 재시도.
+        ③ 한 줄 SQL로 원자적으로 처리(<code>SET balance = balance - ?</code>).
+        각각 충돌 빈도, 트랜잭션 길이, 비즈니스 의미에 따라 골라 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">SERIALIZABLE을 써도 되는데 보통 안 쓰는 이유는?</div>
+      <div class="a">
+        성능 비용입니다. MySQL은 SELECT에도 락이 자동으로 걸려 동시성이 크게 줄고,
+        PostgreSQL의 SSI는 충돌 시 직렬화 실패 예외를 던져 애플리케이션이 재시도해야 합니다.
+        대부분의 정합성은 READ COMMITTED + 명시적 락(FOR UPDATE) + 낙관적 락으로 충분히 다룰 수 있어, SERIALIZABLE은 정말 필요한 경계 영역에만 사용합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Phantom Read와 Non-repeatable Read의 차이는?</div>
+      <div class="a">
+        Non-repeatable은 같은 <strong>행 하나</strong>를 두 번 읽었을 때 값이 달라지는 현상이고,
+        Phantom은 같은 <strong>조건의 결과 집합</strong>이 달라지는 현상입니다(행이 새로 끼거나 사라짐).
+        그래서 행 단위 락으로 Non-repeatable은 막을 수 있어도 Phantom은 막을 수 없고, 범위 락(InnoDB의 next-key) 또는 스냅샷이 필요합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Write Skew는 왜 REPEATABLE READ로 못 막나요?</div>
+      <div class="a">
+        두 트랜잭션이 <em>서로 다른 행</em>을 갱신하기 때문입니다. 각자가 본 스냅샷에서는 불변식이 유지되지만, 둘 다 커밋되면 묶어서 봤을 때 깨집니다.
+        예: 두 의사가 각자 자기 당직을 해제하는 경우. 막으려면 SERIALIZABLE(SSI)이나 <code>SELECT ... FOR UPDATE</code>로 관련 행 전체를 잠가야 합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="transaction-acid.html">트랜잭션과 ACID</a></li>
+      <li><a href="lock.html">락</a></li>
+      <li><a href="mvcc.html">MVCC</a></li>
+      <li><a href="index.html">데이터베이스 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="transaction-acid.html">
+        <span class="label">이전</span>
+        ← 트랜잭션과 ACID
+      </a>
+      <a href="index.html">📂 데이터베이스로</a>
+      <a class="next" href="lock.html">
+        <span class="label">다음</span>
+        락 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

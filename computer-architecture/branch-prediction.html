@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPU 분기 예측 · 컴퓨터구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">컴퓨터구조</a>
+      <span class="sep">›</span>
+      <span>CPU 분기 예측</span>
+    </nav>
+
+    <h1>CPU 분기 예측(Branch Prediction)</h1>
+
+    <div class="definition">
+      <strong>분기 예측</strong>은 CPU가 <code>if</code>, <code>while</code>, jump 같은 분기 명령의 결과를 알기 전에
+      <strong>어느 쪽으로 실행될지 미리 추측</strong>하는 기법입니다. 파이프라인을 비우지 않고 계속 명령어를 가져오기 위해 필요합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      파이프라인 CPU는 다음 명령어를 미리 가져와야 처리량이 높습니다. 그런데 분기 명령을 만나면 다음 주소가 두 갈래로 나뉩니다.
+      조건이 참이면 A로, 거짓이면 B로 가야 하죠. 조건 계산이 끝날 때까지 기다리면 파이프라인이 멈춥니다.
+      그래서 CPU는 과거 패턴을 보고 "이번엔 아마 이쪽"이라고 예측하고 먼저 실행을 시작합니다.
+    </p>
+    <p>
+      예측이 맞으면 파이프라인은 계속 흐릅니다. 예측이 틀리면 잘못 가져온 명령어들을 버리고(flush), 올바른 주소에서 다시 가져와야 합니다.
+      이 비용을 <strong>branch misprediction penalty</strong>라고 합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>예측은 성능 최적화지만, 보안 이슈와도 연결된다</strong></p>
+      <p>
+        CPU는 예측한 경로를 실제로 먼저 실행해볼 수 있습니다(speculative execution).
+        나중에 틀렸다고 결과를 버려도, 캐시 상태 같은 미세한 흔적은 남을 수 있습니다.
+        Spectre 계열 공격은 이런 특성을 악용한 대표적인 side-channel 공격입니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      분기는 프로그램에 매우 자주 등장합니다. 조건문, 반복문, 함수 호출/반환, switch 모두 분기입니다.
+      파이프라인이 깊은 CPU에서 분기 결과를 기다리면 매번 여러 사이클이 낭비됩니다.
+      분기 예측은 이 대기 시간을 숨겨 높은 IPC를 유지하는 핵심 장치입니다.
+    </p>
+    <p>
+      특히 서버 코드처럼 조건 분기가 많은 프로그램에서도 예측 가능한 패턴이면 성능이 좋고,
+      데이터가 랜덤해 분기 결과가 들쭉날쭉하면 같은 코드라도 느려질 수 있습니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 예측 성공과 실패</h3>
+    <div class="viz">
+      <svg width="640" height="250" viewBox="0 0 640 250" role="img" aria-label="분기 예측 성공과 실패">
+        <defs>
+          <marker id="bpA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="60" y="95" width="100" height="50" rx="8"/><text class="node-text" x="110" y="120">BRANCH</text>
+        <rect class="node highlight" x="240" y="40" width="120" height="50" rx="8"/><text class="node-text" x="300" y="65" fill="#1a1a1a" font-weight="bold">Taken path</text>
+        <rect class="node" x="240" y="155" width="120" height="50" rx="8"/><text class="node-text" x="300" y="180">Not taken</text>
+        <line x1="160" y1="110" x2="240" y2="65" stroke="var(--accent)" stroke-width="2" marker-end="url(#bpA)"/>
+        <line x1="160" y1="132" x2="240" y2="180" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#bpA)"/>
+        <text class="label" x="385" y="65" fill="var(--accent)">예측 성공: 그대로 진행</text>
+        <text class="label" x="385" y="180">예측 실패: 잘못 가져온 명령어 flush</text>
+        <text class="label" x="60" y="225">분기 결과가 확정되기 전에도 CPU는 한쪽 경로를 미리 가져오고 실행한다.</text>
+      </svg>
+      <span class="viz-caption">맞으면 이득, 틀리면 flush 비용. 예측 정확도가 성능을 좌우한다.</span>
+    </div>
+
+    <h3>2) 2-bit saturating counter</h3>
+    <p>
+      가장 유명한 기본 예측기는 각 분기마다 2비트 상태를 두고, 최근 결과에 따라 상태를 조금씩 이동합니다.
+      한 번 틀렸다고 바로 방향을 바꾸지 않아 루프 끝의 한 번 다른 결과에 덜 흔들립니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="230" viewBox="0 0 640 230" role="img" aria-label="2비트 분기 예측기">
+        <defs>
+          <marker id="sat" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="35" y="85" width="120" height="50" rx="8"/><text class="node-text" x="95" y="105">Strong NT</text><text class="label" x="95" y="125" text-anchor="middle">00</text>
+        <rect class="node" x="185" y="85" width="120" height="50" rx="8"/><text class="node-text" x="245" y="105">Weak NT</text><text class="label" x="245" y="125" text-anchor="middle">01</text>
+        <rect class="node highlight" x="335" y="85" width="120" height="50" rx="8"/><text class="node-text" x="395" y="105" fill="#1a1a1a" font-weight="bold">Weak T</text><text class="label" x="395" y="125" text-anchor="middle" fill="#1a1a1a">10</text>
+        <rect class="node highlight" x="485" y="85" width="120" height="50" rx="8"/><text class="node-text" x="545" y="105" fill="#1a1a1a" font-weight="bold">Strong T</text><text class="label" x="545" y="125" text-anchor="middle" fill="#1a1a1a">11</text>
+        <line x1="155" y1="110" x2="185" y2="110" class="arrow" marker-end="url(#sat)"/>
+        <line x1="305" y1="110" x2="335" y2="110" class="arrow" marker-end="url(#sat)"/>
+        <line x1="455" y1="110" x2="485" y2="110" class="arrow" marker-end="url(#sat)"/>
+        <text class="label" x="320" y="55" text-anchor="middle">Taken이면 오른쪽으로, Not Taken이면 왼쪽으로 이동</text>
+        <text class="label" x="320" y="180" text-anchor="middle">왼쪽 두 상태는 Not Taken 예측, 오른쪽 두 상태는 Taken 예측</text>
+      </svg>
+      <span class="viz-caption">루프는 대부분 taken이다가 마지막 한 번 not taken이므로 2-bit 예측기가 잘 맞는다.</span>
+    </div>
+
+    <h3>3) Java 코드와 분기 예측</h3>
+<pre><code>// 예측 쉬움: 정렬된 데이터는 조건 결과가 한쪽으로 몰림
+int count = 0;
+for (int x : sortedArray) {
+    if (x &gt; 100) count++;
+}
+
+// 예측 어려움: 랜덤 데이터는 참/거짓이 불규칙
+for (int x : randomArray) {
+    if (x &gt; 100) count++;
+}
+
+// 실제 성능은 JVM JIT, 벡터화, CPU 모델에 따라 달라지지만,
+// 불규칙한 분기는 파이프라인 flush 비용을 만들 수 있다.
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>기법</th><th>장점</th><th>trade-off</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>정적 예측</td><td>단순, 하드웨어 비용 낮음</td><td>패턴 적응 불가</td></tr>
+        <tr><td>동적 예측</td><td>실행 이력으로 정확도 향상</td><td>예측 테이블/전력/복잡도 증가</td></tr>
+        <tr><td>BTB</td><td>분기 대상 주소를 빠르게 예측</td><td>테이블 충돌 가능</td></tr>
+        <tr><td>Speculative Execution</td><td>대기 시간 숨김</td><td>보안 side-channel 위험</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>성능 최적화</strong> — hot loop의 분기 패턴이 성능에 영향을 줍니다.</li>
+      <li><strong>컴파일러/JIT</strong> — branch layout, profile-guided optimization으로 예측 성공률을 높입니다.</li>
+      <li><strong>보안</strong> — Spectre, branch target injection 같은 공격 이해에 필요합니다.</li>
+      <li><strong>데이터 처리</strong> — branchless programming, SIMD가 분기 비용을 줄이는 데 사용됩니다.</li>
+      <li><strong>시스템 튜닝</strong> — 예측 실패는 perf 같은 프로파일러에서 branch-misses 지표로 관찰할 수 있습니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">분기 예측은 왜 필요한가요?</div>
+      <div class="a">
+        파이프라인 CPU가 다음 명령어를 계속 가져오려면 분기 결과를 기다릴 수 없습니다.
+        분기 예측은 다음 경로를 미리 추측해 파이프라인을 채워두고, 맞으면 처리량을 유지합니다.
+        틀리면 잘못 가져온 명령어를 버리고 다시 시작해야 하므로 비용이 발생합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">분기 예측 실패가 왜 비싼가요?</div>
+      <div class="a">
+        CPU가 예측한 경로의 명령어들을 이미 파이프라인에 넣어둔 상태이기 때문입니다.
+        예측이 틀리면 이 명령어들을 flush하고 올바른 주소에서 다시 fetch해야 합니다.
+        파이프라인이 깊을수록 버려야 할 작업이 많아 비용이 커집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">2-bit predictor가 1-bit predictor보다 나은 이유는요?</div>
+      <div class="a">
+        1-bit는 한 번 결과가 바뀌면 바로 예측 방향을 바꿉니다.
+        루프처럼 대부분 taken이다가 마지막 한 번 not taken인 패턴에서는 루프 종료와 다음 루프 시작에서 연속으로 틀릴 수 있습니다.
+        2-bit는 강한/약한 상태를 둬 한 번 틀렸다고 바로 방향을 바꾸지 않아 더 안정적입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">branchless code는 항상 좋은가요?</div>
+      <div class="a">
+        항상 그렇지는 않습니다. 분기가 예측 가능하면 일반 분기가 더 빠를 수 있고, branchless 코드는 불필요한 연산을 더 할 수 있습니다.
+        하지만 분기 결과가 랜덤하고 misprediction이 많다면 조건부 이동, 비트 연산, SIMD 등 branchless 기법이 유리할 수 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="pipelining.html">파이프라이닝</a></li>
+      <li><a href="instruction-cycle.html">명령어 사이클</a></li>
+      <li><a href="tlb.html">TLB</a></li>
+      <li><a href="cache-coherence.html">캐시 일관성(MESI)</a></li>
+      <li><a href="index.html">컴퓨터구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="tlb.html">
+        <span class="label">이전</span>
+        ← TLB
+      </a>
+      <a href="index.html">📂 컴퓨터구조로</a>
+      <a class="next" href="cache-coherence.html">
+        <span class="label">다음</span>
+        캐시 일관성 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

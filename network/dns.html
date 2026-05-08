@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DNS · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">네트워크</a>
+      <span class="sep">›</span>
+      <span>DNS</span>
+    </nav>
+
+    <h1>DNS(Domain Name System)</h1>
+
+    <div class="definition">
+      <strong>DNS</strong>는 사람이 외우기 쉬운 <strong>도메인 이름(example.com)</strong>을
+      컴퓨터가 통신에 쓰는 <strong>IP 주소(93.184.216.34)</strong>로 바꿔 주는 분산 데이터베이스이자 프로토콜입니다.
+      전 세계에 분산된 네임서버들이 <strong>계층 구조</strong>로 협력해 동작하며, <strong>UDP 53번 포트</strong>를 기본으로 사용합니다.
+      모든 인터넷 통신의 첫 단계에서 거의 항상 호출됩니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      DNS는 인터넷의 <strong>주소록</strong>입니다. 우리는 "google.com"이라고 외우지만 컴퓨터는 "142.250.196.142"가 필요합니다.
+      이 변환을 누가 어떻게 해주는가가 DNS의 전부입니다. 그런데 모든 도메인을 한 서버가 알 수는 없으니, 도메인을 계층으로 나눠 책임을 분산했습니다 —
+      <code>.</code>(루트) → <code>com</code>(TLD) → <code>example.com</code>(도메인) → <code>www.example.com</code>(서브도메인).
+    </p>
+    <p>
+      각 계층마다 그 영역을 관리하는 <strong>권한 있는 네임서버(authoritative name server)</strong>가 있고,
+      클라이언트와 권한 서버 사이를 중개하는 <strong>리졸버(resolver)</strong>가 있습니다.
+      우리가 보통 ISP나 8.8.8.8(구글), 1.1.1.1(Cloudflare)을 가리켜 "DNS 서버"라고 부르는 건 사실 이 리졸버입니다.
+    </p>
+    <p>
+      DNS의 또 다른 핵심은 <strong>캐시</strong>입니다. 같은 질문을 매번 루트까지 물으면 시스템이 마비됩니다.
+      그래서 모든 단계(브라우저, OS, 리졸버, 네임서버)가 응답을 캐싱하고, 응답마다 붙은 <strong>TTL</strong> 동안만 유효합니다.
+      이 덕분에 DNS는 <em>강한 일관성보다 가용성·속도</em>를 택한 시스템이 되어 있습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>"DNS 캐시" 한 단어가 사실은 4단계</strong></p>
+      <p>
+        브라우저 캐시 → OS 리졸버 캐시 → 회사/홈 라우터 캐시 → ISP 리졸버 캐시.
+        한 번이라도 hit하면 그 이상 안 올라갑니다. 그래서 <em>DNS 변경이 즉시 반영되지 않는다</em>는 흔한 경험이 생깁니다 — 어디선가 캐시가 살아 있는 거죠.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      IP 주소만으로 인터넷을 쓰려면 두 가지가 어렵습니다.
+      첫째, <strong>외우기 힘듭니다</strong> — 142.250.196.142와 google.com 중 어느 쪽이 더 기억하기 쉬운가요?
+      둘째, <strong>주소가 바뀌면 모두 알려야 합니다</strong> — 서비스가 IP를 바꿀 때마다 모든 사용자가 새 주소를 알아야 하면 운영이 불가능합니다.
+      DNS는 도메인이라는 안정적인 식별자를 두고, 그 뒤의 IP는 자유롭게 바꿀 수 있게 해 줍니다.
+    </p>
+    <p>
+      또 DNS는 <strong>로드 분산과 장애 대응</strong>의 도구이기도 합니다. 한 도메인에 여러 IP를 등록하면(라운드 로빈), 클라이언트가 분산되어 접속합니다.
+      지역별로 다른 IP를 응답하면(GeoDNS) 가까운 서버로 보낼 수 있고, 헬스체크와 결합하면 장애 시 자동으로 살아 있는 IP만 응답합니다(Failover).
+      현대 CDN의 핵심 메커니즘 중 하나가 바로 이런 동적 DNS 응답입니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 도메인 이름의 계층 구조</h3>
+    <p>
+      도메인은 오른쪽에서 왼쪽으로 읽으면 계층이 보입니다. <code>www.example.com.</code>(끝의 점은 루트)에서:
+    </p>
+    <div class="viz">
+      <svg width="680" height="280" viewBox="0 0 680 280" role="img" aria-label="도메인 계층 트리">
+        <rect class="node highlight" x="290" y="30" width="100" height="40" rx="6"/>
+        <text class="node-text" x="340" y="55" fill="#1a1a1a">. (root)</text>
+
+        <line x1="340" y1="70" x2="120" y2="100" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <line x1="340" y1="70" x2="340" y2="100" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <line x1="340" y1="70" x2="560" y2="100" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+        <rect class="node" x="60" y="100" width="120" height="40" rx="6"/>
+        <text class="node-text" x="120" y="125">com (TLD)</text>
+        <rect class="node" x="280" y="100" width="120" height="40" rx="6"/>
+        <text class="node-text" x="340" y="125">org</text>
+        <rect class="node" x="500" y="100" width="120" height="40" rx="6"/>
+        <text class="node-text" x="560" y="125">kr (ccTLD)</text>
+
+        <line x1="120" y1="140" x2="60" y2="170" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <line x1="120" y1="140" x2="180" y2="170" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+        <rect class="node" x="20" y="170" width="120" height="40" rx="6"/>
+        <text class="node-text" x="80" y="195">example.com</text>
+        <rect class="node" x="160" y="170" width="120" height="40" rx="6"/>
+        <text class="node-text" x="220" y="195">google.com</text>
+
+        <line x1="80" y1="210" x2="40" y2="240" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <line x1="80" y1="210" x2="120" y2="240" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+        <rect class="node highlight" x="0" y="240" width="80" height="35" rx="6"/>
+        <text class="label" x="40" y="262" text-anchor="middle" fill="#1a1a1a" font-size="11">www.example.com</text>
+        <rect class="node" x="90" y="240" width="80" height="35" rx="6"/>
+        <text class="label" x="130" y="262" text-anchor="middle" font-size="11">api.example.com</text>
+
+        <text class="label" x="450" y="245">각 노드를 "라벨", 라벨을 점으로 이은 것이 "도메인 이름"</text>
+        <text class="label" x="450" y="265">전체 길이 ≤ 253자, 라벨 1개당 ≤ 63자</text>
+      </svg>
+      <span class="viz-caption">루트는 13개 logical 서버(A~M)로 구현되며, 그 아래 TLD, 도메인, 서브도메인이 트리를 이룬다.</span>
+    </div>
+
+    <h3>2) 재귀 질의(Recursive)와 반복 질의(Iterative)</h3>
+    <p>
+      클라이언트가 리졸버에 보내는 건 <strong>재귀 질의</strong>입니다 — "최종 답을 찾아서 가져와줘". 리졸버는 그 책임을 떠안고 답을 찾을 때까지 일합니다.
+      반면 리졸버가 권한 서버들에게 묻는 건 <strong>반복 질의</strong>입니다 — "다음에 누구한테 물어야 해?"라고 묻고, 답을 못 주면 더 위에서 더 아래로 내려갑니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="380" viewBox="0 0 680 380" role="img" aria-label="DNS 재귀 질의 흐름">
+        <defs>
+          <marker id="dnsA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <rect class="node" x="30" y="40" width="120" height="50" rx="6"/>
+        <text class="node-text" x="90" y="70">Client</text>
+
+        <rect class="node highlight" x="270" y="40" width="140" height="50" rx="6"/>
+        <text class="node-text" x="340" y="70" fill="#1a1a1a">Recursive Resolver</text>
+
+        <line x1="150" y1="65" x2="270" y2="65" stroke="var(--accent)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="210" y="58" text-anchor="middle">① www.example.com?</text>
+
+        <rect class="node" x="500" y="40" width="140" height="50" rx="6"/>
+        <text class="node-text" x="570" y="70">Root (.)</text>
+
+        <line x1="410" y1="65" x2="500" y2="65" stroke="var(--accent)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="455" y="58" text-anchor="middle" font-size="11">② query</text>
+        <line x1="500" y1="80" x2="410" y2="80" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="455" y="100" text-anchor="middle" font-size="11">③ "com 권한서버는 X.X.X.X"</text>
+
+        <rect class="node" x="500" y="130" width="140" height="50" rx="6"/>
+        <text class="node-text" x="570" y="160">.com TLD</text>
+
+        <line x1="410" y1="155" x2="500" y2="155" stroke="var(--accent)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="455" y="148" text-anchor="middle" font-size="11">④ query</text>
+        <line x1="500" y1="170" x2="410" y2="170" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="455" y="190" text-anchor="middle" font-size="11">⑤ "example.com NS는 Y.Y.Y.Y"</text>
+
+        <rect class="node" x="500" y="220" width="140" height="50" rx="6"/>
+        <text class="node-text" x="570" y="245">example.com</text>
+        <text class="node-text" x="570" y="262" font-size="11">(authoritative)</text>
+
+        <line x1="410" y1="245" x2="500" y2="245" stroke="var(--accent)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="455" y="238" text-anchor="middle" font-size="11">⑥ query</text>
+        <line x1="500" y1="260" x2="410" y2="260" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="455" y="280" text-anchor="middle" font-size="11">⑦ "A 93.184.216.34"</text>
+
+        <line x1="270" y1="80" x2="150" y2="80" stroke="var(--accent)" stroke-width="2" marker-end="url(#dnsA)"/>
+        <text class="label" x="210" y="100" text-anchor="middle">⑧ "93.184.216.34"</text>
+
+        <text class="label" x="200" y="320" text-anchor="middle" fill="var(--accent)">클라이언트 → 리졸버: 재귀 질의 (한 번 묻고 답 받음)</text>
+        <text class="label" x="200" y="340" text-anchor="middle" fill="var(--text-muted)">리졸버 → 권한 서버들: 반복 질의 (단계별로 더 아래로)</text>
+      </svg>
+      <span class="viz-caption">실제로는 캐시가 있어 대부분의 질의가 ②~⑦을 건너뛰고 ⑧에서 바로 답이 옵니다.</span>
+    </div>
+
+    <h3>3) 주요 레코드 종류</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>타입</th><th>의미</th><th>예시</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>도메인 → IPv4 주소</td><td>example.com → 93.184.216.34</td></tr>
+        <tr><td>AAAA</td><td>도메인 → IPv6 주소</td><td>example.com → 2606:2800:220:1::</td></tr>
+        <tr><td>CNAME</td><td>도메인 → 다른 도메인의 별칭</td><td>www.example.com → example.com</td></tr>
+        <tr><td>MX</td><td>해당 도메인의 메일 서버</td><td>example.com → mail1.example.com (priority 10)</td></tr>
+        <tr><td>NS</td><td>해당 도메인을 책임지는 네임서버</td><td>example.com → ns1.example.com</td></tr>
+        <tr><td>SOA</td><td>존(zone)의 시작 정보, 시리얼/TTL/책임자</td><td>example.com SOA 레코드</td></tr>
+        <tr><td>TXT</td><td>임의 텍스트 (SPF, DKIM, 도메인 검증 등)</td><td>"v=spf1 include:_spf.google.com ~all"</td></tr>
+        <tr><td>PTR</td><td>IP → 도메인 (역방향 조회)</td><td>34.216.184.93.in-addr.arpa → example.com</td></tr>
+        <tr><td>SRV</td><td>서비스 위치 정보 (포트 포함)</td><td>_sip._tcp.example.com → 5060 sip.example.com</td></tr>
+        <tr><td>CAA</td><td>이 도메인에 인증서를 발급할 수 있는 CA 지정</td><td>example.com CAA "letsencrypt.org"</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>CNAME의 함정</strong>: CNAME은 다른 모든 레코드와 공존할 수 없습니다. 그래서 도메인 루트(example.com)에는 CNAME을 못 두고,
+      AWS는 ALIAS, Cloudflare는 CNAME flattening 같은 우회를 제공합니다.
+    </p>
+
+    <h3>4) TTL과 캐시</h3>
+    <p>
+      각 응답에는 <strong>TTL(Time To Live)</strong>이 같이 옵니다 — "이만큼 초 동안은 캐시해도 돼". TTL이 짧으면 변경 반영이 빠르지만 트래픽이 늘고,
+      길면 트래픽은 줄지만 변경이 늦게 퍼집니다. 일반적인 값:
+    </p>
+    <ul>
+      <li><strong>안정적인 서비스</strong>: 24시간(86400) — 트래픽 절약</li>
+      <li><strong>빠른 변경이 예상되는 도메인</strong>: 5~10분(300~600) — 마이그레이션 직전 변경 권장</li>
+      <li><strong>장애 대응 / DNS 기반 페일오버</strong>: 30~60초 — 빠른 전환 가능, 다만 일부 캐시는 무시할 수 있음</li>
+    </ul>
+    <p>
+      <strong>부정 캐싱(negative caching)</strong>도 있습니다. "이 도메인은 없다(NXDOMAIN)"는 답도 캐시되며, SOA의 minimum 필드가 그 기간을 결정합니다.
+      덕분에 존재하지 않는 도메인 질의로 권한 서버를 괴롭히지 않게 됩니다.
+    </p>
+
+    <h3>5) UDP가 기본이고, 큰 응답은 TCP</h3>
+    <p>
+      DNS는 짧은 질의응답이라 UDP 53번이 기본입니다 — 핸드셰이크 비용을 아끼기 위해서. 그러나 UDP의 한계로 다음 두 경우엔 TCP로 폴백합니다:
+    </p>
+    <ul>
+      <li><strong>응답이 512바이트 초과</strong> — 전통적 DNS의 UDP 응답 한도. 그러면 응답에 TC(Truncated) 비트가 켜지고 클라이언트가 TCP로 다시 묻습니다. EDNS0 옵션으로 4096바이트까지 늘릴 수 있어 요즘은 이 폴백이 줄었습니다.</li>
+      <li><strong>존 전송(AXFR/IXFR)</strong> — 권한 서버 간 존 데이터 동기화는 항상 TCP.</li>
+    </ul>
+
+    <h3>6) DoH, DoT — 암호화된 DNS</h3>
+    <p>
+      전통적인 DNS는 평문이라 누구나 들여다볼 수 있습니다. ISP는 사용자가 어떤 사이트에 접속했는지 다 알 수 있고, 공격자가 응답을 위조할 수도 있습니다.
+      이를 막기 위해:
+    </p>
+    <ul>
+      <li><strong>DoT (DNS over TLS)</strong> — TCP 853번 위에 TLS. 전용 포트라 감지·차단이 쉬움.</li>
+      <li><strong>DoH (DNS over HTTPS)</strong> — HTTPS 443번 위에 DNS 메시지를 실어 보냄. 일반 HTTPS와 구분이 안 되어 차단이 어려움. 브라우저(Firefox, Chrome) 기본 채택.</li>
+      <li><strong>DoQ (DNS over QUIC)</strong> — 비교적 최근 표준. UDP 위 QUIC을 활용해 지연을 줄임.</li>
+    </ul>
+
+    <h3>7) 한 번의 페이지 로드에서 일어나는 일</h3>
+    <ol>
+      <li>브라우저 캐시 검사 → 있으면 끝.</li>
+      <li>OS 리졸버 캐시 검사(<code>nscd</code>, <code>systemd-resolved</code>) → 있으면 끝.</li>
+      <li>설정된 DNS 서버(보통 ISP 또는 8.8.8.8)에 재귀 질의.</li>
+      <li>리졸버가 자기 캐시 → 루트 → TLD → 권한 서버 순으로 반복 질의 후 응답.</li>
+      <li>받은 IP로 TCP 연결 → TLS 핸드셰이크 → HTTP 요청.</li>
+    </ol>
+    <p>
+      여기서 1~2가 모두 hit이면 RTT 0이지만, 4까지 가면 추가로 수십~수백 ms가 더 듭니다. 그래서 첫 방문이 두 번째보다 느린 큰 이유 중 하나가 DNS입니다.
+    </p>
+
+    <h3>8) Java 코드와 명령어</h3>
+<pre><code>// Java — InetAddress가 OS 리졸버를 사용해 도메인을 IP로 변환
+InetAddress addr = InetAddress.getByName("example.com");
+System.out.println(addr.getHostAddress());     // 93.184.216.34
+
+// 모든 IP(예: 라운드 로빈으로 여러 IP가 등록된 경우)
+InetAddress[] all = InetAddress.getAllByName("example.com");
+for (InetAddress a : all) {
+    System.out.println(a.getHostAddress());
+}
+
+// JVM의 DNS 캐시 — 기본값이 길어 운영 환경에선 보통 짧게 조정
+//   networkaddress.cache.ttl=30        (성공 응답 30초)
+//   networkaddress.cache.negative.ttl=10  (NXDOMAIN 10초)
+</code></pre>
+<pre><code>// 리눅스 명령어로 직접 들여다보기
+//   $ dig example.com                  → 권위 응답을 단계별로 표시
+//   $ dig +trace example.com           → 루트→TLD→권한 서버 흐름을 직접 추적
+//   $ dig example.com MX               → 특정 레코드 타입 조회
+//   $ nslookup example.com 8.8.8.8     → 특정 리졸버에 직접 질의
+//   $ host example.com
+//   $ resolvectl status                → systemd-resolved의 캐시 상태
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>강한 일관성 vs 가용성·속도</strong> — DNS는 명백히 후자를 택했습니다. 변경이 즉시 반영되지 않는다는 게 단점이지만, 캐시 덕분에 대규모 트래픽을 감당할 수 있습니다.</li>
+      <li><strong>TTL trade-off</strong> — 짧은 TTL은 변경 반영이 빠르지만 권한 서버 부하·DNS 지연이 증가. 마이그레이션 며칠 전부터 TTL을 줄이는 게 일반적인 운영 팁.</li>
+      <li><strong>UDP vs TCP</strong> — UDP가 빠르지만 큰 응답·존 전송엔 TCP 필수. EDNS0이 UDP 한계를 늘려줬지만 일부 미들박스 호환성 문제가 있음.</li>
+      <li><strong>DoH의 trade-off</strong> — 프라이버시는 좋아지지만, 회사·학교의 콘텐츠 필터링이 무력화될 수 있어 운영 정책 충돌이 있음.</li>
+      <li><strong>DNS-Based Failover의 한계</strong> — TTL이 살아 있는 동안 일부 사용자는 여전히 죽은 IP로 가게 됩니다. 진짜 빠른 페일오버는 L4 로드밸런서나 Anycast가 더 적합.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>CDN과 GeoDNS</strong> — 클라이언트의 위치에 따라 다른 IP를 응답해 가까운 엣지 서버로 라우팅. Cloudflare·Akamai의 핵심.</li>
+      <li><strong>로드 분산</strong> — 한 도메인에 여러 A 레코드를 두고 라운드 로빈. 가중치 기반(weighted round robin)도 가능.</li>
+      <li><strong>서비스 디스커버리</strong> — 쿠버네티스의 ClusterIP는 내부 DNS로 노출. <code>service.namespace.svc.cluster.local</code> 같은 이름 해석.</li>
+      <li><strong>도메인 검증</strong> — TXT 레코드로 SPF/DKIM/DMARC(메일), Let's Encrypt의 DNS-01 인증서 발급, 도메인 소유 증명.</li>
+      <li><strong>장애 진단</strong> — 페이지가 안 열리면 가장 먼저 <code>dig</code>로 DNS 응답을 확인. 권한 서버 응답과 리졸버 응답이 다르면 캐시 의심.</li>
+      <li><strong>보안</strong> — DoH로 ISP 도청 차단, CAA 레코드로 인증서 발급 권한 제한, DNSSEC로 위조 방지.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">DNS 질의는 어떻게 동작하나요?</div>
+      <div class="a">
+        클라이언트가 리졸버에 재귀 질의를 보내면, 리졸버는 자기 캐시를 본 뒤 없으면 루트→TLD→권한 서버 순으로 반복 질의를 합니다.
+        각 단계는 "다음에 누구한테 물어봐"를 알려주고, 권한 서버에서 마침내 A/AAAA 레코드를 받습니다.
+        실제로는 캐시 hit이 많아 대부분 1~2단계에서 끝납니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">재귀 질의와 반복 질의의 차이는 무엇인가요?</div>
+      <div class="a">
+        재귀 질의는 "최종 답을 찾아서 가져와줘" — 한 번 묻고 답을 받습니다. 보통 클라이언트가 리졸버에 보내는 질의입니다.
+        반복 질의는 "지금 답이 없다면 다음에 어디로 물어야 해?" — 단계마다 NS 레코드만 받고 더 아래로 내려가는 방식으로, 리졸버가 권한 서버들에게 보냅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DNS는 왜 UDP를 기본으로 쓰나요?</div>
+      <div class="a">
+        질의·응답이 짧고 빠르게 끝나야 하는 특성상 TCP 핸드셰이크 비용이 부담되기 때문입니다.
+        다만 응답이 512바이트(EDNS0 시 4096바이트)를 초과하거나 존 전송(AXFR)일 때는 TCP로 폴백합니다.
+        DoT는 항상 TCP, DoH는 HTTPS, DoQ는 UDP 위 QUIC을 사용합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">A, CNAME, MX 레코드의 차이는 무엇인가요?</div>
+      <div class="a">
+        A는 도메인을 IPv4 주소로 매핑하는 가장 기본 레코드입니다. CNAME은 한 도메인을 다른 도메인의 별칭으로 만듭니다 — 다만 도메인 루트엔 둘 수 없고 다른 레코드와 공존 불가.
+        MX는 해당 도메인의 메일을 받을 서버를 지정하는 레코드로, 우선순위(priority) 값을 함께 가집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">TTL은 무엇이고 어떻게 정하나요?</div>
+      <div class="a">
+        응답이 캐시될 수 있는 시간(초)입니다. 짧으면 변경 반영이 빠르지만 권한 서버 트래픽이 늘고, 길면 반대.
+        보통 안정적인 서비스는 1~24시간, IP 변경이 예상되면 며칠 전부터 5~10분으로 줄여둡니다.
+        DNS 기반 페일오버는 30~60초가 흔하지만, 일부 캐시는 짧은 TTL을 무시하기도 해 한계가 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DNS 변경이 즉시 안 보이는 이유는?</div>
+      <div class="a">
+        브라우저, OS, 라우터, ISP 리졸버 등 여러 단계의 캐시가 살아 있기 때문입니다. 한 곳이라도 hit하면 그 위로 올라가지 않으므로,
+        TTL이 다 만료될 때까지 기다리거나(또는 직접 캐시 비우기), 마이그레이션 전에 TTL을 미리 줄이는 게 일반적인 운영 방법입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DoH와 DoT는 왜 등장했나요?</div>
+      <div class="a">
+        전통 DNS는 평문이라 ISP·공격자가 사용자의 도메인 질의를 들여다보거나 위조할 수 있습니다.
+        DoT는 TCP 853번 위 TLS로 암호화하고, DoH는 HTTPS 443번 위에 DNS를 실어 일반 HTTPS와 구분이 안 되도록 합니다.
+        프라이버시 향상이 주목적이지만, 기업의 콘텐츠 필터링과 충돌하는 운영적 trade-off가 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">CDN은 어떻게 DNS를 활용하나요?</div>
+      <div class="a">
+        클라이언트의 IP나 EDNS Client Subnet 정보를 보고 가장 가까운 엣지 서버의 IP를 응답하는 GeoDNS 방식입니다.
+        헬스체크와 결합해 죽은 노드는 응답에서 빼고, 트래픽 분산을 위해 가중치를 적용하기도 합니다.
+        Cloudflare, Akamai, AWS Route 53 등이 대표적인 운영 사례입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="http-https.html">HTTP / HTTPS</a></li>
+      <li><a href="http-versions.html">HTTP/1.1 vs 2 vs 3</a></li>
+      <li><a href="tcp-udp.html">TCP vs UDP</a></li>
+      <li><a href="osi-tcp-ip.html">OSI / TCP/IP 계층</a></li>
+      <li><a href="index.html">네트워크 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="http-versions.html">
+        <span class="label">이전</span>
+        ← HTTP/1.1 vs 2 vs 3
+      </a>
+      <a href="index.html">📂 네트워크로</a>
+      <a class="next" href="cors.html">
+        <span class="label">다음</span>
+        CORS →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

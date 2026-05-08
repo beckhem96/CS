@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HTTP / HTTPS · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">네트워크</a>
+      <span class="sep">›</span>
+      <span>HTTP / HTTPS</span>
+    </nav>
+
+    <h1>HTTP / HTTPS</h1>
+
+    <div class="definition">
+      <strong>HTTP(HyperText Transfer Protocol)</strong>는 클라이언트와 서버가 자원을 주고받기 위한
+      <strong>요청–응답형 텍스트 기반 프로토콜</strong>입니다.
+      <strong>HTTPS</strong>는 그 위에 <strong>TLS(Transport Layer Security)</strong>로 암호화·무결성·서버 인증을 더한 것이고,
+      이름 그대로 <em>HTTP + Secure</em>입니다.
+      두 프로토콜 모두 응용 계층(L7)에서 동작하며, 무상태성(stateless)을 기본 원칙으로 삼습니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      HTTP는 우리가 매일 쓰는 웹의 <strong>대화 규칙</strong>입니다. 브라우저가 "이 자원을 줘"라고 요청하면 서버가 "여기 있어"라고 응답합니다.
+      이 단순한 골격 위에 메서드, 상태 코드, 헤더, 캐시 같은 약속들이 쌓여 있습니다. 텍스트 기반이라 사람이 직접 읽을 수 있고,
+      덕분에 디버깅이 쉽다는 게 큰 장점입니다(<code>curl -v</code> 한 번이면 끝).
+    </p>
+    <p>
+      <strong>무상태성</strong>은 HTTP의 가장 중요한 설계 원칙입니다 — 서버는 이전 요청을 "기억"하지 않습니다.
+      매 요청은 그 자체로 완결되어야 하며, 서로 연관된 요청들의 맥락은 쿠키·세션·토큰 같은 별도 메커니즘으로 만들어 줘야 합니다.
+      이 단순함이 거대한 분산 시스템의 확장성을 가능하게 했습니다 — 서버를 마구 늘려도 요청을 어느 서버가 받든 상관없으니까요.
+    </p>
+    <p>
+      HTTPS는 그 위에 <strong>TLS</strong>를 한 겹 깐 것입니다. TLS가 보장하는 것은 세 가지: 데이터를 도청할 수 없는 <em>기밀성</em>,
+      중간에 변조되면 알아챌 수 있는 <em>무결성</em>, 내가 접속한 서버가 진짜 그 서버인지 확인하는 <em>인증</em>입니다.
+      HTTP 자체의 문법은 그대로지만 그 메시지를 암호화된 통로 안으로 흘려보낸다고 보면 됩니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>HTTPS는 "암호화"만이 아니다</strong></p>
+      <p>
+        TLS의 진짜 가치는 셋 모두입니다. 암호화만 있다면 공격자가 서버인 척 위장(MITM)해 가짜 응답을 보내도 알 수 없습니다.
+        <strong>인증서</strong>로 서버 신원을 확인하고, <strong>MAC/AEAD</strong>로 변조를 막고, <strong>대칭 키</strong>로 데이터를 암호화 — 이 세 가지가 모두 한 번에 작동해야 합니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      HTTP는 1991년 단순한 문서 공유용으로 시작했지만, 지금은 거의 모든 응용 통신의 사실상 표준이 되었습니다.
+      이유는 단순함과 유연함입니다 — 텍스트 헤더로 무엇이든 표현할 수 있고, 어떤 방화벽도 80/443 포트는 열어두기 때문에 다른 프로토콜이 끼어들 틈이 없습니다.
+      gRPC, WebSocket, SSE 같은 후계자들도 결국 HTTP의 핸드셰이크와 헤더를 빌려 쓰는 이유입니다.
+    </p>
+    <p>
+      HTTPS가 필요한 이유는 두 가지입니다.
+      첫째, 평문 HTTP는 <strong>같은 Wi-Fi에 있는 누구나 들여다볼 수 있고 변조할 수 있습니다</strong>(공항·카페 와이파이 광고 삽입 사례).
+      둘째, 인증서가 없으면 사용자는 자기가 진짜 은행 사이트에 접속한 건지 가짜 사이트에 접속한 건지 알 수 없습니다.
+      그래서 현대 브라우저는 HTTP만으로는 "Not Secure" 경고를 띄우고, 일부 API(Geolocation, Service Worker 등)는 HTTPS에서만 동작합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) HTTP 요청·응답 메시지 구조</h3>
+    <p>
+      HTTP 메시지는 세 부분으로 나뉩니다 — <strong>start line</strong>, <strong>headers</strong>, <strong>body</strong>.
+      헤더와 본문은 빈 줄(<code>\r\n\r\n</code>)로 구분합니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="HTTP 메시지 구조">
+        <text class="label" x="60" y="25" font-weight="bold">요청(Request)</text>
+        <rect class="node" x="40" y="40" width="280" height="240" rx="6" fill="none"/>
+        <rect class="node highlight" x="50" y="50" width="260" height="32" rx="4"/>
+        <text class="label" x="180" y="71" text-anchor="middle" fill="#1a1a1a" font-family="var(--font-mono)">GET /users/42 HTTP/1.1</text>
+        <text class="label" x="180" y="100" text-anchor="middle" fill="var(--text-muted)">Method · Path · Version</text>
+
+        <rect class="node" x="50" y="115" width="260" height="100" rx="4"/>
+        <text class="label" x="60" y="135" font-family="var(--font-mono)" font-size="12">Host: api.example.com</text>
+        <text class="label" x="60" y="153" font-family="var(--font-mono)" font-size="12">Accept: application/json</text>
+        <text class="label" x="60" y="171" font-family="var(--font-mono)" font-size="12">Authorization: Bearer ey...</text>
+        <text class="label" x="60" y="189" font-family="var(--font-mono)" font-size="12">User-Agent: curl/8.0</text>
+        <text class="label" x="60" y="207" font-family="var(--font-mono)" font-size="12">Content-Length: 0</text>
+
+        <text class="label" x="180" y="232" text-anchor="middle" fill="var(--text-muted)">Headers (이름: 값)</text>
+
+        <text class="label" x="180" y="265" text-anchor="middle">↓ 빈 줄 ↓</text>
+        <text class="label" x="180" y="278" text-anchor="middle" fill="var(--text-muted)">(GET이라 본문 없음)</text>
+
+        <text class="label" x="380" y="25" font-weight="bold">응답(Response)</text>
+        <rect class="node" x="360" y="40" width="280" height="240" rx="6" fill="none"/>
+        <rect class="node highlight" x="370" y="50" width="260" height="32" rx="4"/>
+        <text class="label" x="500" y="71" text-anchor="middle" fill="#1a1a1a" font-family="var(--font-mono)">HTTP/1.1 200 OK</text>
+        <text class="label" x="500" y="100" text-anchor="middle" fill="var(--text-muted)">Version · Status · Reason</text>
+
+        <rect class="node" x="370" y="115" width="260" height="80" rx="4"/>
+        <text class="label" x="380" y="135" font-family="var(--font-mono)" font-size="12">Content-Type: application/json</text>
+        <text class="label" x="380" y="153" font-family="var(--font-mono)" font-size="12">Content-Length: 42</text>
+        <text class="label" x="380" y="171" font-family="var(--font-mono)" font-size="12">Cache-Control: max-age=60</text>
+        <text class="label" x="500" y="212" text-anchor="middle" fill="var(--text-muted)">Headers</text>
+
+        <rect class="node" x="370" y="225" width="260" height="50" rx="4"/>
+        <text class="label" x="380" y="248" font-family="var(--font-mono)" font-size="12">{"id":42,"name":"Alice"}</text>
+        <text class="label" x="500" y="270" text-anchor="middle" fill="var(--text-muted)">Body</text>
+      </svg>
+      <span class="viz-caption">요청·응답 모두 첫 줄(start line) → 헤더들 → 빈 줄 → 본문의 동일한 골격을 가진다.</span>
+    </div>
+
+    <h3>2) HTTP 메서드 — 안전성과 멱등성</h3>
+    <p>
+      메서드는 자원에 대해 무엇을 할 것인지 알리는 동사입니다. 단순히 GET/POST 두 개가 아니라 <strong>안전성(safety)</strong>과 <strong>멱등성(idempotency)</strong> 두 축으로 분류해 외워두면 좋습니다.
+    </p>
+    <table class="complexity">
+      <thead>
+        <tr><th>메서드</th><th>용도</th><th>안전한가?</th><th>멱등한가?</th><th>본문 있나?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>GET</td><td>자원 조회</td><td>O</td><td>O</td><td>(원칙적으로) X</td></tr>
+        <tr><td>HEAD</td><td>응답 헤더만 조회</td><td>O</td><td>O</td><td>X</td></tr>
+        <tr><td>OPTIONS</td><td>지원 메서드 확인 / preflight</td><td>O</td><td>O</td><td>X</td></tr>
+        <tr><td>POST</td><td>자원 생성, 또는 일반적인 처리</td><td>X</td><td>X</td><td>O</td></tr>
+        <tr><td>PUT</td><td>자원 전체 교체(또는 생성)</td><td>X</td><td>O</td><td>O</td></tr>
+        <tr><td>PATCH</td><td>자원 부분 수정</td><td>X</td><td>X (보장 안 함)</td><td>O</td></tr>
+        <tr><td>DELETE</td><td>자원 삭제</td><td>X</td><td>O</td><td>(선택)</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>안전(safe)</strong> = 서버 상태를 변경하지 않음. GET·HEAD·OPTIONS만 안전.</li>
+      <li><strong>멱등(idempotent)</strong> = 같은 요청을 여러 번 보내도 결과가 같음. PUT/DELETE는 멱등이지만 POST/PATCH는 보장 안 함.</li>
+      <li>이 분류는 단순한 학문적 구분이 아닙니다. 멱등 메서드는 네트워크 오류 시 <strong>안전하게 재시도</strong>할 수 있어 클라이언트·프록시·로드밸런서가 자동 재시도해도 됩니다.</li>
+    </ul>
+
+    <h3>3) 상태 코드 5범주</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>범주</th><th>의미</th><th>대표 코드</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1xx</td><td>정보(처리 중)</td><td>100 Continue, 101 Switching Protocols(WebSocket 업그레이드)</td></tr>
+        <tr><td>2xx</td><td>성공</td><td>200 OK, 201 Created, 204 No Content, 206 Partial Content</td></tr>
+        <tr><td>3xx</td><td>리다이렉션</td><td>301 영구 이동, 302/303/307/308 이동, 304 Not Modified(캐시)</td></tr>
+        <tr><td>4xx</td><td>클라이언트 오류</td><td>400 Bad Request, 401 인증 안 됨, 403 권한 없음, 404 없음, 409 충돌, 429 너무 많은 요청</td></tr>
+        <tr><td>5xx</td><td>서버 오류</td><td>500 Internal Error, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout</td></tr>
+      </tbody>
+    </table>
+    <p>
+      자주 헷갈리는 코드 정리:
+    </p>
+    <ul>
+      <li><strong>301 vs 308</strong>: 둘 다 영구 이동이지만, 301은 일부 클라이언트가 메서드를 GET으로 바꿔버리고, 308은 메서드와 본문을 그대로 유지합니다.</li>
+      <li><strong>302 vs 307</strong>: 302는 같은 이유로 메서드가 바뀔 수 있고, 307은 메서드 보존을 명확히 합니다. 폼 POST 후 리다이렉트엔 303을 권장.</li>
+      <li><strong>401 vs 403</strong>: 401은 "당신이 누군지 모르겠다(인증 필요)", 403은 "누군지는 알지만 권한 없다".</li>
+      <li><strong>502 vs 504</strong>: 둘 다 게이트웨이 문제. 502는 백엔드가 잘못된 응답을 줬을 때, 504는 백엔드가 시간 안에 응답 못 했을 때.</li>
+    </ul>
+
+    <h3>4) 헤더 — 카테고리로 묶어 이해</h3>
+    <p>
+      헤더는 종류가 매우 많지만 대부분 다음 4범주 중 하나입니다:
+    </p>
+    <ul>
+      <li><strong>일반(General)</strong> — 메시지 자체에 관한 정보. <code>Date</code>, <code>Connection</code>, <code>Cache-Control</code>.</li>
+      <li><strong>요청(Request)</strong> — 요청 클라이언트나 조건. <code>Host</code>, <code>User-Agent</code>, <code>Accept</code>, <code>Authorization</code>, <code>Cookie</code>, <code>If-Modified-Since</code>.</li>
+      <li><strong>응답(Response)</strong> — 응답 서버나 조건. <code>Server</code>, <code>Set-Cookie</code>, <code>WWW-Authenticate</code>, <code>Location</code>, <code>ETag</code>.</li>
+      <li><strong>엔티티(Entity)</strong> — 본문에 관한 메타. <code>Content-Type</code>, <code>Content-Length</code>, <code>Content-Encoding</code>(gzip/br).</li>
+    </ul>
+
+    <h3>5) 캐시 — Conditional GET</h3>
+    <p>
+      HTTP는 같은 자원을 여러 번 받지 않도록 강력한 캐시 메커니즘을 가집니다. 핵심은 <strong>조건부 GET</strong>입니다.
+      서버는 응답에 <code>ETag</code>(콘텐츠의 지문)나 <code>Last-Modified</code>를 같이 줍니다. 다음에 클라이언트는
+      <code>If-None-Match</code>나 <code>If-Modified-Since</code>로 "내가 이 버전 갖고 있는데 바뀌었어?"라고 묻고, 서버는 안 바뀌었으면 <strong>304 Not Modified</strong>(본문 없음)로 응답합니다.
+    </p>
+    <p>
+      캐시 정책은 <code>Cache-Control</code>로 표현합니다: <code>public/private</code>(누가 캐싱 가능), <code>max-age=N</code>(N초간 신선),
+      <code>no-cache</code>(캐시 사용 전 매번 검증), <code>no-store</code>(아예 저장 금지), <code>immutable</code>(절대 변하지 않음).
+    </p>
+
+    <h3>6) 무상태성과 상태 유지</h3>
+    <p>
+      앞서 말했듯 HTTP 자체는 무상태입니다. 그러나 실제 웹은 "로그인", "장바구니" 같은 상태가 필요하니 별도 메커니즘으로 만들어줍니다:
+    </p>
+    <ul>
+      <li><strong>쿠키</strong> — 서버가 <code>Set-Cookie</code>로 발급, 클라이언트가 다음 요청부터 <code>Cookie</code> 헤더로 자동 전송.</li>
+      <li><strong>세션</strong> — 서버 메모리/DB에 상태를 두고 식별자만 쿠키에 담음.</li>
+      <li><strong>토큰(JWT)</strong> — 서명된 토큰을 클라이언트가 보관, 서버는 토큰을 검증만 하면 되어 stateless 유지.</li>
+    </ul>
+    <p>
+      각 방식의 장단점은 별도 페이지(<em>쿠키 / 세션 / JWT</em> — 작성 예정)에서 깊이 다룹니다.
+    </p>
+
+    <h3>7) HTTPS — HTTP + TLS</h3>
+    <p>
+      HTTPS의 동작은 단순합니다. <strong>TCP 연결</strong>이 수립되면 곧장 <strong>TLS 핸드셰이크</strong>를 해서 안전한 통로를 만들고,
+      그 통로 안으로 평소의 HTTP 메시지를 흘려보냅니다. 클라이언트와 서버는 핸드셰이크에서:
+    </p>
+    <ol>
+      <li>지원 가능한 암호 스위트(cipher suite) 협상</li>
+      <li>서버 인증서로 서버 신원 검증 (CA 체인 → 루트 CA)</li>
+      <li>키 교환(보통 ECDHE)으로 양쪽이 동일한 대칭 키 도출</li>
+      <li>이후 그 대칭 키로 모든 메시지를 AEAD(예: AES-GCM, ChaCha20-Poly1305)로 암호화·인증</li>
+    </ol>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="TLS 핸드셰이크 개요">
+        <defs>
+          <marker id="tlsA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <line x1="120" y1="40" x2="120" y2="300" stroke="var(--border)" stroke-width="1"/>
+        <line x1="560" y1="40" x2="560" y2="300" stroke="var(--border)" stroke-width="1"/>
+        <text class="label" x="120" y="30" text-anchor="middle" font-weight="bold">Client</text>
+        <text class="label" x="560" y="30" text-anchor="middle" font-weight="bold">Server</text>
+
+        <text class="label" x="60" y="60" text-anchor="middle" fill="var(--text-muted)">(TCP 연결됨)</text>
+
+        <line x1="120" y1="80" x2="560" y2="95" stroke="var(--accent)" stroke-width="2" marker-end="url(#tlsA)"/>
+        <text class="label" x="340" y="75" text-anchor="middle">ClientHello (지원 cipher, random, SNI)</text>
+
+        <line x1="560" y1="115" x2="120" y2="135" stroke="var(--accent)" stroke-width="2" marker-end="url(#tlsA)"/>
+        <text class="label" x="340" y="110" text-anchor="middle">ServerHello + 인증서 + 키 공유</text>
+
+        <text class="label" x="60" y="160" text-anchor="middle" fill="var(--accent)">인증서 검증</text>
+
+        <line x1="120" y1="180" x2="560" y2="195" stroke="var(--accent)" stroke-width="2" marker-end="url(#tlsA)"/>
+        <text class="label" x="340" y="175" text-anchor="middle">키 교환 완료 + Finished</text>
+
+        <line x1="560" y1="215" x2="120" y2="230" stroke="var(--accent)" stroke-width="2" marker-end="url(#tlsA)"/>
+        <text class="label" x="340" y="210" text-anchor="middle">Finished</text>
+
+        <text class="label" x="340" y="255" text-anchor="middle" fill="var(--accent)" font-weight="bold">↓ 이제부터 암호화된 통로 ↓</text>
+
+        <line x1="120" y1="275" x2="560" y2="290" stroke="var(--accent)" stroke-width="2" marker-end="url(#tlsA)"/>
+        <text class="label" x="340" y="270" text-anchor="middle">GET /index.html (암호화)</text>
+      </svg>
+      <span class="viz-caption">TLS 1.3는 핸드셰이크가 1 RTT(0-RTT 옵션도 가능). TLS 1.2는 2 RTT가 필요했다. 상세는 별도 페이지에서.</span>
+    </div>
+    <p>
+      TLS 1.2는 핸드셰이크에 2 RTT가 필요했지만, <strong>TLS 1.3</strong>은 1 RTT로 줄였고 0-RTT 재연결도 지원합니다.
+      자세한 메시지 단계와 0-RTT의 보안 trade-off는 <em>"TLS 핸드셰이크 상세"</em>(작성 예정) 페이지에서 다룹니다.
+    </p>
+
+    <h3>8) Java 코드</h3>
+<pre><code>// (1) HttpClient — JDK 11+ 표준
+HttpClient client = HttpClient.newBuilder()
+    .version(HttpClient.Version.HTTP_2)         // HTTPS면 자동으로 TLS 사용
+    .connectTimeout(Duration.ofSeconds(3))
+    .build();
+
+HttpRequest req = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.example.com/users/42"))
+    .header("Accept", "application/json")
+    .header("Authorization", "Bearer " + token)
+    .GET()
+    .build();
+
+HttpResponse&lt;String&gt; res = client.send(req, HttpResponse.BodyHandlers.ofString());
+System.out.println(res.statusCode());           // 200
+System.out.println(res.headers().firstValue("content-type").orElse(""));
+</code></pre>
+<pre><code>// (2) 캐시 검증 — If-None-Match
+String etag = previousResponse.headers().firstValue("ETag").orElse(null);
+HttpRequest req = HttpRequest.newBuilder(uri)
+    .header("If-None-Match", etag)
+    .GET().build();
+// 응답이 304 Not Modified면 본문 없음 → 기존 캐시 사용
+</code></pre>
+<pre><code>// (3) POST + JSON
+HttpRequest post = HttpRequest.newBuilder(URI.create("https://api.example.com/users"))
+    .header("Content-Type", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"Bob\"}"))
+    .build();
+// 응답: 201 Created + Location: /users/43
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>항목</th><th>장점</th><th>비용 / 한계</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>텍스트 기반</td><td>디버깅 쉬움, 어떤 도구든 인코딩 가능</td><td>이진 프로토콜보다 크기·파싱 비용 큼 → HTTP/2가 이진으로 전환</td></tr>
+        <tr><td>무상태성</td><td>수평 확장 쉬움, 캐시 친화적</td><td>매 요청마다 인증 정보 재전송 필요</td></tr>
+        <tr><td>HTTPS</td><td>기밀성·무결성·인증 동시 보장</td><td>핸드셰이크 RTT 비용, CPU 암호화 비용(현대 CPU에선 무시할 수준)</td></tr>
+        <tr><td>HTTP 캐시</td><td>대역폭·서버 부하 절감, 응답 시간↓</td><td>잘못 설정하면 오래된 자원이 노출됨, 캐시 무효화 어려움</td></tr>
+        <tr><td>인증서 검증</td><td>서버 신원 위조 방지</td><td>인증서 만료·체인 깨짐 시 서비스 장애로 이어질 수 있음</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>웹·모바일 API</strong> — 거의 모든 백엔드 API가 HTTP(S) 기반. REST·GraphQL·gRPC 모두 HTTP를 빌려 씀.</li>
+      <li><strong>서비스 간 통신</strong> — 마이크로서비스의 내부 호출도 대부분 HTTP. 사이드카(mTLS)로 mutual TLS 자동화.</li>
+      <li><strong>CDN과 캐시 계층</strong> — Cache-Control·ETag로 엣지 캐시 정책 결정. 적절한 캐시는 곧 비용 절감.</li>
+      <li><strong>인증·보안</strong> — Authorization 헤더, OAuth 2.0, mTLS, HSTS 헤더로 강제 HTTPS.</li>
+      <li><strong>장애 분석</strong> — 5xx 비율, P95/P99 응답 시간, 4xx 패턴이 알람·SLO의 기본 지표.</li>
+      <li><strong>관측·디버깅</strong> — <code>curl -v</code>, 브라우저 DevTools, <code>mitmproxy</code>로 헤더와 본문을 들여다봄.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">HTTP의 무상태성(stateless)이란 무엇이고 왜 중요한가요?</div>
+      <div class="a">
+        서버가 이전 요청의 맥락을 기억하지 않고, 매 요청을 그 자체로 완결되도록 처리한다는 원칙입니다.
+        덕분에 서버를 자유롭게 추가·교체할 수 있어 수평 확장이 쉬워지고, 캐시·로드밸런서가 단순해집니다.
+        대신 인증 같은 상태는 쿠키, 세션, 토큰으로 별도 표현합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">HTTP 메서드의 안전성과 멱등성은 어떻게 다른가요?</div>
+      <div class="a">
+        안전(safe)은 서버 상태를 변경하지 않는 메서드(GET·HEAD·OPTIONS)를 말하고,
+        멱등(idempotent)은 같은 요청을 여러 번 보내도 같은 결과가 되는 메서드(GET·PUT·DELETE 등)입니다.
+        멱등 메서드는 네트워크 오류 시 안전하게 자동 재시도할 수 있어, 클라이언트·프록시 설계에 큰 영향을 줍니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PUT과 PATCH의 차이는 무엇인가요?</div>
+      <div class="a">
+        PUT은 자원 전체를 보낸 본문으로 교체합니다. 같은 요청을 여러 번 보내도 결과는 동일해 멱등입니다.
+        PATCH는 자원의 일부만 수정합니다. 표준상 멱등성이 보장되지 않으며, 서버 구현에 따라 다릅니다(JSON Patch는 비멱등, JSON Merge Patch는 멱등 가능).
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">401과 403의 차이는 무엇인가요?</div>
+      <div class="a">
+        401은 "인증되지 않음(unauthenticated)" — 누구인지 모르겠으니 자격을 증명하라는 의미로, 응답에 <code>WWW-Authenticate</code> 헤더를 같이 보냅니다.
+        403은 "인증은 됐지만 권한 없음(forbidden)" — 누구인지 알지만 이 자원에 접근할 자격이 없다는 의미입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">HTTP 캐시 검증은 어떻게 동작하나요?</div>
+      <div class="a">
+        서버가 응답에 <code>ETag</code>(콘텐츠 지문) 또는 <code>Last-Modified</code>를 줍니다. 클라이언트는 다음에 <code>If-None-Match</code>나
+        <code>If-Modified-Since</code>로 보유한 버전을 알리고, 서버는 변경이 없으면 304 Not Modified로 본문 없이 응답합니다.
+        Cache-Control과 함께 쓰면 강력한 신선도 + 검증 캐시가 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">HTTPS는 무엇을 보장하나요?</div>
+      <div class="a">
+        세 가지를 동시에 보장합니다 — 기밀성(도청 방지), 무결성(변조 감지), 서버 인증(접속한 곳이 진짜 그 서버임 확인).
+        대칭 암호로 데이터를, AEAD로 무결성을, 인증서 체인으로 신원을 처리합니다. 셋 중 하나라도 빠지면 안전하지 않습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">TLS 핸드셰이크는 왜 필요하고 무엇을 합니까?</div>
+      <div class="a">
+        평문 채널 위에 안전한 채널을 만드는 협상 절차입니다. 양쪽이 지원하는 암호 스위트를 합의하고, 서버 인증서로 신원을 확인하고,
+        ECDHE 같은 키 교환으로 양쪽이 동일한 대칭 키를 도출합니다. 이후 모든 메시지는 그 대칭 키로 암호화·인증됩니다.
+        TLS 1.3은 1 RTT, 0-RTT까지 가능합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">CONNECT 메서드는 언제 쓰이나요?</div>
+      <div class="a">
+        주로 HTTPS 프록시 통과에 쓰입니다. 클라이언트가 프록시에 <code>CONNECT host:443</code>을 보내면 프록시는 그 호스트에 TCP 터널을 만들고 그 안으로 TLS를 그대로 흘려보냅니다.
+        프록시는 본문을 못 봅니다(end-to-end 암호화 보존).
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="http-versions.html">HTTP/1.1 vs 2 vs 3</a></li>
+      <li><a href="dns.html">DNS</a></li>
+      <li><a href="osi-tcp-ip.html">OSI / TCP/IP 계층</a></li>
+      <li><a href="tcp-udp.html">TCP vs UDP</a></li>
+      <li><a href="handshake.html">3-way / 4-way handshake</a></li>
+      <li><a href="index.html">네트워크 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="handshake.html">
+        <span class="label">이전</span>
+        ← 3-way / 4-way handshake
+      </a>
+      <a href="index.html">📂 네트워크로</a>
+      <a class="next" href="http-versions.html">
+        <span class="label">다음</span>
+        HTTP/1.1 vs 2 vs 3 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>데드락 · 운영체제 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">운영체제</a>
+      <span class="sep">›</span>
+      <span>데드락</span>
+    </nav>
+
+    <h1>데드락(Deadlock)</h1>
+
+    <div class="definition">
+      <strong>데드락</strong>은 두 개 이상의 스레드(또는 프로세스)가
+      <strong>서로가 가진 자원을 기다리며 영원히 진행하지 못하는 상태</strong>입니다.
+      네 가지 조건(<em>상호 배제·점유와 대기·비선점·순환 대기</em>)이 모두 성립할 때 발생합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      데드락은 좁은 외길에서 두 차가 정면으로 마주친 상황과 같습니다. 둘 다 후진하지 않으면 영원히 못 지나갑니다.
+      차이는 OS에서는 신호도 없고 운전자도 없다는 것입니다 — 시스템은 멈춘 줄도 모르고 그대로 정지합니다.
+    </p>
+    <p>
+      가장 흔한 패턴은 <strong>두 개의 락을 반대 순서로 잡으려는 경우</strong>입니다.
+      Thread A가 락 1을 쥔 상태로 락 2를 기다리고, 동시에 Thread B가 락 2를 쥔 채 락 1을 기다리면 둘 다 멈춥니다.
+      이 단순한 패턴이 운영 환경에서는 호출 깊이가 깊은 코드 사이에 숨어 있어 잘 보이지 않습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>데드락 ≠ 라이브락 ≠ 기아</strong></p>
+      <p>
+        데드락은 모두 <em>멈춘</em> 상태, 라이브락(livelock)은 서로 양보만 하느라 <em>일은 안 되는</em> 상태,
+        기아(starvation)는 시스템은 돌지만 <em>특정 스레드만 계속 자원을 못 받는</em> 상태입니다. 셋 다 진행이 안 되지만 원인과 해결법이 다릅니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      데드락 자체가 필요한 게 아니라, <strong>피하는 방법을 알아야</strong> 합니다.
+      서버 한 곳의 데드락이 커넥션 풀을 잠그고, 잠긴 풀이 요청을 막고, 막힌 요청이 다시 의존 서비스를 마비시키는 식으로 장애가 번질 수 있습니다.
+      DB·분산 시스템·동시성 코드 어디에서도 가능성이 있어 면접 단골 주제이기도 합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 데드락 발생의 4가지 조건(Coffman conditions)</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>조건</th><th>의미</th><th>깨면 어떻게 되나</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>상호 배제(Mutual Exclusion)</td><td>한 자원은 한 번에 한 명만 쓸 수 있음</td><td>공유 가능한 자원으로 바꾸면 데드락 불가</td></tr>
+        <tr><td>점유와 대기(Hold &amp; Wait)</td><td>이미 쥔 자원이 있는 채로 다른 자원을 기다림</td><td>한 번에 모든 자원 요청 → 점유 채로 대기 X</td></tr>
+        <tr><td>비선점(No Preemption)</td><td>다른 스레드가 강제로 빼앗을 수 없음</td><td>OS가 빼앗아 회수 가능하면 진전 발생</td></tr>
+        <tr><td>순환 대기(Circular Wait)</td><td>대기 그래프에 사이클 형성</td><td>자원에 전역 순서를 정하고 순서대로만 잡으면 사이클 X</td></tr>
+      </tbody>
+    </table>
+    <p><strong>네 가지가 모두 성립</strong>해야 데드락이 발생합니다. 하나만 깨도 막을 수 있다는 뜻입니다.</p>
+
+    <h3>2) 두 스레드 데드락 시각화</h3>
+    <div class="viz">
+      <svg width="680" height="240" viewBox="0 0 680 240" role="img" aria-label="데드락 자원 할당 그래프">
+        <defs>
+          <marker id="dlA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+          <marker id="dlB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+
+        <circle class="node" cx="120" cy="80" r="40"/>
+        <text class="node-text" x="120" y="85">T1</text>
+        <circle class="node" cx="560" cy="80" r="40"/>
+        <text class="node-text" x="560" y="85">T2</text>
+
+        <rect class="node" x="80" y="170" width="80" height="50" rx="6"/>
+        <text class="node-text" x="120" y="200">Lock A</text>
+        <rect class="node" x="520" y="170" width="80" height="50" rx="6"/>
+        <text class="node-text" x="560" y="200">Lock B</text>
+
+        <line x1="120" y1="170" x2="120" y2="120" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#dlB)"/>
+        <text class="label" x="55" y="148">held by</text>
+
+        <line x1="560" y1="170" x2="560" y2="120" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#dlB)"/>
+        <text class="label" x="600" y="148">held by</text>
+
+        <line x1="160" y1="80" x2="520" y2="80" stroke="var(--accent)" stroke-width="2" marker-end="url(#dlA)"/>
+        <text class="label" x="340" y="68" text-anchor="middle">T1 wants Lock B</text>
+
+        <line x1="520" y1="100" x2="160" y2="100" stroke="var(--accent)" stroke-width="2" marker-end="url(#dlA)"/>
+        <text class="label" x="340" y="118" text-anchor="middle">T2 wants Lock A</text>
+
+        <text class="label" x="340" y="232" text-anchor="middle" fill="var(--accent)">사이클 형성 → 둘 다 영원히 대기</text>
+      </svg>
+      <span class="viz-caption">자원 할당 그래프에 사이클이 있으면 데드락이다.</span>
+    </div>
+
+    <h3>3) 대처 방법 — 4가지 전략</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>전략</th><th>방식</th><th>비용/한계</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>예방(Prevention)</td><td>4가지 조건 중 하나를 구조적으로 깬다 (예: 자원 순서 강제)</td><td>설계 제약이 강함</td></tr>
+        <tr><td>회피(Avoidance)</td><td>자원 요청 시 안전 상태인지 검사 후 허용 (Banker's algorithm)</td><td>사전 정보 필요, 오버헤드 큼</td></tr>
+        <tr><td>탐지·복구(Detection &amp; Recovery)</td><td>주기적으로 사이클 탐지 후 한 스레드 종료/롤백</td><td>탐지 비용·작업 손실</td></tr>
+        <tr><td>무시(Ostrich)</td><td>거의 안 일어난다 보고 그냥 둠</td><td>리눅스·일반 OS의 현실적 선택</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4) 가장 실용적인 해결책 — 락 순서 강제</h3>
+    <p>
+      실무에서 가장 자주 쓰는 방법은 <strong>전역 락 순서</strong>를 정하는 것입니다.
+      모든 스레드가 락을 항상 같은 순서(예: A → B)로만 잡으면 사이클이 만들어질 수 없습니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="180" viewBox="0 0 680 180" role="img" aria-label="락 순서 강제">
+        <text class="label" x="50" y="35" font-weight="bold">규칙: id가 작은 락 먼저</text>
+
+        <rect class="node" x="40" y="60" width="280" height="100" rx="8"/>
+        <text class="node-text" x="180" y="85">Thread 1</text>
+        <text class="label" x="60" y="115">lock(A) → lock(B) → ...</text>
+        <text class="label" x="60" y="140" fill="var(--accent)">A를 먼저 잡고 B를 잡는다</text>
+
+        <rect class="node" x="360" y="60" width="280" height="100" rx="8"/>
+        <text class="node-text" x="500" y="85">Thread 2</text>
+        <text class="label" x="380" y="115">lock(A) → lock(B) → ...</text>
+        <text class="label" x="380" y="140" fill="var(--accent)">동일한 순서, 사이클 없음</text>
+      </svg>
+      <span class="viz-caption">자원에 전역 순서를 정하면 순환 대기 조건이 무너진다.</span>
+    </div>
+
+    <h3>5) Java 코드</h3>
+<pre><code>// (1) 데드락 발생 코드 — 두 스레드가 락을 반대 순서로 잡는다
+class Account {
+    final Object lock = new Object();
+    long balance = 1000;
+}
+
+void transferBad(Account from, Account to, long amount) {
+    synchronized (from.lock) {
+        synchronized (to.lock) {       // 다른 스레드가 to → from 순서면 데드락
+            from.balance -= amount;
+            to.balance   += amount;
+        }
+    }
+}
+
+// (2) 락 순서 강제 — 항상 id 작은 쪽부터
+void transferSafe(Account a, Account b, long amount) {
+    Account first  = System.identityHashCode(a) &lt; System.identityHashCode(b) ? a : b;
+    Account second = (first == a) ? b : a;
+    synchronized (first.lock) {
+        synchronized (second.lock) {
+            // ...
+        }
+    }
+}
+
+// (3) tryLock + 타임아웃 — 일정 시간 못 잡으면 포기하고 재시도
+boolean transferTry(java.util.concurrent.locks.Lock l1,
+                    java.util.concurrent.locks.Lock l2) throws InterruptedException {
+    if (l1.tryLock(100, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+        try {
+            if (l2.tryLock(100, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                try { /* ... */ return true; }
+                finally { l2.unlock(); }
+            }
+        } finally { l1.unlock(); }
+    }
+    return false;  // 데드락 의심 시 호출자가 재시도
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>예방</strong>은 가장 안전하지만 시스템 설계가 경직됩니다. 자원 순서를 강제하면 일부 알고리즘이 어색해집니다.</li>
+      <li><strong>회피</strong>는 이론적으로 우아하지만 모든 자원 요구를 미리 알아야 해서 일반 OS에서는 비현실적입니다.</li>
+      <li><strong>탐지·복구</strong>는 DBMS에서 흔합니다. 주기적으로 wait-for 그래프를 검사해 사이클이 있으면 한 트랜잭션을 강제 롤백합니다.</li>
+      <li><strong>무시</strong>는 데스크톱·일반 OS의 실용적 선택. 정말 드물게 일어나면 재부팅으로 해결합니다.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>RDBMS의 트랜잭션 락</strong> — MySQL/PostgreSQL은 wait-for 그래프로 데드락을 탐지하고 한 트랜잭션을 자동 롤백합니다(<code>Deadlock found</code>).</li>
+      <li><strong>분산 락(Redis Redlock, ZooKeeper)</strong> — TTL과 fencing token으로 무한 대기를 방지합니다.</li>
+      <li><strong>커넥션 풀 + 외부 API 호출</strong> — 풀에서 커넥션을 받고 그 안에서 또 풀을 호출하면 풀 데드락이 흔히 생깁니다.</li>
+      <li><strong>JVM 진단</strong> — <code>jstack</code>이나 thread dump의 "Found one Java-level deadlock" 메시지로 즉시 확인 가능합니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">데드락 발생 조건 4가지를 말해보세요.</div>
+      <div class="a">
+        상호 배제, 점유와 대기, 비선점, 순환 대기입니다. 네 가지가 동시에 성립해야 발생하므로 하나만 깨도 막을 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">실제 서비스에서 데드락을 어떻게 예방하시나요?</div>
+      <div class="a">
+        가장 흔하게는 락 획득 순서를 전역적으로 강제합니다. 락 범위를 좁히고, <code>tryLock</code>에 타임아웃을 두어 무한 대기를 막고,
+        가능하면 락 자체를 줄여 동시성 자료구조나 메시지 패싱으로 대체합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">데드락과 라이브락은 어떻게 다른가요?</div>
+      <div class="a">
+        데드락은 모든 스레드가 정지한 상태, 라이브락은 스레드가 계속 무언가를 시도하지만 서로 양보만 해서 진전이 없는 상태입니다.
+        두 사람이 복도에서 같은 방향으로 비키다가 계속 서로 가로막는 상황이 라이브락입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DBMS는 데드락을 어떻게 처리하나요?</div>
+      <div class="a">
+        대부분 탐지·복구 방식입니다. 트랜잭션 간 wait-for 그래프에서 사이클을 발견하면 비용이 가장 적은(보통 가장 최근, 가장 작은) 트랜잭션을 롤백합니다.
+        애플리케이션은 데드락 예외를 받아 재시도하도록 작성합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">은행원 알고리즘(Banker's algorithm)은 무엇인가요?</div>
+      <div class="a">
+        자원 요청 시 그것을 허용했을 때 시스템이 여전히 모든 프로세스를 끝낼 수 있는 "안전 상태"인지 검사하는 회피 알고리즘입니다.
+        총 자원량과 각 프로세스의 최대 요구량을 미리 알아야 하므로 실무 OS에는 잘 쓰이지 않습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="synchronization.html">동기화</a></li>
+      <li><a href="process-thread.html">프로세스와 스레드</a></li>
+      <li><a href="cpu-scheduling.html">CPU 스케줄링</a></li>
+      <li><a href="index.html">운영체제 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="synchronization.html">
+        <span class="label">이전</span>
+        ← 동기화
+      </a>
+      <a href="index.html">📂 운영체제로</a>
+      <a class="next" href="paging-segmentation.html">
+        <span class="label">다음</span>
+        페이징/세그먼테이션 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

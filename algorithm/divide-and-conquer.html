@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>분할 정복(Divide & Conquer) · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>분할 정복</span>
+    </nav>
+
+    <h1>분할 정복(Divide &amp; Conquer)</h1>
+
+    <div class="definition">
+      <strong>분할 정복</strong>이란, 큰 문제를 <strong>서로 비슷한 작은 문제들로 나누고(Divide)</strong>,
+      작은 문제를 각각 해결한 뒤(Solve), 그 결과를 <strong>합쳐서(Combine)</strong> 전체 문제를 푸는 알고리즘 설계 기법입니다.
+      병합 정렬, 퀵 정렬, 이진 탐색, 큰 수 곱셈, FFT 같은 알고리즘의 핵심 사고방식입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      분할 정복은 이름 그대로 <strong>쪼개서 이긴다</strong>는 전략입니다. 한 번에 풀기 어려운 큰 문제를 절반 또는 여러 조각으로 나누고,
+      각 조각을 같은 방식으로 재귀적으로 풉니다. 조각이 충분히 작아지면 바로 답을 구하고, 그 답들을 합쳐 전체 답을 만듭니다.
+    </p>
+    <p>항상 세 단계로 생각하면 됩니다.</p>
+    <ol>
+      <li><strong>Divide</strong> — 문제를 작은 하위 문제로 나눈다.</li>
+      <li><strong>Conquer</strong> — 하위 문제를 재귀적으로 해결한다.</li>
+      <li><strong>Combine</strong> — 하위 문제의 답을 합쳐 원래 문제의 답을 만든다.</li>
+    </ol>
+
+    <div class="callout">
+      <p><strong>DP와 뭐가 다를까?</strong></p>
+      <p>
+        분할 정복의 하위 문제들은 보통 <strong>서로 독립</strong>입니다. 병합 정렬의 왼쪽 절반과 오른쪽 절반은 겹치지 않죠.
+        반면 DP는 같은 하위 문제가 반복해서 등장합니다. 중복이 크면 DP, 독립적인 분할이면 분할 정복을 먼저 떠올리면 됩니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      큰 문제를 직접 풀면 O(n²)처럼 느릴 수 있지만, 적절히 나누면 O(n log n) 또는 그보다 더 빠르게 만들 수 있습니다.
+      정렬의 대표 예가 병합 정렬과 퀵 정렬입니다. 단순 정렬은 O(n²)이지만, 분할 정복 정렬은 평균 또는 최악 O(n log n)을 달성합니다.
+    </p>
+    <p>
+      또 분할 정복은 병렬 처리와도 잘 맞습니다. 하위 문제가 독립적이면 서로 다른 스레드나 머신에서 동시에 계산하고 마지막에 합치면 됩니다.
+      MapReduce, 병렬 정렬, 이미지 처리의 타일 분할 같은 시스템도 이런 생각을 기반으로 합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 병합 정렬의 분할 정복 구조</h3>
+    <p>배열을 계속 절반으로 나누고, 길이 1짜리 배열들을 정렬된 상태로 합쳐 올라갑니다.</p>
+
+    <div class="viz">
+      <svg width="640" height="300" viewBox="0 0 640 300" role="img" aria-label="분할 정복 병합 정렬 트리">
+        <text class="label" x="320" y="20" text-anchor="middle" font-weight="bold">[8, 3, 5, 1, 9, 2, 7, 4]</text>
+        <line x1="300" y1="30" x2="180" y2="70" class="arrow"/>
+        <line x1="340" y1="30" x2="460" y2="70" class="arrow"/>
+        <text class="label" x="180" y="80" text-anchor="middle">[8, 3, 5, 1]</text>
+        <text class="label" x="460" y="80" text-anchor="middle">[9, 2, 7, 4]</text>
+
+        <line x1="170" y1="90" x2="100" y2="130" class="arrow"/>
+        <line x1="190" y1="90" x2="260" y2="130" class="arrow"/>
+        <line x1="450" y1="90" x2="380" y2="130" class="arrow"/>
+        <line x1="470" y1="90" x2="540" y2="130" class="arrow"/>
+        <text class="label" x="100" y="140" text-anchor="middle">[8, 3]</text>
+        <text class="label" x="260" y="140" text-anchor="middle">[5, 1]</text>
+        <text class="label" x="380" y="140" text-anchor="middle">[9, 2]</text>
+        <text class="label" x="540" y="140" text-anchor="middle">[7, 4]</text>
+
+        <text class="label" x="320" y="175" text-anchor="middle" fill="var(--accent)" font-weight="bold">↓ Combine: 정렬된 조각을 합치며 올라감</text>
+
+        <text class="label" x="100" y="215" text-anchor="middle">[3, 8]</text>
+        <text class="label" x="260" y="215" text-anchor="middle">[1, 5]</text>
+        <text class="label" x="380" y="215" text-anchor="middle">[2, 9]</text>
+        <text class="label" x="540" y="215" text-anchor="middle">[4, 7]</text>
+        <text class="label" x="180" y="250" text-anchor="middle">[1, 3, 5, 8]</text>
+        <text class="label" x="460" y="250" text-anchor="middle">[2, 4, 7, 9]</text>
+        <text class="label" x="320" y="285" text-anchor="middle" font-weight="bold">[1, 2, 3, 4, 5, 7, 8, 9]</text>
+      </svg>
+      <span class="viz-caption">분할 자체는 싸고, 병합 단계에서 각 레벨마다 전체 n개를 한 번씩 처리한다.</span>
+    </div>
+
+    <h3>2) 재귀식으로 성능 보기</h3>
+    <p>분할 정복 알고리즘은 보통 다음 형태의 재귀식으로 시간 복잡도를 표현합니다.</p>
+    <pre><code>T(n) = a · T(n / b) + f(n)</code></pre>
+    <ul>
+      <li><strong>a</strong> — 하위 문제 개수</li>
+      <li><strong>b</strong> — 문제 크기가 얼마나 줄어드는지</li>
+      <li><strong>f(n)</strong> — 나누고 합치는 데 드는 비용</li>
+    </ul>
+
+    <table class="complexity">
+      <thead>
+        <tr><th>알고리즘</th><th>재귀식</th><th>복잡도</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>이진 탐색</td><td>T(n)=T(n/2)+O(1)</td><td>O(log n)</td><td>절반 하나만 봄</td></tr>
+        <tr><td>병합 정렬</td><td>T(n)=2T(n/2)+O(n)</td><td>O(n log n)</td><td>양쪽 해결 + 병합 O(n)</td></tr>
+        <tr><td>퀵 정렬 평균</td><td>T(n)=2T(n/2)+O(n)</td><td>O(n log n)</td><td>균형 분할 가정</td></tr>
+        <tr><td>카라츠바 곱셈</td><td>T(n)=3T(n/2)+O(n)</td><td>O(n^1.585)</td><td>곱셈 4번을 3번으로 줄임</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) Java 코드로 보기 — 병합 정렬</h3>
+<pre><code>void mergeSort(int[] a) {
+    int[] tmp = new int[a.length];
+    mergeSort(a, tmp, 0, a.length - 1);
+}
+
+void mergeSort(int[] a, int[] tmp, int lo, int hi) {
+    if (lo &gt;= hi) return;                 // 충분히 작은 문제
+
+    int mid = lo + (hi - lo) / 2;
+    mergeSort(a, tmp, lo, mid);           // Divide + Conquer
+    mergeSort(a, tmp, mid + 1, hi);
+    merge(a, tmp, lo, mid, hi);           // Combine
+}
+
+void merge(int[] a, int[] tmp, int lo, int mid, int hi) {
+    int i = lo, j = mid + 1, k = lo;
+    while (i &lt;= mid &amp;&amp; j &lt;= hi) {
+        tmp[k++] = (a[i] &lt;= a[j]) ? a[i++] : a[j++];
+    }
+    while (i &lt;= mid) tmp[k++] = a[i++];
+    while (j &lt;= hi) tmp[k++] = a[j++];
+
+    for (int p = lo; p &lt;= hi; p++) a[p] = tmp[p];
+}
+
+// 이진 탐색도 분할 정복의 한 예
+int binarySearch(int[] a, int target) {
+    int lo = 0, hi = a.length - 1;
+    while (lo &lt;= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] == target) return mid;
+        if (a[mid] &lt; target) lo = mid + 1;
+        else hi = mid - 1;
+    }
+    return -1;
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <p>
+      분할 정복의 비용은 <strong>재귀 깊이</strong>와 <strong>각 레벨에서 처리하는 총량</strong>으로 보면 직관적입니다.
+      병합 정렬은 깊이가 log n이고, 각 레벨마다 병합으로 전체 n개를 처리하므로 O(n log n)입니다.
+    </p>
+    <table class="complexity">
+      <thead>
+        <tr><th>알고리즘</th><th>시간</th><th>공간</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>이진 탐색</td><td>O(log n)</td><td>O(1)</td><td>반복문 기준</td></tr>
+        <tr><td>병합 정렬</td><td>O(n log n)</td><td>O(n)</td><td>안정 정렬</td></tr>
+        <tr><td>퀵 정렬</td><td>평균 O(n log n), 최악 O(n²)</td><td>O(log n)</td><td>피벗 선택 중요</td></tr>
+        <tr><td>분할 정복 최대 부분 배열</td><td>O(n log n)</td><td>O(log n)</td><td>DP/Kadane은 O(n)</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>정렬 라이브러리</strong> — 병합 정렬, 퀵 정렬, introsort, Timsort의 기반.</li>
+      <li><strong>검색</strong> — 이진 탐색, B+Tree 노드 내부 탐색.</li>
+      <li><strong>병렬 처리</strong> — 큰 작업을 독립 조각으로 나눠 여러 코어에서 처리.</li>
+      <li><strong>대규모 데이터 처리</strong> — MapReduce의 map/reduce 구조도 넓은 의미의 분할-결합.</li>
+      <li><strong>계산 기하</strong> — 최근접 점 쌍, 볼록 껍질 일부 알고리즘.</li>
+      <li><strong>신호 처리</strong> — FFT는 대표적인 고급 분할 정복 알고리즘.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">분할 정복과 DP의 차이를 설명해 주세요.</div>
+      <div class="a">
+        분할 정복은 문제를 독립적인 하위 문제로 나눠 각각 풀고 합칩니다. 병합 정렬의 왼쪽/오른쪽 절반은 겹치지 않습니다.
+        DP는 하위 문제가 서로 겹쳐 같은 계산이 반복되므로 결과를 저장해 재사용합니다. 중복 부분 문제가 보이면 DP,
+        독립적인 분할이면 분할 정복을 먼저 떠올리면 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">병합 정렬이 O(n log n)인 이유는요?</div>
+      <div class="a">
+        배열을 절반씩 나누면 재귀 깊이가 log n입니다. 각 깊이에서는 여러 조각이 있지만, 조각들을 모두 합치면 전체 원소 n개를 한 번씩 처리합니다.
+        그래서 레벨당 O(n), 레벨 수 O(log n), 전체 O(n log n)입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">퀵 정렬도 분할 정복인데 왜 최악이 O(n²)인가요?</div>
+      <div class="a">
+        퀵 정렬의 분할이 균형 잡히면 병합 정렬처럼 O(n log n)이지만, 피벗이 계속 최솟값/최댓값이 되면 한쪽 크기가 0, 다른 쪽이 n-1이 됩니다.
+        그러면 재귀 깊이가 n이 되고 각 레벨에서 파티션 O(n)이 누적되어 O(n²)이 됩니다.
+        그래서 랜덤 피벗이나 중앙값-of-3, introsort 같은 방어 전략을 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">마스터 정리는 언제 쓰나요?</div>
+      <div class="a">
+        <code>T(n)=aT(n/b)+f(n)</code> 형태의 균일한 분할 정복 재귀식을 빠르게 해석할 때 씁니다.
+        병합 정렬처럼 하위 문제가 같은 크기로 나뉘고, 결합 비용이 명확할 때 유용합니다.
+        다만 퀵 정렬 최악처럼 분할 크기가 매번 달라지는 경우에는 그대로 적용하기 어렵습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="sorting.html">정렬</a></li>
+      <li><a href="binary-search.html">이진 탐색</a></li>
+      <li><a href="dynamic-programming.html">동적 계획법</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="shortest-paths.html">
+        <span class="label">이전</span>
+        ← 벨만-포드 / 플로이드-워셜
+      </a>
+      <a href="index.html">📂 알고리즘으로</a>
+      <a class="next" href="minimum-spanning-tree.html">
+        <span class="label">다음</span>
+        최소 신장 트리 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

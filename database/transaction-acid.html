@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>트랜잭션과 ACID · 데이터베이스 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">데이터베이스</a>
+      <span class="sep">›</span>
+      <span>트랜잭션과 ACID</span>
+    </nav>
+
+    <h1>트랜잭션과 ACID</h1>
+
+    <div class="definition">
+      <strong>트랜잭션(Transaction)</strong>은 "하나의 논리적 작업 단위" — 여러 SQL을 묶어 <strong>전부 성공하거나 전부 취소</strong>되도록 합니다.
+      <strong>ACID</strong>는 그 트랜잭션이 보장해야 하는 4가지 성질 — Atomicity(원자성), Consistency(일관성), Isolation(격리성), Durability(지속성)입니다.
+      각 성질은 서로 다른 메커니즘(언두 로그, 제약조건, 락/MVCC, WAL+fsync)으로 실현됩니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      "A 계좌에서 1만원을 빼서 B 계좌에 넣는다"는 작업을 생각해 봅시다.
+      이 두 단계 사이에 시스템이 죽으면 돈이 사라지거나 두 배가 되어버릴 수 있죠.
+      트랜잭션은 이런 일을 막기 위해 두 작업을 묶고, "성공이면 commit, 실패면 rollback"의 약속을 보장합니다.
+    </p>
+    <p>
+      ACID는 트랜잭션이 만족해야 하는 4가지 약속을 한 번에 모은 이름입니다.
+      각 글자는 서로 독립적이지만, 실제로는 함께 동작해야 의미가 있습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>비유 — 송금 영수증</strong></p>
+      <p>
+        은행 창구에서 돈을 보내고 받을 때, "출금"과 "입금"이 따로따로 처리되는 것 같지만 결국 영수증 한 장에 묶여 있습니다.
+        중간에 실수가 생기면 둘 다 취소되고, 정상이면 둘 다 처리되죠. 트랜잭션이 정확히 그 역할을 합니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>중간 실패에 대한 안전망</strong> — 네트워크 단절, 전원 차단, OOM 같은 상황에서도 데이터가 어긋나지 않도록.</li>
+      <li><strong>동시성 환경의 일관성</strong> — 여러 사용자가 같은 행을 동시에 수정해도 결과가 깨지지 않도록.</li>
+      <li><strong>비즈니스 불변식 유지</strong> — "총합이 변하면 안 된다", "재고 ≥ 0" 같은 규칙을 항상 만족.</li>
+      <li><strong>복구의 단위</strong> — 장애 후 재시작했을 때 미완료 트랜잭션은 되돌리고, 커밋된 트랜잭션은 다시 적용해야 한다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 트랜잭션의 라이프사이클</h3>
+    <div class="viz">
+      <svg width="700" height="200" viewBox="0 0 700 200" role="img" aria-label="트랜잭션 라이프사이클">
+        <defs>
+          <marker id="txArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect x="20"  y="80" width="110" height="44" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="75"  y="106" text-anchor="middle" font-size="13">BEGIN</text>
+        <rect x="170" y="80" width="120" height="44" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="230" y="106" text-anchor="middle" font-size="13">ACTIVE</text>
+        <rect x="320" y="20" width="160" height="44" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="400" y="46" text-anchor="middle" font-size="13">PARTIALLY COMMITTED</text>
+        <rect x="320" y="140" width="160" height="44" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="400" y="166" text-anchor="middle" font-size="13">FAILED</text>
+        <rect x="520" y="20" width="160" height="44" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="600" y="46" text-anchor="middle" font-size="13" font-weight="bold">COMMITTED</text>
+        <rect x="520" y="140" width="160" height="44" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="600" y="166" text-anchor="middle" font-size="13" font-weight="bold">ABORTED</text>
+
+        <line x1="130" y1="102" x2="170" y2="102" stroke="var(--accent)" stroke-width="2" marker-end="url(#txArr)"/>
+        <line x1="290" y1="90"  x2="320" y2="50"  stroke="var(--accent)" stroke-width="2" marker-end="url(#txArr)"/>
+        <line x1="290" y1="115" x2="320" y2="155" stroke="var(--accent)" stroke-width="2" marker-end="url(#txArr)"/>
+        <line x1="480" y1="42"  x2="520" y2="42"  stroke="var(--accent)" stroke-width="2" marker-end="url(#txArr)"/>
+        <line x1="480" y1="162" x2="520" y2="162" stroke="var(--accent)" stroke-width="2" marker-end="url(#txArr)"/>
+
+        <text x="305" y="78" font-size="11" fill="var(--text-muted)">commit 시도</text>
+        <text x="305" y="135" font-size="11" fill="var(--text-muted)">에러/롤백</text>
+      </svg>
+      <span class="viz-caption">트랜잭션은 BEGIN → ACTIVE → (Partially Committed → COMMITTED) 또는 (FAILED → ABORTED)로 끝난다.</span>
+    </div>
+
+    <h3>2) Atomicity(원자성) — All or Nothing</h3>
+    <p>
+      트랜잭션 안의 모든 변경은 하나의 묶음입니다. 일부만 적용된 상태로 끝나는 일은 없어야 합니다.
+      구현은 <strong>언두 로그(Undo Log)</strong>로 합니다 — 변경 전 값을 따로 기록해 두고, 실패 시 그 기록을 거꾸로 적용해 되돌립니다.
+    </p>
+<pre><code>BEGIN;
+UPDATE account SET balance = balance - 10000 WHERE id = 'A';  -- (1)
+-- 여기서 서버 다운!
+UPDATE account SET balance = balance + 10000 WHERE id = 'B';  -- (2) 미실행
+
+-- 재시작 후 복구:
+-- (1)의 언두 로그를 적용해 A의 잔액을 원복 → 부분 적용 상태가 사라진다.
+</code></pre>
+
+    <h3>3) Consistency(일관성) — 불변식 유지</h3>
+    <p>
+      트랜잭션의 시작과 끝 모두에서 <strong>DB의 무결성 제약을 만족</strong>해야 합니다.
+      여기서 일관성은 "데이터가 늘 의미 있는 상태에 있다"는 약속입니다.
+    </p>
+    <ul>
+      <li><strong>데이터 무결성</strong> — PK 유일성, FK 참조 무결성, CHECK 제약, NOT NULL.</li>
+      <li><strong>비즈니스 불변식</strong> — 트리거나 애플리케이션이 보장(예: 출금 후 잔액 ≥ 0).</li>
+    </ul>
+    <p>일관성은 다른 ACID 성질이 함께 보장되어야 비로소 만족됩니다 — Atomicity가 깨지면 한쪽만 적용돼 불변식이 깨질 수 있고, Isolation이 부족하면 동시 갱신으로 깨질 수 있습니다.</p>
+
+    <h3>4) Isolation(격리성) — 동시 트랜잭션 사이의 가림막</h3>
+    <p>
+      여러 트랜잭션이 동시에 실행돼도, 마치 <strong>차례로 실행된 것처럼</strong> 보여야 합니다.
+      현실에서는 성능 때문에 격리 수준을 단계적으로 완화하고, 그에 따라 발생 가능한 이상 현상(Dirty Read, Phantom 등)이 달라집니다.
+      구현 메커니즘은 보통 <strong>락</strong>이거나 <strong>MVCC</strong>입니다.
+    </p>
+    <p>자세한 내용은 다음 페이지에서 다룹니다 → <a href="isolation-level.html">격리 수준</a>, <a href="lock.html">락</a>, <a href="mvcc.html">MVCC</a>.</p>
+
+    <h3>5) Durability(지속성) — 커밋된 결과는 살아남는다</h3>
+    <p>
+      커밋이 끝났다고 응답한 트랜잭션의 결과는 <strong>이후 어떤 장애가 와도 보존</strong>되어야 합니다.
+      이를 위해 대부분의 RDBMS는 <strong>WAL(Write-Ahead Logging)</strong>을 사용합니다.
+    </p>
+    <div class="viz">
+      <svg width="700" height="220" viewBox="0 0 700 220" role="img" aria-label="WAL과 fsync">
+        <defs>
+          <marker id="walArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect x="20" y="40" width="120" height="50" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="80" y="60" text-anchor="middle" font-size="13" font-weight="bold">트랜잭션</text>
+        <text x="80" y="78" text-anchor="middle" font-size="11" fill="var(--text-muted)">UPDATE / INSERT</text>
+
+        <rect x="200" y="20" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="280" y="44" text-anchor="middle" font-size="13" font-weight="bold">WAL 로그</text>
+        <text x="280" y="62" text-anchor="middle" font-size="11" fill="var(--text-muted)">변경 내용을 순차 기록</text>
+
+        <rect x="200" y="120" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="280" y="144" text-anchor="middle" font-size="13" font-weight="bold">버퍼 풀(메모리)</text>
+        <text x="280" y="162" text-anchor="middle" font-size="11" fill="var(--text-muted)">데이터 페이지 dirty</text>
+
+        <rect x="430" y="20" width="170" height="60" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="515" y="44" text-anchor="middle" font-size="13" font-weight="bold">디스크: WAL 파일</text>
+        <text x="515" y="62" text-anchor="middle" font-size="11" fill="var(--text-muted)">fsync로 영속화</text>
+
+        <rect x="430" y="120" width="170" height="60" fill="var(--bg-elev)" stroke="var(--accent)"/>
+        <text x="515" y="144" text-anchor="middle" font-size="13">디스크: 데이터 파일</text>
+        <text x="515" y="162" text-anchor="middle" font-size="11" fill="var(--text-muted)">체크포인트 시 반영</text>
+
+        <line x1="140" y1="65" x2="200" y2="50" stroke="var(--accent)" stroke-width="2" marker-end="url(#walArr)"/>
+        <line x1="140" y1="70" x2="200" y2="150" stroke="var(--accent)" stroke-width="2" marker-end="url(#walArr)"/>
+        <line x1="360" y1="50" x2="430" y2="50" stroke="var(--accent)" stroke-width="2" marker-end="url(#walArr)"/>
+        <line x1="360" y1="150" x2="430" y2="150" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#walArr)"/>
+
+        <text x="395" y="40" font-size="11" font-weight="bold" fill="var(--accent)">커밋 시 fsync</text>
+        <text x="395" y="200" font-size="11" fill="var(--text-muted)">체크포인트 (느리게)</text>
+      </svg>
+      <span class="viz-caption">변경은 먼저 WAL에 기록되고 fsync로 영속화된 뒤 커밋이 응답된다. 데이터 페이지는 나중에 천천히 디스크로 내려간다.</span>
+    </div>
+
+    <p>
+      WAL의 핵심 규칙은 "데이터 페이지를 디스크로 내리기 <strong>전에</strong> 그 변경을 기록한 로그가 먼저 디스크에 영속화되어야 한다"입니다.
+      덕분에 도중에 시스템이 죽어도 WAL을 다시 읽어 커밋된 트랜잭션은 재적용(redo), 미완료 트랜잭션은 되돌릴(undo) 수 있습니다.
+    </p>
+
+    <h3>6) Java 트랜잭션 예시</h3>
+<pre><code>// JDBC — 명시적 트랜잭션
+conn.setAutoCommit(false);
+try {
+    PreparedStatement out = conn.prepareStatement("UPDATE account SET balance = balance - ? WHERE id = ?");
+    out.setInt(1, 10000); out.setString(2, "A"); out.executeUpdate();
+
+    PreparedStatement in = conn.prepareStatement("UPDATE account SET balance = balance + ? WHERE id = ?");
+    in.setInt(1, 10000); in.setString(2, "B"); in.executeUpdate();
+
+    conn.commit();    // 여기서 WAL fsync까지 끝나고 응답
+} catch (Exception e) {
+    conn.rollback();  // 언두 로그로 원복
+}
+</code></pre>
+
+<pre><code>// Spring — 선언적 트랜잭션
+@Transactional
+public void transfer(String from, String to, int amount) {
+    accountRepo.withdraw(from, amount);
+    accountRepo.deposit(to, amount);
+    // 메서드가 정상 종료되면 commit, 예외가 나면 rollback (기본은 RuntimeException 한정)
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>속성</th><th>구현</th><th>비용</th><th>왜 그런가?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Atomicity</td><td>언두 로그</td><td>쓰기 1회당 로그 1회</td><td>변경 전 값 저장 필요</td></tr>
+        <tr><td>Consistency</td><td>제약조건 + 트리거</td><td>제약 검증 시간</td><td>각 갱신마다 무결성 검사</td></tr>
+        <tr><td>Isolation</td><td>락 / MVCC</td><td>락 대기, 버전 GC</td><td>동시성 충돌 시 대기 발생</td></tr>
+        <tr><td>Durability</td><td>WAL + fsync</td><td>커밋마다 fsync I/O</td><td>디스크 영속화는 느림. 그룹 커밋·SSD로 완화</td></tr>
+        <tr><td>throughput</td><td>—</td><td>커밋 빈도와 반비례</td><td>큰 트랜잭션 한 번이 작은 것 여러 번보다 fsync 비용은 적음</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>금융·결제·재고</strong> — 부분 적용이 절대 안 되는 도메인은 트랜잭션이 필수.</li>
+      <li><strong>여러 테이블 동시 수정</strong> — 회원가입(회원 + 권한 + 약관 동의)처럼 한 번에 묶일 작업.</li>
+      <li><strong>스프링 <code>@Transactional</code></strong> — 메서드 단위로 트랜잭션 경계를 선언적으로 표현.</li>
+      <li><strong>분산 환경의 Saga·Outbox 패턴</strong> — 여러 서비스에 걸친 트랜잭션을 ACID로 보장하기 어려울 때 보상 트랜잭션 방식으로 대체.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">ACID를 한 줄씩 설명해 보세요.</div>
+      <div class="a">
+        Atomicity: 트랜잭션의 모든 변경은 전부 적용되거나 전부 취소된다(언두 로그).
+        Consistency: 트랜잭션 시작과 끝 모두 무결성 제약과 비즈니스 불변식을 만족한다.
+        Isolation: 동시에 실행되는 트랜잭션이 서로의 중간 상태를 보지 않는다(락/MVCC).
+        Durability: 커밋된 결과는 이후 장애가 발생해도 사라지지 않는다(WAL + fsync).
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Atomicity는 어떻게 구현되나요?</div>
+      <div class="a">
+        대부분의 RDBMS는 변경 전 값을 별도의 <strong>언두 로그</strong>에 기록합니다.
+        롤백 시 언두 로그를 거꾸로 적용해 변경 전 상태로 복원하고, 장애로 미커밋 트랜잭션이 남으면 재시작 시 자동으로 되돌립니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Durability는 왜 fsync가 필요한가요?</div>
+      <div class="a">
+        OS는 쓰기 성능을 위해 데이터를 페이지 캐시에 모아뒀다가 나중에 디스크에 내립니다.
+        그 사이에 전원이 나가면 데이터가 사라질 수 있어, DB는 커밋 직전 <strong>fsync</strong>로 WAL을 디스크로 내려보내고 응답합니다.
+        그래서 fsync 성능이 곧 트랜잭션 처리량을 좌우합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Consistency는 무결성 제약과 같은 말인가요?</div>
+      <div class="a">
+        같지 않습니다. 무결성 제약은 DB가 강제하는 일부 규칙일 뿐이고, Consistency는 그것을 포함해 <strong>"어떤 시점이든 데이터가 의미 있는 상태"</strong>라는 더 넓은 약속입니다.
+        예를 들어 "주문 합계 = 주문 라인 합계"는 DB가 자동으로 못 잡는 비즈니스 불변식이지만, 이 또한 일관성의 일부입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">트랜잭션을 너무 길게 잡으면 어떤 문제가 있나요?</div>
+      <div class="a">
+        락이 오래 유지돼 다른 트랜잭션이 대기하고, MVCC에서는 옛 버전이 GC되지 못해 디스크가 부풀어 오릅니다(PostgreSQL의 long-running 트랜잭션 → bloat 문제).
+        장애 시 롤백 시간도 길어집니다. 그래서 트랜잭션은 가능한 한 짧게, 사용자 입력 대기 같은 외부 I/O는 트랜잭션 밖으로 빼는 게 원칙입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">분산 시스템에서 ACID는 어떻게 다루나요?</div>
+      <div class="a">
+        한 DB 안에서 ACID가 쉽지만, 여러 서비스에 걸친 작업은 2PC가 비용이 크고 가용성을 해치기 때문에
+        실무에선 <strong>Saga 패턴(보상 트랜잭션)</strong>이나 <strong>Outbox 패턴(이벤트와 DB 변경을 한 트랜잭션으로 묶고 비동기 발행)</strong>으로 우회합니다.
+        결과는 <em>최종 일관성</em>이지만 운영적으로 더 견고합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="isolation-level.html">격리 수준</a></li>
+      <li><a href="lock.html">락</a></li>
+      <li><a href="mvcc.html">MVCC</a></li>
+      <li><a href="indexing.html">인덱스</a></li>
+      <li><a href="index.html">데이터베이스 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="indexing.html">
+        <span class="label">이전</span>
+        ← 인덱스
+      </a>
+      <a href="index.html">📂 데이터베이스로</a>
+      <a class="next" href="isolation-level.html">
+        <span class="label">다음</span>
+        격리 수준 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

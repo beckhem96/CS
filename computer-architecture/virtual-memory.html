@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>가상 메모리 / MMU · 컴퓨터구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">컴퓨터구조</a>
+      <span class="sep">›</span>
+      <span>가상 메모리 / MMU</span>
+    </nav>
+
+    <h1>가상 메모리 / MMU</h1>
+
+    <div class="definition">
+      <strong>가상 메모리(Virtual Memory)</strong>는 각 프로세스에게 자신만의 연속된 메모리 공간이 있는 것처럼 보이게 하는 추상화입니다.
+      <strong>MMU(Memory Management Unit)</strong>는 CPU가 만든 가상 주소를 실제 RAM의 <strong>물리 주소</strong>로 변환하는 하드웨어입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      프로그램은 보통 "내가 0번 주소부터 큰 메모리를 혼자 쓰고 있다"고 생각합니다. 하지만 실제 RAM은 여러 프로세스가 함께 나눠 씁니다.
+      운영체제와 MMU는 각 프로세스에게 독립된 <strong>가상 주소 공간</strong>을 제공하고, 실제 물리 메모리의 어디에 매핑되는지는 숨깁니다.
+    </p>
+    <p>
+      이 변환은 보통 <strong>페이지(page)</strong> 단위로 이루어집니다. 가상 메모리를 일정 크기(예: 4KB)의 페이지로 나누고,
+      물리 메모리도 같은 크기의 프레임(frame)으로 나눕니다. 페이지 테이블은 "가상 페이지 번호 → 물리 프레임 번호" 매핑을 저장합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>가상 메모리가 주는 세 가지 가치</strong></p>
+      <ul>
+        <li><strong>격리</strong> — 프로세스가 다른 프로세스의 메모리를 함부로 읽거나 쓰지 못하게 합니다.</li>
+        <li><strong>편의</strong> — 각 프로세스가 연속된 큰 주소 공간을 가진 것처럼 프로그래밍할 수 있습니다.</li>
+        <li><strong>확장</strong> — 실제 RAM보다 큰 주소 공간을 디스크와 함께 사용하는 demand paging이 가능합니다.</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      가상 메모리가 없다면 프로그램은 실제 RAM 주소를 직접 다뤄야 하고, 여러 프로그램이 서로의 메모리를 덮어쓰는 사고가 쉽게 발생합니다.
+      또한 큰 프로그램을 실행하려면 반드시 그 전체가 RAM에 올라와 있어야 합니다.
+    </p>
+    <p>
+      가상 메모리는 이런 문제를 해결합니다. 프로세스마다 독립된 주소 공간을 제공하고, 필요한 페이지만 실제 메모리에 올리며,
+      접근 권한을 페이지 단위로 관리합니다. 그래서 OS 보안, 프로세스 격리, 메모리 보호, 동적 로딩, 파일 매핑이 가능해집니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 주소 변환 흐름</h3>
+    <div class="viz">
+      <svg width="640" height="270" viewBox="0 0 640 270" role="img" aria-label="가상 주소에서 물리 주소 변환">
+        <defs>
+          <marker id="vmA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="35" y="85" width="130" height="60" rx="8"/>
+        <text class="node-text" x="100" y="105">CPU</text>
+        <text class="label" x="100" y="128" text-anchor="middle">가상 주소 생성</text>
+
+        <rect class="node highlight" x="230" y="80" width="160" height="70" rx="8"/>
+        <text class="node-text" x="310" y="102" fill="#1a1a1a" font-weight="bold">MMU</text>
+        <text class="label" x="310" y="126" text-anchor="middle" fill="#1a1a1a">페이지 테이블 조회</text>
+
+        <rect class="node" x="460" y="85" width="140" height="60" rx="8"/>
+        <text class="node-text" x="530" y="105">RAM</text>
+        <text class="label" x="530" y="128" text-anchor="middle">물리 주소 접근</text>
+
+        <line x1="165" y1="115" x2="230" y2="115" stroke="var(--accent)" stroke-width="2" marker-end="url(#vmA)"/>
+        <line x1="390" y1="115" x2="460" y2="115" stroke="var(--accent)" stroke-width="2" marker-end="url(#vmA)"/>
+
+        <rect x="230" y="180" width="160" height="55" rx="8" fill="var(--bg-card)" stroke="var(--border-strong)"/>
+        <text class="node-text" x="310" y="200">Page Table</text>
+        <text class="label" x="310" y="222" text-anchor="middle">VPN → PFN</text>
+        <line x1="310" y1="150" x2="310" y2="180" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#vmA)"/>
+
+        <text class="label" x="35" y="35">가상 주소 = [가상 페이지 번호(VPN) | 오프셋]</text>
+        <text class="label" x="35" y="55">물리 주소 = [물리 프레임 번호(PFN) | 같은 오프셋]</text>
+      </svg>
+      <span class="viz-caption">오프셋은 페이지 안 위치이므로 그대로 유지되고, 페이지 번호만 프레임 번호로 바뀐다.</span>
+    </div>
+
+    <h3>2) 페이지 테이블 예시</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>가상 페이지 번호(VPN)</th><th>물리 프레임 번호(PFN)</th><th>권한</th><th>상태</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>5</td><td>읽기/실행</td><td>메모리에 있음</td></tr>
+        <tr><td>1</td><td>9</td><td>읽기/쓰기</td><td>메모리에 있음</td></tr>
+        <tr><td>2</td><td>—</td><td>읽기/쓰기</td><td>디스크에 있음(page fault)</td></tr>
+        <tr><td>3</td><td>2</td><td>읽기 전용</td><td>메모리에 있음</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) TLB — 주소 변환용 캐시</h3>
+    <p>
+      매 메모리 접근마다 페이지 테이블을 RAM에서 읽으면 너무 느립니다. 그래서 MMU 안에는 최근 주소 변환 결과를 저장하는 작은 캐시인
+      <strong>TLB(Translation Lookaside Buffer)</strong>가 있습니다. TLB hit이면 페이지 테이블을 거치지 않고 바로 물리 주소를 얻습니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="TLB 흐름">
+        <rect class="node" x="35" y="70" width="100" height="50" rx="8"/><text class="node-text" x="85" y="95">CPU</text>
+        <rect class="node highlight" x="190" y="50" width="110" height="50" rx="8"/><text class="node-text" x="245" y="75" fill="#1a1a1a" font-weight="bold">TLB</text>
+        <rect class="node" x="360" y="50" width="130" height="50" rx="8"/><text class="node-text" x="425" y="75">Page Table</text>
+        <rect class="node" x="520" y="70" width="90" height="50" rx="8"/><text class="node-text" x="565" y="95">RAM</text>
+        <line x1="135" y1="95" x2="190" y2="75" class="arrow"/>
+        <line x1="300" y1="75" x2="360" y2="75" class="arrow"/>
+        <line x1="490" y1="75" x2="520" y2="95" class="arrow"/>
+        <path d="M 245 100 C 300 150 470 150 545 120" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <text class="label" x="260" y="150" fill="var(--accent)">TLB hit이면 페이지 테이블 생략</text>
+      </svg>
+      <span class="viz-caption">TLB는 주소 변환에도 캐시가 필요하다는 사실을 보여준다.</span>
+    </div>
+
+    <h3>4) Java 코드와 가상 메모리 관점</h3>
+<pre><code>// Java 객체 생성
+byte[] data = new byte[1024 * 1024];
+
+// 개발자는 연속된 배열처럼 사용하지만,
+// OS/MMU 관점에서는 여러 가상 페이지가 여러 물리 프레임에 매핑된다.
+for (int i = 0; i &lt; data.length; i += 4096) {
+    data[i] = 1; // 새 페이지를 처음 건드리면 page fault가 발생할 수 있음
+}
+
+// 대용량 메모리 매핑 파일은 가상 메모리 기능을 적극 활용한다.
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>요소</th><th>장점</th><th>trade-off</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>페이지 테이블</td><td>유연한 주소 매핑/보호</td><td>테이블 메모리 오버헤드</td></tr>
+        <tr><td>TLB</td><td>주소 변환 속도 향상</td><td>TLB miss 시 비용 증가</td></tr>
+        <tr><td>Demand Paging</td><td>필요한 페이지만 RAM에 로드</td><td>page fault 시 매우 느림</td></tr>
+        <tr><td>큰 페이지(Huge Page)</td><td>TLB 커버리지 증가</td><td>내부 단편화 가능</td></tr>
+        <tr><td>메모리 보호</td><td>프로세스 격리/보안</td><td>권한 검사와 변환 비용</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>프로세스 격리</strong> — 각 프로세스가 독립 주소 공간을 가져 안정성과 보안이 좋아집니다.</li>
+      <li><strong>메모리 매핑 파일</strong> — 파일을 메모리처럼 접근하는 mmap, DB의 페이지 캐시.</li>
+      <li><strong>컨테이너/가상화</strong> — 주소 공간 격리와 2단계 주소 변환.</li>
+      <li><strong>성능 튜닝</strong> — TLB miss, page fault, huge page 설정이 서버 성능에 영향.</li>
+      <li><strong>JVM</strong> — 힙 메모리 예약/커밋, GC와 페이지 접근 패턴 이해에 도움.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">가상 메모리는 왜 필요한가요?</div>
+      <div class="a">
+        프로세스마다 독립된 주소 공간을 제공해 서로의 메모리를 침범하지 못하게 하고,
+        실제 물리 메모리 배치를 숨겨 프로그래밍을 단순하게 만듭니다.
+        또한 필요한 페이지만 메모리에 올리는 demand paging으로 RAM보다 큰 주소 공간을 다룰 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">MMU는 어떤 역할을 하나요?</div>
+      <div class="a">
+        CPU가 생성한 가상 주소를 물리 주소로 변환합니다.
+        이 과정에서 페이지 테이블과 TLB를 사용하고, 페이지 권한을 검사해 읽기/쓰기/실행이 허용되는지도 확인합니다.
+        권한 위반이나 페이지 부재가 있으면 예외 또는 page fault가 발생합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Page fault는 항상 오류인가요?</div>
+      <div class="a">
+        아닙니다. 필요한 페이지가 아직 RAM에 없어서 발생하는 정상적인 page fault도 있습니다.
+        OS는 디스크에서 페이지를 읽어 물리 메모리에 올린 뒤 실행을 재개합니다.
+        다만 접근 권한이 없거나 유효하지 않은 주소라면 segmentation fault 같은 오류로 이어집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">TLB가 왜 중요한가요?</div>
+      <div class="a">
+        모든 메모리 접근마다 페이지 테이블을 조회하면 메모리 접근이 두 번 이상 필요해집니다.
+        TLB는 최근 가상 페이지 → 물리 프레임 변환 결과를 캐싱해 이 비용을 크게 줄입니다.
+        TLB miss가 많으면 캐시 hit가 좋아도 주소 변환 비용 때문에 성능이 떨어질 수 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="cache-memory.html">캐시 메모리</a></li>
+      <li><a href="pipelining.html">파이프라이닝</a></li>
+      <li><a href="interrupt.html">인터럽트</a></li>
+      <li><a href="index.html">컴퓨터구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="pipelining.html">
+        <span class="label">이전</span>
+        ← 파이프라이닝
+      </a>
+      <a href="index.html">📂 컴퓨터구조로</a>
+      <a class="next" href="interrupt.html">
+        <span class="label">다음</span>
+        인터럽트 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>캐시 일관성(MESI) · 컴퓨터구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">컴퓨터구조</a>
+      <span class="sep">›</span>
+      <span>캐시 일관성</span>
+    </nav>
+
+    <h1>캐시 일관성(Cache Coherence)과 MESI</h1>
+
+    <div class="definition">
+      <strong>캐시 일관성</strong>은 멀티코어 CPU에서 여러 코어의 캐시가 같은 메모리 값을 서로 다르게 알고 있지 않도록 맞추는 규칙입니다.
+      <strong>MESI</strong>는 캐시 라인을 Modified, Exclusive, Shared, Invalid 네 상태로 관리하는 대표적인 일관성 프로토콜입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      싱글코어에서는 CPU 하나가 캐시를 쓰므로 같은 데이터의 복사본이 많아도 비교적 단순합니다. 하지만 멀티코어에서는 Core 1과 Core 2가
+      같은 메모리 주소를 각자 캐시에 올려둘 수 있습니다. 이때 Core 1이 값을 바꿨는데 Core 2가 예전 값을 계속 읽으면 프로그램은 이상하게 동작합니다.
+    </p>
+    <p>
+      캐시 일관성은 이런 문제를 막기 위해 <strong>한 코어가 캐시 라인을 쓰면 다른 코어의 복사본을 무효화하거나 최신 값을 보게 만드는 약속</strong>입니다.
+      여기서 캐시 라인(cache line)은 캐시가 데이터를 주고받는 기본 단위입니다. 보통 int 하나가 아니라 주변 바이트 묶음이 함께 이동합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>일관성(coherence)과 일관된 순서(consistency)는 다르다</strong></p>
+      <p>
+        캐시 일관성은 같은 주소에 대한 여러 캐시 복사본이 서로 모순되지 않게 하는 문제입니다.
+        메모리 일관성 모델(memory consistency model)은 여러 주소에 대한 읽기/쓰기 순서가 스레드 사이에서 어떻게 보이는지를 정하는 더 넓은 규칙입니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      멀티코어 성능은 각 코어가 가까운 캐시를 적극적으로 사용할 때 좋아집니다. 하지만 캐시를 쓰면 같은 메모리 값의 복사본이 여러 곳에 생깁니다.
+      공유 변수, 락, 큐, 카운터처럼 여러 스레드가 만지는 데이터는 항상 최신 값이 보장되어야 합니다.
+    </p>
+    <p>
+      캐시 일관성이 없다면 <code>volatile</code>, <code>synchronized</code>, 원자 연산 같은 동시성 도구도 하드웨어 위에서 신뢰할 수 없습니다.
+      그래서 CPU는 캐시 일관성 프로토콜과 메모리 배리어를 조합해 멀티스레드 프로그램의 기반을 제공합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 같은 값의 복사본이 여러 캐시에 생기는 상황</h3>
+    <div class="viz">
+      <svg width="680" height="300" viewBox="0 0 680 300" role="img" aria-label="멀티코어 캐시 복사본">
+        <defs>
+          <marker id="ccA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="70" y="45" width="160" height="80" rx="10"/>
+        <text class="node-text" x="150" y="70">Core 1</text>
+        <rect class="node highlight" x="95" y="85" width="110" height="25" rx="5"/>
+        <text class="label" x="150" y="102" text-anchor="middle" fill="#1a1a1a">Cache: x = 7</text>
+
+        <rect class="node" x="450" y="45" width="160" height="80" rx="10"/>
+        <text class="node-text" x="530" y="70">Core 2</text>
+        <rect class="node highlight" x="475" y="85" width="110" height="25" rx="5"/>
+        <text class="label" x="530" y="102" text-anchor="middle" fill="#1a1a1a">Cache: x = 7</text>
+
+        <rect class="node" x="250" y="210" width="180" height="55" rx="10"/>
+        <text class="node-text" x="340" y="232">Main Memory</text>
+        <text class="label" x="340" y="252" text-anchor="middle">x = 7</text>
+
+        <line x1="150" y1="125" x2="295" y2="210" stroke="var(--accent)" stroke-width="2" marker-end="url(#ccA)"/>
+        <line x1="530" y1="125" x2="385" y2="210" stroke="var(--accent)" stroke-width="2" marker-end="url(#ccA)"/>
+        <text class="label" x="340" y="165" text-anchor="middle">같은 캐시 라인이 여러 코어에 올라올 수 있다.</text>
+      </svg>
+      <span class="viz-caption">읽기만 할 때는 여러 코어가 같은 값을 공유해도 문제가 없다. 문제는 누군가 쓰기 시작할 때 생긴다.</span>
+    </div>
+
+    <h3>2) MESI 네 가지 상태</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>상태</th><th>의미</th><th>직관</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Modified</td><td>이 코어만 최신 값을 가지고 있고 메모리는 아직 예전 값</td><td>내가 고친 원본 초안</td></tr>
+        <tr><td>Exclusive</td><td>이 코어만 가지고 있지만 메모리와 값은 같음</td><td>나만 가진 깨끗한 복사본</td></tr>
+        <tr><td>Shared</td><td>여러 코어가 같은 값을 읽기용으로 공유</td><td>여러 명이 보는 읽기 전용 문서</td></tr>
+        <tr><td>Invalid</td><td>더 이상 믿으면 안 되는 캐시 라인</td><td>폐기된 복사본</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) 쓰기가 일어나면 다른 복사본을 무효화한다</h3>
+    <div class="viz">
+      <svg width="680" height="330" viewBox="0 0 680 330" role="img" aria-label="MESI 무효화 흐름">
+        <defs>
+          <marker id="mesiA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="label" x="340" y="30" text-anchor="middle">1. 둘 다 x=7을 Shared 상태로 읽고 있다</text>
+        <rect class="node" x="55" y="55" width="180" height="70" rx="10"/>
+        <text class="node-text" x="145" y="80">Core 1 Cache</text>
+        <text class="label" x="145" y="105" text-anchor="middle">x=7, S</text>
+        <rect class="node" x="445" y="55" width="180" height="70" rx="10"/>
+        <text class="node-text" x="535" y="80">Core 2 Cache</text>
+        <text class="label" x="535" y="105" text-anchor="middle">x=7, S</text>
+
+        <text class="label" x="340" y="170" text-anchor="middle">2. Core 1이 x=8로 쓰려면 소유권을 얻고 다른 복사본을 Invalid로 만든다</text>
+        <rect class="node highlight" x="55" y="200" width="180" height="70" rx="10"/>
+        <text class="node-text" x="145" y="225" fill="#1a1a1a" font-weight="bold">Core 1 Cache</text>
+        <text class="label" x="145" y="250" text-anchor="middle" fill="#1a1a1a">x=8, M</text>
+        <rect class="node" x="445" y="200" width="180" height="70" rx="10"/>
+        <text class="node-text" x="535" y="225">Core 2 Cache</text>
+        <text class="label" x="535" y="250" text-anchor="middle">x=?, I</text>
+        <line x1="235" y1="235" x2="445" y2="235" stroke="var(--accent)" stroke-width="2" marker-end="url(#mesiA)"/>
+        <text class="label" x="340" y="225" text-anchor="middle" fill="var(--accent)">invalidate</text>
+      </svg>
+      <span class="viz-caption">쓰기 권한은 사실상 독점권이다. 다른 코어가 가진 오래된 복사본은 Invalid가 된다.</span>
+    </div>
+
+    <h3>4) 상태 전이의 큰 흐름</h3>
+    <div class="viz">
+      <svg width="680" height="270" viewBox="0 0 680 270" role="img" aria-label="MESI 상태 전이 요약">
+        <defs>
+          <marker id="stateA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="65" y="95" width="110" height="55" rx="10"/><text class="node-text" x="120" y="128">Invalid</text>
+        <rect class="node" x="225" y="45" width="120" height="55" rx="10"/><text class="node-text" x="285" y="78">Exclusive</text>
+        <rect class="node" x="225" y="165" width="120" height="55" rx="10"/><text class="node-text" x="285" y="198">Shared</text>
+        <rect class="node highlight" x="505" y="95" width="120" height="55" rx="10"/><text class="node-text" x="565" y="128" fill="#1a1a1a" font-weight="bold">Modified</text>
+
+        <line x1="175" y1="115" x2="225" y2="80" stroke="var(--text-muted)" stroke-width="1.8" marker-end="url(#stateA)"/>
+        <text class="label" x="205" y="75">read, 혼자</text>
+        <line x1="175" y1="135" x2="225" y2="185" stroke="var(--text-muted)" stroke-width="1.8" marker-end="url(#stateA)"/>
+        <text class="label" x="205" y="180">read, 공유</text>
+        <line x1="345" y1="72" x2="505" y2="112" stroke="var(--accent)" stroke-width="2" marker-end="url(#stateA)"/>
+        <text class="label" x="425" y="83" fill="var(--accent)">write</text>
+        <line x1="345" y1="192" x2="505" y2="138" stroke="var(--accent)" stroke-width="2" marker-end="url(#stateA)"/>
+        <text class="label" x="425" y="178" fill="var(--accent)">invalidate 후 write</text>
+        <path d="M 505 135 C 430 205 370 220 345 205" fill="none" stroke="var(--text-muted)" stroke-width="1.8" marker-end="url(#stateA)"/>
+        <text class="label" x="430" y="230">다른 코어가 읽으면 공유 상태로</text>
+      </svg>
+      <span class="viz-caption">MESI의 핵심은 읽기는 공유하고, 쓰기는 독점권을 얻은 뒤 진행하는 것이다.</span>
+    </div>
+
+    <h3>5) Java 코드와 false sharing</h3>
+<pre><code>// 서로 다른 변수처럼 보여도 같은 캐시 라인에 있으면 문제가 될 수 있다.
+class Counters {
+    volatile long a = 0;
+    volatile long b = 0;
+}
+
+Counters counters = new Counters();
+
+// Thread 1: counters.a++ 반복
+// Thread 2: counters.b++ 반복
+
+// a와 b가 같은 캐시 라인에 있으면,
+// 두 스레드는 서로 다른 값을 고치는데도 같은 캐시 라인 소유권을 계속 뺏고 빼앗긴다.
+// 이런 현상을 false sharing이라고 한다.
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>항목</th><th>장점</th><th>trade-off</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>캐시 일관성</td><td>멀티코어에서도 공유 데이터의 최신성 보장</td><td>코어 간 통신, 무효화 메시지 비용</td></tr>
+        <tr><td>쓰기 무효화</td><td>쓰기 독점권을 명확히 관리</td><td>다른 코어가 다시 읽으면 캐시 미스 발생</td></tr>
+        <tr><td>공유 읽기</td><td>읽기 많은 데이터는 여러 코어가 빠르게 접근</td><td>쓰기 발생 시 모든 공유 복사본 관리 필요</td></tr>
+        <tr><td>false sharing 회피</td><td>불필요한 캐시 라인 경쟁 감소</td><td>패딩으로 메모리 사용량 증가 가능</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>멀티스레드 성능 튜닝</strong> — 공유 카운터, 큐, 락 경합에서 캐시 라인 이동 비용을 이해할 수 있습니다.</li>
+      <li><strong>false sharing 분석</strong> — 서로 다른 필드가 같은 캐시 라인에 있어 성능이 떨어지는 문제를 찾습니다.</li>
+      <li><strong>락과 원자 연산</strong> — CAS, synchronized, volatile이 왜 비싸질 수 있는지 설명하는 기반입니다.</li>
+      <li><strong>NUMA 시스템</strong> — 코어/소켓 사이 데이터 이동이 더 비싸지는 서버 환경을 이해하는 데 필요합니다.</li>
+      <li><strong>고성능 자료구조</strong> — lock-free queue, ring buffer, work stealing deque 설계에서 중요합니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">캐시 일관성이 왜 필요한가요?</div>
+      <div class="a">
+        멀티코어에서는 같은 메모리 주소의 값이 여러 코어 캐시에 복사될 수 있습니다.
+        한 코어가 값을 수정했는데 다른 코어가 오래된 복사본을 읽으면 프로그램 결과가 틀릴 수 있으므로,
+        하드웨어가 캐시 복사본의 상태를 맞춰줘야 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">MESI의 네 상태는 무엇인가요?</div>
+      <div class="a">
+        Modified는 이 캐시만 최신 값을 가진 더러운 상태, Exclusive는 이 캐시만 가진 깨끗한 상태,
+        Shared는 여러 캐시가 같은 값을 공유하는 상태, Invalid는 더 이상 사용할 수 없는 상태입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">한 코어가 Shared 상태의 캐시 라인에 쓰려면 어떻게 되나요?</div>
+      <div class="a">
+        먼저 해당 캐시 라인의 독점 소유권을 얻어야 합니다.
+        이 과정에서 다른 코어가 가진 같은 라인의 복사본은 Invalid가 되고, 쓰는 코어의 라인은 보통 Modified 상태가 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">false sharing이란 무엇인가요?</div>
+      <div class="a">
+        논리적으로는 서로 다른 변수를 각 스레드가 수정하지만, 두 변수가 같은 캐시 라인에 있어서 캐시 일관성 트래픽이 계속 발생하는 현상입니다.
+        실제 공유 데이터가 아닌데도 캐시 라인을 공유하기 때문에 성능이 크게 떨어질 수 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="cache-memory.html">캐시 메모리</a></li>
+      <li><a href="pipelining.html">파이프라이닝</a></li>
+      <li><a href="branch-prediction.html">CPU 분기 예측</a></li>
+      <li><a href="virtual-memory.html">가상 메모리 / MMU</a></li>
+      <li><a href="index.html">컴퓨터구조 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="branch-prediction.html">
+        <span class="label">이전</span>
+        ← CPU 분기 예측
+      </a>
+      <a href="index.html">📂 컴퓨터구조로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

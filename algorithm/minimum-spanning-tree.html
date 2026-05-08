@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>최소 신장 트리(MST) · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>최소 신장 트리</span>
+    </nav>
+
+    <h1>최소 신장 트리(Minimum Spanning Tree)</h1>
+
+    <div class="definition">
+      <strong>최소 신장 트리(MST)</strong>란, 가중치가 있는 <strong>무방향 연결 그래프</strong>에서
+      모든 정점을 연결하되 <strong>사이클 없이</strong>, 간선 가중치 합이 최소가 되는 트리입니다.
+      대표 알고리즘은 <strong>크루스칼(Kruskal)</strong>과 <strong>프림(Prim)</strong>입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비유하면 여러 도시를 광케이블로 연결하려고 할 때, 모든 도시가 서로 통신 가능해야 하지만 케이블 비용은 최소로 하고 싶습니다.
+      모든 도시를 직접 다 연결하면 비싸고, 중복 경로(사이클)는 비용만 늘립니다. 그래서 필요한 간선만 골라 <strong>트리</strong>를 만들고,
+      그중 비용이 가장 작은 것이 MST입니다.
+    </p>
+    <p>MST의 조건은 세 가지입니다.</p>
+    <ul>
+      <li><strong>모든 정점을 포함</strong>한다.</li>
+      <li><strong>사이클이 없다</strong> — 정점이 V개라면 간선은 정확히 V-1개.</li>
+      <li><strong>가중치 합이 최소</strong>다.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>최단 경로와 다르다</strong></p>
+      <p>
+        MST는 전체 네트워크를 싸게 연결하는 문제이고, 최단 경로는 특정 출발점에서 특정 도착점까지 가장 짧은 길을 찾는 문제입니다.
+        MST 안에서 두 정점 사이의 경로가 원래 그래프의 최단 경로라는 보장은 없습니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      네트워크 설계, 전기 배선, 도로/철도 최소 연결, 클러스터링 등에서 "모두 연결하되 비용은 최소"라는 요구가 자주 등장합니다.
+      MST는 이 요구를 정확히 수학적으로 모델링합니다.
+    </p>
+    <p>
+      또한 MST 알고리즘은 그리디가 왜 맞는지 보여주는 대표 사례입니다. 크루스칼은 가장 싼 간선부터 고르고,
+      프림은 현재 연결된 집합에서 바깥으로 나가는 가장 싼 간선을 고릅니다. 둘 다 <strong>컷 속성(cut property)</strong> 덕분에 최적해를 보장합니다.
+    </p>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 예제 그래프와 MST</h3>
+
+    <div class="viz">
+      <svg width="640" height="260" viewBox="0 0 640 260" role="img" aria-label="최소 신장 트리 예시">
+        <!-- all edges -->
+        <line x1="110" y1="70" x2="260" y2="60" class="arrow"/>
+        <line x1="110" y1="70" x2="180" y2="180" class="arrow"/>
+        <line x1="260" y1="60" x2="180" y2="180" class="arrow"/>
+        <line x1="260" y1="60" x2="420" y2="80" class="arrow"/>
+        <line x1="180" y1="180" x2="420" y2="80" class="arrow"/>
+        <line x1="180" y1="180" x2="420" y2="190" class="arrow"/>
+        <line x1="420" y1="80" x2="420" y2="190" class="arrow"/>
+        <line x1="420" y1="80" x2="560" y2="135" class="arrow"/>
+        <line x1="420" y1="190" x2="560" y2="135" class="arrow"/>
+
+        <!-- MST highlighted overlay -->
+        <line x1="110" y1="70" x2="260" y2="60" stroke="var(--accent)" stroke-width="4"/>
+        <line x1="260" y1="60" x2="180" y2="180" stroke="var(--accent)" stroke-width="4"/>
+        <line x1="260" y1="60" x2="420" y2="80" stroke="var(--accent)" stroke-width="4"/>
+        <line x1="420" y1="80" x2="420" y2="190" stroke="var(--accent)" stroke-width="4"/>
+        <line x1="420" y1="80" x2="560" y2="135" stroke="var(--accent)" stroke-width="4"/>
+
+        <!-- weights -->
+        <text class="label" x="180" y="55" fill="var(--accent)" font-weight="bold">1</text>
+        <text class="label" x="130" y="130">4</text>
+        <text class="label" x="210" y="125" fill="var(--accent)" font-weight="bold">2</text>
+        <text class="label" x="340" y="55" fill="var(--accent)" font-weight="bold">3</text>
+        <text class="label" x="310" y="145">7</text>
+        <text class="label" x="300" y="205">8</text>
+        <text class="label" x="435" y="135" fill="var(--accent)" font-weight="bold">2</text>
+        <text class="label" x="490" y="95" fill="var(--accent)" font-weight="bold">4</text>
+        <text class="label" x="490" y="185">5</text>
+
+        <!-- nodes -->
+        <circle class="node" cx="110" cy="70" r="24"/><text class="node-text" x="110" y="70">A</text>
+        <circle class="node" cx="260" cy="60" r="24"/><text class="node-text" x="260" y="60">B</text>
+        <circle class="node" cx="180" cy="180" r="24"/><text class="node-text" x="180" y="180">C</text>
+        <circle class="node" cx="420" cy="80" r="24"/><text class="node-text" x="420" y="80">D</text>
+        <circle class="node" cx="420" cy="190" r="24"/><text class="node-text" x="420" y="190">E</text>
+        <circle class="node" cx="560" cy="135" r="24"/><text class="node-text" x="560" y="135">F</text>
+
+        <text class="label" x="20" y="235">강조된 간선 합: 1 + 2 + 3 + 2 + 4 = 12</text>
+      </svg>
+      <span class="viz-caption">모든 정점이 연결되고, 간선은 V-1개이며, 사이클이 없다.</span>
+    </div>
+
+    <h3>2) 크루스칼 알고리즘</h3>
+    <p>
+      모든 간선을 가중치 오름차순으로 정렬하고, 싼 간선부터 보면서 사이클을 만들지 않으면 선택합니다.
+      사이클 여부는 <a href="union-find.html">유니온-파인드</a>로 빠르게 확인합니다.
+    </p>
+    <ol>
+      <li>간선을 가중치 오름차순으로 정렬.</li>
+      <li>각 정점을 독립 집합으로 초기화.</li>
+      <li>간선을 하나씩 보며 양 끝 정점이 다른 집합이면 선택하고 union.</li>
+      <li>간선이 V-1개 선택되면 종료.</li>
+    </ol>
+
+    <h3>3) 프림 알고리즘</h3>
+    <p>
+      하나의 정점에서 시작해, 현재 MST에 포함된 정점 집합에서 바깥으로 나가는 간선 중 가장 싼 간선을 계속 고릅니다.
+      다익스트라처럼 우선순위 큐를 쓰지만, 거리 합이 아니라 <strong>집합에 연결되는 간선 비용</strong>을 기준으로 고릅니다.
+    </p>
+
+    <div class="viz">
+      <svg width="640" height="180" viewBox="0 0 640 180" role="img" aria-label="크루스칼과 프림 비교">
+        <text class="label" x="20" y="25" font-weight="bold">크루스칼</text>
+        <text class="label" x="20" y="55">간선 전체를 싼 순서로 본다</text>
+        <text class="label" x="20" y="85">사이클 만들면 버린다</text>
+        <text class="label" x="20" y="115">유니온-파인드와 궁합 좋음</text>
+
+        <line x1="300" y1="25" x2="300" y2="145" stroke="var(--border-strong)"/>
+
+        <text class="label" x="350" y="25" font-weight="bold">프림</text>
+        <text class="label" x="350" y="55">정점 하나에서 시작한다</text>
+        <text class="label" x="350" y="85">현재 트리 바깥으로 나가는 최저 간선 선택</text>
+        <text class="label" x="350" y="115">우선순위 큐와 궁합 좋음</text>
+      </svg>
+      <span class="viz-caption">크루스칼은 간선 중심, 프림은 정점 집합 확장 중심.</span>
+    </div>
+
+    <h3>4) Java 코드로 보기</h3>
+<pre><code>import java.util.*;
+
+class Edge {
+    int u, v, w;
+    Edge(int u, int v, int w) { this.u = u; this.v = v; this.w = w; }
+}
+
+class UnionFind {
+    int[] parent, rank;
+    UnionFind(int n) {
+        parent = new int[n]; rank = new int[n];
+        for (int i = 0; i &lt; n; i++) parent[i] = i;
+    }
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    boolean union(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;
+        if (rank[ra] &lt; rank[rb]) parent[ra] = rb;
+        else if (rank[ra] &gt; rank[rb]) parent[rb] = ra;
+        else { parent[rb] = ra; rank[ra]++; }
+        return true;
+    }
+}
+
+// 크루스칼
+int kruskal(int n, List&lt;Edge&gt; edges) {
+    edges.sort(Comparator.comparingInt(e -&gt; e.w));
+    UnionFind uf = new UnionFind(n);
+    int cost = 0, count = 0;
+
+    for (Edge e : edges) {
+        if (uf.union(e.u, e.v)) {
+            cost += e.w;
+            if (++count == n - 1) break;
+        }
+    }
+    if (count != n - 1) throw new IllegalStateException("그래프가 연결되어 있지 않음");
+    return cost;
+}
+
+// 프림: adj[u] = {to, weight}
+int prim(List&lt;List&lt;int[]&gt;&gt; adj, int n) {
+    boolean[] visited = new boolean[n];
+    PriorityQueue&lt;int[]&gt; pq = new PriorityQueue&lt;&gt;(Comparator.comparingInt(a -&gt; a[1]));
+    pq.offer(new int[]{0, 0}); // {정점, 연결 비용}
+
+    int cost = 0, count = 0;
+    while (!pq.isEmpty()) {
+        int[] cur = pq.poll();
+        int u = cur[0], w = cur[1];
+        if (visited[u]) continue;
+
+        visited[u] = true;
+        cost += w;
+        count++;
+
+        for (int[] edge : adj.get(u)) {
+            if (!visited[edge[0]]) pq.offer(edge);
+        }
+    }
+    if (count != n) throw new IllegalStateException("그래프가 연결되어 있지 않음");
+    return cost;
+}
+</code></pre>
+
+    <h2>시간/공간 복잡도</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>알고리즘</th><th>시간</th><th>공간</th><th>좋은 상황</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>크루스칼</td><td>O(E log E)</td><td>O(V)</td><td>간선 리스트가 있고, 희소 그래프</td></tr>
+        <tr><td>프림 + 이진 힙</td><td>O(E log V)</td><td>O(V + E)</td><td>인접 리스트, 연결 그래프</td></tr>
+        <tr><td>프림 + 인접 행렬</td><td>O(V²)</td><td>O(V²)</td><td>밀집 그래프, V가 작음</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>네트워크 설계</strong> — 최소 비용으로 모든 지점 연결(통신망, 전력망, 배관망).</li>
+      <li><strong>클러스터링</strong> — MST를 만든 뒤 큰 간선을 끊어 군집 분리.</li>
+      <li><strong>이미지 분할</strong> — 픽셀/영역을 그래프로 보고 유사도 기반 연결.</li>
+      <li><strong>근사 알고리즘</strong> — TSP 근사해 구성의 빌딩 블록.</li>
+      <li><strong>게임/지도</strong> — 절차적 맵 생성에서 방들을 최소 연결 후 추가 간선으로 순환 경로 생성.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">MST와 최단 경로 트리는 같은 건가요?</div>
+      <div class="a">
+        아닙니다. MST는 전체 간선 비용 합을 최소화하는 트리이고, 최단 경로 트리는 특정 출발점에서 각 정점까지의 거리를 최소화하는 트리입니다.
+        MST 안의 두 정점 사이 경로가 원래 그래프의 최단 경로일 필요는 없습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">크루스칼과 프림 중 어느 걸 써야 하나요?</div>
+      <div class="a">
+        간선 리스트가 주어지고 그래프가 희소하면 크루스칼이 단순합니다. 간선을 정렬하고 유니온-파인드로 사이클만 막으면 됩니다.
+        인접 리스트로 연결 그래프를 탐색하듯 확장하고 싶으면 프림이 자연스럽습니다.
+        밀집 그래프라면 인접 행렬 기반 프림 O(V²)이 힙보다 단순하고 빠를 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">왜 가장 싼 간선을 계속 골라도 최적해가 되나요?</div>
+      <div class="a">
+        MST의 핵심 정리는 <strong>컷 속성</strong>입니다. 그래프의 정점을 두 그룹으로 나누는 임의의 컷에서,
+        그 컷을 가로지르는 가장 싼 간선은 어떤 MST에 반드시 포함될 수 있습니다.
+        크루스칼과 프림은 이 안전한 간선을 반복해서 고르는 알고리즘이라 최적해를 보장합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">그래프가 연결되어 있지 않으면 어떻게 되나요?</div>
+      <div class="a">
+        모든 정점을 하나의 트리로 연결할 수 없으므로 MST가 존재하지 않습니다.
+        대신 각 연결 요소마다 MST를 만든 <strong>최소 신장 숲(Minimum Spanning Forest)</strong>을 만들 수 있습니다.
+        코드에서는 선택된 간선 수가 V-1보다 적거나, 방문한 정점 수가 V보다 작으면 연결 그래프가 아니라고 판단합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="union-find.html">유니온-파인드</a></li>
+      <li><a href="greedy.html">그리디</a></li>
+      <li><a href="dijkstra.html">다익스트라</a></li>
+      <li><a href="../data-structure/graph.html">그래프</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="divide-and-conquer.html">
+        <span class="label">이전</span>
+        ← 분할 정복
+      </a>
+      <a href="index.html">📂 알고리즘으로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

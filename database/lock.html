@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>락 · 데이터베이스 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">데이터베이스</a>
+      <span class="sep">›</span>
+      <span>락</span>
+    </nav>
+
+    <h1>락(Lock)</h1>
+
+    <div class="definition">
+      <strong>락</strong>은 한 트랜잭션이 어떤 자원을 다루는 동안 다른 트랜잭션이 같은 자원에 접근하지 못하도록 막는 동시성 제어 도구입니다.
+      락은 <strong>모드(공유/배타), 범위(행/페이지/테이블), 종류(레코드/갭/넥스트키), 단계(인텐션 락)</strong>로 나뉘며,
+      DB 격리 수준은 결국 "어떤 락을 언제 걸지"의 정책입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      여러 트랜잭션이 같은 행을 동시에 수정하면 "마지막 수정만 살아남는" 식의 손실이 발생합니다.
+      락은 그 충돌을 사전에 차단합니다 — "내가 다 쓰기 전에는 너 못 만짐"이라고 표시해 두는 것이죠.
+    </p>
+    <p>
+      DB의 락은 OS의 뮤텍스보다 훨씬 다양합니다. "어떤 자원을, 어떤 모드로, 어느 범위까지" 잠그느냐에 따라 동시성 영향이 크게 달라집니다.
+      그래서 같은 SQL이라도 격리 수준·인덱스·옵티마이저 결정에 따라 잠기는 범위가 달라질 수 있습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>비유 — 도서관 책 대출</strong></p>
+      <p>
+        한 책을 빌리면 다른 사람은 빌릴 수 없지만(배타 락), 같은 책을 여러 명이 동시에 열람만 하는 건 허용됩니다(공유 락).
+        서가 한 칸 통째로 청소하려면 그 칸의 책 전부에 접근을 막아야 하죠(테이블 락). DB의 락도 이런 그림으로 그려보면 좋습니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>경쟁 조건 차단</strong> — 동시 갱신으로 인한 데이터 손실(Lost Update) 방지.</li>
+      <li><strong>읽기 일관성</strong> — 트랜잭션 동안 같은 데이터를 같은 모습으로 보장(REPEATABLE READ).</li>
+      <li><strong>외부 효과의 격리</strong> — 결제·재고처럼 한 번에 하나만 처리해야 하는 흐름.</li>
+      <li><strong>스키마 변경 안전성</strong> — DDL이 진행 중인 테이블에 동시에 INSERT/UPDATE가 들어오지 않도록.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 락 모드 — 공유(S) vs 배타(X)</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th></th><th>X 보유</th><th>S 보유</th><th>없음</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>X 요청</td><td>대기</td><td>대기</td><td>획득</td></tr>
+        <tr><td>S 요청</td><td>대기</td><td>획득(공유)</td><td>획득</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>S(Shared)</strong>는 여러 트랜잭션이 동시에 읽기 위해 함께 쥘 수 있고, <strong>X(Exclusive)</strong>는 단독으로만 쥘 수 있습니다.
+      S끼리는 양립하지만, X는 누구와도 양립하지 않습니다.
+    </p>
+
+    <h3>2) 락의 범위 — 행 / 페이지 / 테이블</h3>
+    <div class="viz">
+      <svg width="660" height="220" viewBox="0 0 660 220" role="img" aria-label="락 범위">
+        <text x="100" y="22" font-weight="bold" fill="var(--accent)" font-size="13">행 락</text>
+        <rect x="20" y="35" width="160" height="160" fill="var(--bg-card)" stroke="var(--border)"/>
+        <rect x="40" y="55" width="120" height="20" fill="var(--bg-elev)" stroke="var(--border)"/>
+        <rect x="40" y="80" width="120" height="20" fill="#a86464" stroke="var(--accent)"/>
+        <text x="100" y="95" font-size="11" fill="#fff" text-anchor="middle">잠긴 행</text>
+        <rect x="40" y="105" width="120" height="20" fill="var(--bg-elev)" stroke="var(--border)"/>
+        <rect x="40" y="130" width="120" height="20" fill="var(--bg-elev)" stroke="var(--border)"/>
+        <text x="100" y="180" text-anchor="middle" font-size="11" fill="var(--text-muted)">동시성↑ 비용↑</text>
+
+        <text x="320" y="22" font-weight="bold" fill="var(--accent)" font-size="13">페이지 락</text>
+        <rect x="240" y="35" width="160" height="160" fill="var(--bg-card)" stroke="var(--border)"/>
+        <rect x="260" y="55" width="120" height="65" fill="#a86464" stroke="var(--accent)"/>
+        <text x="320" y="91" font-size="11" fill="#fff" text-anchor="middle">잠긴 페이지(여러 행)</text>
+        <rect x="260" y="125" width="120" height="20" fill="var(--bg-elev)" stroke="var(--border)"/>
+        <rect x="260" y="150" width="120" height="20" fill="var(--bg-elev)" stroke="var(--border)"/>
+        <text x="320" y="180" text-anchor="middle" font-size="11" fill="var(--text-muted)">중간 절충</text>
+
+        <text x="540" y="22" font-weight="bold" fill="var(--accent)" font-size="13">테이블 락</text>
+        <rect x="460" y="35" width="160" height="160" fill="#a86464" stroke="var(--accent)"/>
+        <text x="540" y="120" text-anchor="middle" font-size="13" fill="#fff" font-weight="bold">테이블 전체</text>
+        <text x="540" y="180" text-anchor="middle" font-size="11" fill="var(--text-muted)">동시성↓ 비용↓</text>
+      </svg>
+      <span class="viz-caption">잠그는 단위가 작을수록 동시성은 높지만 락 자체의 관리 비용이 증가한다.</span>
+    </div>
+
+    <p>
+      락 단위가 작으면 메모리에 락이 많이 쌓여 관리 비용이 커지고, 단위가 크면 동시성이 떨어집니다.
+      DB는 보통 행 락을 기본으로 하되, 락 수가 임계치를 넘으면 자동으로 더 큰 단위로 묶는 <strong>락 에스컬레이션(escalation)</strong>을 합니다(SQL Server 등).
+    </p>
+
+    <h3>3) 인텐션 락(Intention Lock) — 계층 락의 효율화</h3>
+    <p>
+      행 락만 있다면 "이 테이블에 어떤 행이 잠겨 있나?"를 알기 위해 모든 행을 일일이 검사해야 합니다.
+      이를 막기 위해 큰 단위(테이블)에 "내가 안에 행 락을 갖고 있다"는 표시를 미리 걸어둡니다 — 이게 인텐션 락입니다.
+    </p>
+    <ul>
+      <li><strong>IS(Intention Shared)</strong> — 안에서 S 락을 걸 예정.</li>
+      <li><strong>IX(Intention Exclusive)</strong> — 안에서 X 락을 걸 예정.</li>
+    </ul>
+    <p>
+      덕분에 다른 트랜잭션이 테이블 락을 걸려고 할 때 IS/IX만 보면 충돌 여부를 즉시 판단할 수 있습니다.
+      InnoDB는 모든 행 락 전에 IX/IS를 자동으로 잡아 둡니다.
+    </p>
+
+    <h3>4) 레코드 / 갭 / 넥스트키 락 (InnoDB)</h3>
+    <div class="viz">
+      <svg width="700" height="180" viewBox="0 0 700 180" role="img" aria-label="갭 락">
+        <line x1="40" y1="100" x2="660" y2="100" stroke="var(--border)" stroke-width="2"/>
+        <circle cx="120" cy="100" r="8" fill="var(--accent)"/>
+        <text x="120" y="80" text-anchor="middle" font-size="12">10</text>
+        <circle cx="280" cy="100" r="8" fill="var(--accent)"/>
+        <text x="280" y="80" text-anchor="middle" font-size="12">20</text>
+        <circle cx="440" cy="100" r="8" fill="var(--accent)"/>
+        <text x="440" y="80" text-anchor="middle" font-size="12">30</text>
+        <circle cx="600" cy="100" r="8" fill="var(--accent)"/>
+        <text x="600" y="80" text-anchor="middle" font-size="12">40</text>
+
+        <rect x="280" y="92" width="160" height="16" fill="rgba(168,100,100,0.4)" stroke="var(--accent)" stroke-dasharray="3 3"/>
+        <text x="360" y="135" text-anchor="middle" font-size="12">갭 락 — 20과 30 사이에는 새 값이 들어올 수 없음</text>
+        <text x="280" y="160" text-anchor="middle" font-size="11" fill="var(--text-muted)">레코드 락(20)</text>
+        <text x="360" y="160" text-anchor="middle" font-size="11" fill="var(--text-muted)">+ 갭 락(20~30)</text>
+        <text x="440" y="160" text-anchor="middle" font-size="11" fill="var(--text-muted)">= Next-Key</text>
+      </svg>
+      <span class="viz-caption">Next-Key Lock = 인덱스 키(레코드) + 그 키 앞의 갭. 범위에 새 값이 끼어드는 Phantom을 막는다.</span>
+    </div>
+
+    <ul>
+      <li><strong>레코드 락(Record Lock)</strong> — 인덱스 항목 자체에 거는 락.</li>
+      <li><strong>갭 락(Gap Lock)</strong> — 인덱스 항목들 사이의 빈 구간에 거는 락. 새 행 INSERT 차단.</li>
+      <li><strong>넥스트키 락(Next-Key Lock)</strong> — 레코드 + 그 앞 갭. InnoDB의 REPEATABLE READ에서 Phantom을 막는 핵심.</li>
+    </ul>
+
+<pre><code>-- InnoDB, REPEATABLE READ
+SELECT * FROM orders WHERE id BETWEEN 20 AND 30 FOR UPDATE;
+-- 20, 30에 레코드 락 + (20~30) 갭 락 + 30 위쪽 갭 락이 함께 걸린다.
+-- 이 사이에 INSERT id=25를 시도하는 다른 트랜잭션은 대기.
+</code></pre>
+
+    <h3>5) 데드락(Deadlock) — 서로의 락을 기다림</h3>
+    <div class="viz">
+      <svg width="640" height="200" viewBox="0 0 640 200" role="img" aria-label="데드락">
+        <defs>
+          <marker id="dlArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#e74c3c"/>
+          </marker>
+        </defs>
+        <rect x="40"  y="60" width="120" height="60" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="100" y="80" text-anchor="middle" font-size="13" font-weight="bold">T1</text>
+        <text x="100" y="100" text-anchor="middle" font-size="11" fill="var(--text-muted)">행 A 보유</text>
+        <text x="100" y="115" text-anchor="middle" font-size="11" fill="var(--text-muted)">행 B 대기</text>
+
+        <rect x="480" y="60" width="120" height="60" fill="var(--bg-card)" stroke="var(--accent)"/>
+        <text x="540" y="80" text-anchor="middle" font-size="13" font-weight="bold">T2</text>
+        <text x="540" y="100" text-anchor="middle" font-size="11" fill="var(--text-muted)">행 B 보유</text>
+        <text x="540" y="115" text-anchor="middle" font-size="11" fill="var(--text-muted)">행 A 대기</text>
+
+        <line x1="160" y1="80" x2="480" y2="80" stroke="#e74c3c" stroke-width="2" marker-end="url(#dlArr)"/>
+        <line x1="480" y1="110" x2="160" y2="110" stroke="#e74c3c" stroke-width="2" marker-end="url(#dlArr)"/>
+
+        <text x="320" y="68" text-anchor="middle" font-size="12" fill="#e74c3c" font-weight="bold">T1 → T2 (B 대기)</text>
+        <text x="320" y="135" text-anchor="middle" font-size="12" fill="#e74c3c" font-weight="bold">T2 → T1 (A 대기)</text>
+        <text x="320" y="170" text-anchor="middle" font-size="13" fill="#e74c3c" font-weight="bold">대기 그래프에 사이클 → 데드락</text>
+      </svg>
+      <span class="viz-caption">두 트랜잭션이 서로 상대가 가진 락을 기다리는 사이클이 생기면 데드락이다.</span>
+    </div>
+
+    <p>
+      대부분의 RDBMS는 <strong>대기 그래프(wait-for graph)</strong>를 만들어 사이클이 감지되면 한쪽을 강제로 abort합니다.
+      MySQL은 비용이 적은 쪽을 victim으로 선택하고 deadlock 에러(<code>1213</code>)를 던집니다.
+      애플리케이션은 이 에러를 잡고 <strong>자동 재시도</strong>를 구현해야 합니다.
+    </p>
+
+    <h4>데드락 예방 패턴</h4>
+    <ul>
+      <li><strong>잠금 순서 통일</strong> — 항상 같은 순서로 자원에 접근(예: id가 작은 행부터).</li>
+      <li><strong>트랜잭션 짧게</strong> — 외부 I/O를 트랜잭션 밖으로.</li>
+      <li><strong>인덱스 점검</strong> — 풀스캔으로 잠기는 행이 많아져 데드락이 늘어남.</li>
+      <li><strong>적절한 격리 수준</strong> — REPEATABLE READ에서 갭 락이 의외로 데드락의 주범이 되기도 함.</li>
+    </ul>
+
+    <h3>6) 비관적 락 vs 낙관적 락</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>관점</th><th>비관적 락</th><th>낙관적 락</th><th>왜 그런가?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>가정</td><td>충돌 잦음</td><td>충돌 드묾</td><td>가정에 맞춰 비용 위치가 다름</td></tr>
+        <tr><td>구현</td><td>FOR UPDATE</td><td>version 컬럼</td><td>DB 락 vs 애플리케이션 검사</td></tr>
+        <tr><td>대기</td><td>락 대기 발생</td><td>없음(충돌 시 재시도)</td><td>락은 즉시 막고, 낙관은 사후 감지</td></tr>
+        <tr><td>처리량</td><td>충돌이 많으면 유리</td><td>충돌이 드물면 유리</td><td>대기 vs 재시도 트레이드오프</td></tr>
+        <tr><td>데드락 위험</td><td>있음</td><td>거의 없음</td><td>락이 없으니 사이클이 안 생김</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7) Java 코드 — JPA 낙관적 / 비관적 락</h3>
+<pre><code>// 비관적 락
+@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("SELECT a FROM Account a WHERE a.id = :id")
+Account lockForUpdate(@Param("id") Long id);
+// 내부적으로 SELECT ... FOR UPDATE 발행
+
+// 낙관적 락
+@Entity
+public class Account {
+    @Id Long id;
+    int balance;
+    @Version Long version;   // UPDATE 시 자동으로 검사·증가
+}
+// 다른 트랜잭션이 먼저 커밋했다면 OptimisticLockException → 재시도
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>락 단위와 동시성</strong> — 작을수록 동시성 ↑, 락 관리 비용 ↑.</li>
+      <li><strong>락 보유 시간과 throughput</strong> — 트랜잭션이 길면 다른 트랜잭션이 대기해 처리량이 급감한다.</li>
+      <li><strong>인덱스가 없으면 더 많이 잠긴다</strong> — InnoDB는 행을 찾지 못하면 모든 검사 행에 락을 거는데, 풀스캔이면 사실상 테이블 락처럼 동작.</li>
+      <li><strong>SELECT도 락을 걸 수 있다</strong> — <code>FOR UPDATE</code>, <code>FOR SHARE</code>(LOCK IN SHARE MODE) 또는 SERIALIZABLE 격리에서.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>재고 차감 / 결제 / 좌석 예약</strong> — 비관적 락으로 동시 구매 충돌 방지.</li>
+      <li><strong>게시글 수정 / 사용자 프로필</strong> — 낙관적 락이 적합(동시 수정이 드묾).</li>
+      <li><strong>배치 작업의 lease 패턴</strong> — <code>SELECT ... FOR UPDATE SKIP LOCKED</code>로 큐를 분산 처리.</li>
+      <li><strong>DDL 잠금</strong> — 운영 중 ALTER TABLE 시 메타데이터 락이 다른 트랜잭션을 대기시킬 수 있어 시간 창 관리 중요.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">공유 락과 배타 락의 차이를 호환성 매트릭스로 설명해 주세요.</div>
+      <div class="a">
+        S끼리는 호환되어 여러 트랜잭션이 동시에 읽을 수 있지만, 한쪽이라도 X를 잡으면 다른 어떤 락과도 호환되지 않아 대기합니다.
+        그래서 X 락은 한 번에 하나만, S 락은 여러 트랜잭션이 함께 보유할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">인텐션 락은 왜 필요한가요?</div>
+      <div class="a">
+        테이블 단위로 락 충돌을 빠르게 판정하기 위해서입니다.
+        행 락만 있다면 "이 테이블 안에 어떤 행이 잠겼는가?"를 알기 위해 모든 행을 검사해야 하는데,
+        IS/IX를 테이블 레벨에 미리 올려두면 이를 O(1)로 확인할 수 있습니다. 락 계층화의 효율화 장치입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">갭 락과 넥스트키 락은 무슨 차이인가요?</div>
+      <div class="a">
+        갭 락은 인덱스 항목 사이의 빈 구간에 거는 락으로, 그 사이로 새 행이 INSERT되는 것을 막습니다.
+        넥스트키 락은 레코드 락 + 그 앞 갭 락의 결합으로, InnoDB의 REPEATABLE READ에서 범위 SELECT 시 Phantom을 막기 위해 자동으로 사용됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">데드락은 어떻게 감지하고 대응하나요?</div>
+      <div class="a">
+        DB는 wait-for 그래프에 사이클이 생기면 데드락으로 판단해 한쪽을 abort합니다(MySQL은 영향 행이 적은 쪽).
+        애플리케이션은 데드락 에러를 잡아 재시도해야 하며, 예방 측면에서는 잠금 순서 통일·트랜잭션 단축·인덱스 점검이 효과적입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">비관적 락과 낙관적 락 중 무엇을 선택해야 하나요?</div>
+      <div class="a">
+        <strong>충돌 빈도</strong>로 결정합니다. 동일 자원을 여러 사용자가 자주 동시에 갱신하면(재고, 좌석) 비관적 락이 유리하고,
+        충돌이 드물면(게시글 수정) 낙관적 락이 처리량과 단순성에서 유리합니다. 낙관은 데드락 위험이 거의 없습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">SELECT ... FOR UPDATE SKIP LOCKED는 언제 쓰나요?</div>
+      <div class="a">
+        DB를 큐로 사용할 때 워커들이 서로 다른 작업을 가져가도록 만들 때 씁니다.
+        SKIP LOCKED는 이미 잠긴 행을 건너뛰어 즉시 다음 행을 잡으므로, 락 대기 없이 작업을 분산 처리할 수 있습니다.
+        Postgres 9.5+, MySQL 8 이상에서 지원됩니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="isolation-level.html">격리 수준</a></li>
+      <li><a href="mvcc.html">MVCC</a></li>
+      <li><a href="../operating-system/synchronization.html">OS 동기화 — 뮤텍스/세마포어</a></li>
+      <li><a href="../operating-system/deadlock.html">OS 데드락</a></li>
+      <li><a href="index.html">데이터베이스 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="isolation-level.html">
+        <span class="label">이전</span>
+        ← 격리 수준
+      </a>
+      <a href="index.html">📂 데이터베이스로</a>
+      <a class="next" href="mvcc.html">
+        <span class="label">다음</span>
+        MVCC →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

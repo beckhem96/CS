@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>컴퓨터구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <span>컴퓨터구조</span>
+    </nav>
+
+    <h1>🖥️ 컴퓨터구조</h1>
+    <p class="lead">
+      컴퓨터구조(Computer Architecture)는 프로그램이 실제 하드웨어 위에서 어떻게 실행되는지 이해하는 분야입니다.
+      CPU, 메모리, 캐시, 명령어, 인터럽트 같은 개념을 알면 "왜 이 코드가 빠른가/느린가"를 더 깊게 설명할 수 있습니다.
+      여기서는 추상적인 하드웨어 용어를 실행 흐름과 그림 중심으로 정리합니다.
+    </p>
+
+    <section class="concept-section">
+      <h2>CPU와 명령어 실행</h2>
+      <p>프로그램 명령어가 CPU 안에서 어떤 부품을 거쳐 실행되는지 다룹니다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="cpu-components.html">CPU 구성 요소</a>
+          <span class="summary">ALU, 제어 장치, 레지스터, 버스가 함께 명령어를 실행하는 구조.</span>
+        </li>
+        <li>
+          <a href="instruction-cycle.html">명령어 사이클</a>
+          <span class="summary">Fetch → Decode → Execute → Writeback 흐름으로 한 명령어가 처리되는 과정.</span>
+        </li>
+        <li>
+          <a href="pipelining.html">파이프라이닝(Pipelining)</a>
+          <span class="summary">명령어 단계를 겹쳐 처리해 처리량을 높이는 구조. 해저드가 핵심.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h2>메모리 계층</h2>
+      <p>CPU와 메모리 사이의 속도 차이를 줄이기 위한 계층 구조와 주소 변환을 다룹니다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="cache-memory.html">캐시 메모리</a>
+          <span class="summary">L1/L2/L3 캐시, 지역성 원리, 캐시 히트/미스와 성능 영향.</span>
+        </li>
+        <li>
+          <a href="virtual-memory.html">가상 메모리 / MMU</a>
+          <span class="summary">가상 주소를 물리 주소로 바꾸고 프로세스별 독립 주소 공간을 제공.</span>
+        </li>
+        <li>
+          <a href="tlb.html">TLB(Translation Lookaside Buffer)</a>
+          <span class="summary">페이지 테이블 조회 결과를 캐싱해 주소 변환 비용을 줄이는 작은 캐시.</span>
+        </li>
+        <li>
+          <a href="cache-coherence.html">캐시 일관성(MESI)</a>
+          <span class="summary">멀티코어에서 여러 캐시의 같은 데이터가 서로 어긋나지 않게 맞추는 규칙.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h2>성능 심화</h2>
+      <p>CPU가 높은 처리량을 유지하기 위해 사용하는 예측과 최적화 기법입니다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="branch-prediction.html">CPU 분기 예측</a>
+          <span class="summary">분기 결과를 미리 추측해 파이프라인을 계속 채우고, 실패 시 flush 비용을 치르는 구조.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h2>시스템 이벤트</h2>
+      <p>CPU가 외부 장치나 예외 상황에 반응하는 방식입니다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="interrupt.html">인터럽트(Interrupt)</a>
+          <span class="summary">외부 장치나 예외가 CPU의 현재 흐름을 잠시 멈추고 처리 루틴으로 이동시키는 메커니즘.</span>
+        </li>
+      </ul>
+    </section>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="../index.html">🏠 홈으로</a>
+      <span></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>쿠키 / 세션 / JWT · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">네트워크</a><span class="sep">›</span><span>쿠키 / 세션 / JWT</span></nav>
+    <h1>쿠키 / 세션 / JWT</h1>
+    <div class="definition"><strong>쿠키</strong>는 브라우저가 서버별로 저장하고 매 요청에 자동으로 붙이는 작은 데이터이고, <strong>세션</strong>은 서버가 상태를 저장하고 쿠키에는 세션 ID만 담는 방식입니다. <strong>JWT(JSON Web Token)</strong>는 서명된 토큰 안에 사용자 정보와 만료 시간을 담아 서버가 저장소 조회 없이 검증할 수 있게 하는 방식입니다.</div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>HTTP는 무상태(stateless)입니다. 서버는 방금 전 요청을 보낸 사용자가 누구였는지 기본적으로 기억하지 않습니다. 그런데 실제 서비스에는 로그인, 장바구니, 권한 확인처럼 상태가 필요합니다. 그래서 브라우저와 서버 사이에 "너는 방금 로그인한 사용자야"를 표현하는 장치가 필요합니다.</p>
+    <p>가장 기본 도구가 쿠키입니다. 서버가 응답에 <code>Set-Cookie</code>를 보내면 브라우저가 저장하고, 이후 같은 조건에 맞는 요청마다 <code>Cookie</code> 헤더로 자동 전송합니다. 세션은 이 쿠키에 실제 사용자 정보를 넣지 않고, 무작위 세션 ID만 넣은 뒤 서버 저장소에서 상태를 찾는 방식입니다. JWT는 반대로 상태 일부를 토큰 자체에 담고 서명으로 위조를 막습니다.</p>
+
+    <div class="callout"><p><strong>쿠키는 저장 위치, 세션/JWT는 인증 설계 방식</strong></p><p>쿠키 vs JWT처럼 비교하면 조금 헷갈립니다. JWT도 쿠키에 저장할 수 있고, 세션 ID도 쿠키에 저장합니다. 정확히는 "브라우저가 무엇을 저장하느냐"와 "서버가 상태를 어디에 두느냐"를 나눠 봐야 합니다.</p></div>
+
+    <h2>왜 필요한가?</h2>
+    <p>로그인 후 모든 요청에 아이디와 비밀번호를 다시 보내는 건 위험하고 불편합니다. 대신 로그인 성공 시 서버가 "이 사용자는 인증됐다"는 증표를 발급하고, 이후 요청은 그 증표만 보내게 합니다. 이 증표가 세션 ID일 수도 있고 JWT일 수도 있습니다.</p>
+    <p>좋은 인증 방식은 보안과 운영 편의의 균형입니다. 세션은 서버가 즉시 무효화할 수 있어 안전하지만 저장소가 필요합니다. JWT는 여러 서버가 쉽게 검증할 수 있어 확장성이 좋지만, 발급된 토큰을 중간에 회수하기 어렵습니다.</p>
+
+    <h2>어떻게 동작하는가?</h2>
+    <h3>1) 쿠키의 기본 흐름</h3>
+    <div class="viz"><svg width="680" height="260" viewBox="0 0 680 260" role="img" aria-label="쿠키 흐름"><defs><marker id="ckA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs><line x1="120" y1="40" x2="120" y2="235" stroke="var(--border)"/><line x1="560" y1="40" x2="560" y2="235" stroke="var(--border)"/><text class="label" x="120" y="30" text-anchor="middle" font-weight="bold">Browser</text><text class="label" x="560" y="30" text-anchor="middle" font-weight="bold">Server</text><line x1="120" y1="70" x2="560" y2="90" stroke="var(--accent)" stroke-width="2" marker-end="url(#ckA)"/><text class="label" x="340" y="65" text-anchor="middle">POST /login</text><line x1="560" y1="120" x2="120" y2="140" stroke="var(--accent)" stroke-width="2" marker-end="url(#ckA)"/><text class="label" x="340" y="115" text-anchor="middle">Set-Cookie: sid=abc; HttpOnly; Secure</text><rect class="node highlight" x="65" y="155" width="110" height="45" rx="6"/><text class="label" x="120" y="183" text-anchor="middle" fill="#1a1a1a">쿠키 저장</text><line x1="120" y1="210" x2="560" y2="225" stroke="var(--accent)" stroke-width="2" marker-end="url(#ckA)"/><text class="label" x="340" y="207" text-anchor="middle">GET /me + Cookie: sid=abc</text></svg><span class="viz-caption">쿠키는 브라우저가 조건에 맞는 요청에 자동 첨부한다. JS가 직접 붙이는 Authorization 헤더와 다르다.</span></div>
+
+    <h3>2) 쿠키 속성</h3>
+    <table class="complexity"><thead><tr><th>속성</th><th>의미</th><th>보안 영향</th></tr></thead><tbody><tr><td>Domain</td><td>쿠키를 보낼 도메인 범위</td><td>너무 넓게 잡으면 서브도메인 탈취 영향 증가</td></tr><tr><td>Path</td><td>쿠키를 보낼 경로 범위</td><td>보안 경계로 믿으면 안 됨</td></tr><tr><td>Expires / Max-Age</td><td>만료 시각 / 상대 시간</td><td>짧을수록 탈취 피해 감소</td></tr><tr><td>HttpOnly</td><td>JavaScript에서 읽기 금지</td><td>XSS로 토큰 탈취 방지에 중요</td></tr><tr><td>Secure</td><td>HTTPS에서만 전송</td><td>평문 네트워크 탈취 방지</td></tr><tr><td>SameSite</td><td>교차 사이트 요청에 쿠키 전송 제한</td><td>CSRF 방어 핵심</td></tr></tbody></table>
+
+    <h3>3) 세션 방식</h3>
+    <p>세션 방식은 서버 저장소에 사용자 상태를 두고, 브라우저에는 <strong>랜덤한 세션 ID</strong>만 둡니다. 요청이 오면 서버가 세션 ID로 Redis/DB/메모리에서 사용자를 찾습니다.</p>
+    <div class="viz"><svg width="680" height="260" viewBox="0 0 680 260" role="img" aria-label="세션 인증 흐름"><defs><marker id="ssA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker></defs><rect class="node" x="40" y="90" width="130" height="60" rx="8"/><text class="node-text" x="105" y="125">Browser</text><rect class="node highlight" x="275" y="90" width="130" height="60" rx="8"/><text class="node-text" x="340" y="125" fill="#1a1a1a">App Server</text><rect class="node" x="510" y="90" width="130" height="60" rx="8"/><text class="node-text" x="575" y="115">Session</text><text class="node-text" x="575" y="135">Store</text><line x1="170" y1="110" x2="275" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#ssA)"/><text class="label" x="222" y="100" text-anchor="middle">Cookie: sid</text><line x1="405" y1="110" x2="510" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#ssA)"/><text class="label" x="457" y="100" text-anchor="middle">sid 조회</text><line x1="510" y1="135" x2="405" y2="135" stroke="var(--accent)" stroke-width="2" marker-end="url(#ssA)"/><text class="label" x="457" y="155" text-anchor="middle">user=42</text><text class="label" x="340" y="205" text-anchor="middle">로그아웃/차단 시 세션 저장소에서 sid 삭제 → 즉시 무효화 가능</text></svg></div>
+
+    <h3>4) JWT 방식</h3>
+    <p>JWT는 세 부분으로 이루어집니다: <strong>Header.Payload.Signature</strong>. Header는 알고리즘, Payload는 claim(사용자 ID, 권한, 만료 등), Signature는 위조 방지 서명입니다.</p>
+    <div class="viz"><svg width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="JWT 구조"><rect class="node highlight" x="40" y="65" width="170" height="70" rx="8"/><text class="node-text" x="125" y="95" fill="#1a1a1a">Header</text><text class="label" x="125" y="118" text-anchor="middle" fill="#1a1a1a">alg, typ</text><text class="label" x="225" y="105" font-size="28">.</text><rect class="node" x="255" y="65" width="170" height="70" rx="8"/><text class="node-text" x="340" y="95">Payload</text><text class="label" x="340" y="118" text-anchor="middle">sub, exp, roles</text><text class="label" x="440" y="105" font-size="28">.</text><rect class="node" x="470" y="65" width="170" height="70" rx="8"/><text class="node-text" x="555" y="95">Signature</text><text class="label" x="555" y="118" text-anchor="middle">HMAC/RSA/ECDSA</text><text class="label" x="340" y="175" text-anchor="middle">Payload는 Base64Url 인코딩일 뿐 암호화가 아니다. 민감정보를 넣으면 안 된다.</text></svg></div>
+
+    <h3>5) Access Token + Refresh Token</h3>
+    <p>JWT는 한 번 발급되면 만료 전까지 회수하기 어렵습니다. 그래서 실무에서는 짧은 수명의 <strong>Access Token</strong>과 긴 수명의 <strong>Refresh Token</strong>을 나눕니다.</p>
+    <ul><li>Access Token: API 호출에 사용, 수명 5~30분.</li><li>Refresh Token: 새 Access Token 발급용, 수명 며칠~몇 주. 서버 DB에 저장해 회수 가능하게 운영.</li><li>Refresh Token Rotation: 갱신할 때마다 refresh token도 새로 발급하고 이전 것은 폐기해 탈취 재사용을 감지.</li></ul>
+
+    <h3>6) Java 예시</h3>
+<pre><code>// Spring에서 안전한 세션 쿠키 설정 예시
+ResponseCookie cookie = ResponseCookie.from("sid", sessionId)
+    .httpOnly(true)
+    .secure(true)
+    .sameSite("Lax")
+    .path("/")
+    .maxAge(Duration.ofHours(2))
+    .build();
+response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+</code></pre>
+<pre><code>// JWT 검증의 핵심 흐름(개념 코드)
+String token = authorizationHeader.substring("Bearer ".length());
+Jws&lt;Claims&gt; parsed = Jwts.parserBuilder()
+    .setSigningKey(publicKeyOrSecret)
+    .build()
+    .parseClaimsJws(token);       // 서명 검증 + exp 검증
+String userId = parsed.getBody().getSubject();</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity"><thead><tr><th>방식</th><th>장점</th><th>단점</th><th>적합한 경우</th></tr></thead><tbody><tr><td>세션</td><td>즉시 무효화 가능, payload 작음</td><td>저장소 필요, 서버 간 공유 필요</td><td>일반 웹 앱, 높은 보안 요구</td></tr><tr><td>JWT</td><td>서버 저장소 조회 없이 검증, 서비스 간 전달 쉬움</td><td>회수 어려움, 토큰 커짐, payload 노출</td><td>분산 API, SSO, 짧은 토큰</td></tr><tr><td>쿠키 저장</td><td>브라우저 자동 전송, HttpOnly 가능</td><td>CSRF 고려 필요</td><td>웹 브라우저 기반 인증</td></tr><tr><td>localStorage 저장</td><td>CSRF 영향 적음, JS 제어 쉬움</td><td>XSS 시 탈취 쉬움</td><td>권장 낮음, 네이티브 앱과 구분 필요</td></tr></tbody></table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul><li><strong>전통 서버 렌더링 웹</strong> — 세션 + HttpOnly/Secure/SameSite 쿠키.</li><li><strong>SPA + API</strong> — 쿠키 세션 또는 JWT. CORS credentials와 SameSite 설정을 함께 고려.</li><li><strong>모바일 앱</strong> — Authorization Bearer 토큰 저장, OS 보안 저장소 사용.</li><li><strong>SSO</strong> — OAuth 2.0/OIDC에서 ID Token(JWT)과 Access Token을 사용.</li><li><strong>마이크로서비스</strong> — 게이트웨이에서 토큰 검증 후 내부 claim 전달.</li></ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+    <div class="qa"><div class="q">세션과 JWT의 핵심 차이는?</div><div class="a">세션은 상태를 서버 저장소에 두고 클라이언트에는 ID만 둡니다. JWT는 토큰 자체에 claim을 담고 서명으로 위조를 막습니다. 세션은 회수가 쉽고, JWT는 분산 검증이 쉽습니다.</div></div>
+    <div class="qa"><div class="q">JWT payload에 비밀번호나 개인정보를 넣어도 되나요?</div><div class="a">안 됩니다. JWT의 payload는 Base64Url 인코딩일 뿐 암호화가 아닙니다. 누구나 디코딩해서 볼 수 있으므로 민감정보는 넣지 말고 식별자와 최소 권한 정보만 넣어야 합니다.</div></div>
+    <div class="qa"><div class="q">HttpOnly와 Secure의 의미는?</div><div class="a">HttpOnly는 JavaScript에서 쿠키를 읽지 못하게 해 XSS로 토큰을 훔치는 것을 어렵게 합니다. Secure는 HTTPS 연결에서만 쿠키를 보내 평문 네트워크 탈취를 막습니다.</div></div>
+    <div class="qa"><div class="q">SameSite는 무엇을 막나요?</div><div class="a">교차 사이트 요청에 쿠키를 자동으로 보낼지 제한해 CSRF를 줄입니다. Lax는 일반 링크 이동에는 보내지만 위험한 cross-site POST에는 제한하고, Strict는 더 엄격하며, None은 Secure와 함께 써야 합니다.</div></div>
+    <div class="qa"><div class="q">JWT를 로그아웃시키기 어려운 이유는?</div><div class="a">서버가 상태를 저장하지 않고 서명만 검증하므로, 이미 발급된 토큰은 만료 전까지 유효합니다. 해결하려면 짧은 access token, refresh token rotation, blacklist 또는 token version을 사용해야 합니다.</div></div>
+    <div class="qa"><div class="q">쿠키 기반 인증은 왜 CSRF에 취약한가요?</div><div class="a">브라우저가 해당 사이트 쿠키를 자동으로 붙이기 때문입니다. 악성 사이트가 폼 제출이나 이미지 요청을 유도하면 사용자의 쿠키가 함께 전송될 수 있습니다. SameSite와 CSRF token으로 방어합니다.</div></div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips"><li><a href="cors.html">CORS</a></li><li><a href="http-https.html">HTTP / HTTPS</a></li><li><a href="http-versions.html">HTTP/1.1 vs 2 vs 3</a></li><li><a href="index.html">네트워크 목록</a></li></ul>
+    <nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="cors.html"><span class="label">이전</span>← CORS</a><a href="index.html">📂 네트워크로</a><a class="next" href="ip-cidr.html"><span class="label">다음</span>IP 주소 / CIDR →</a></nav>
+  </main>
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
