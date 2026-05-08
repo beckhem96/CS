@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SQL 기본 (DDL / DML / DCL / TCL) · 데이터베이스 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">데이터베이스</a>
+      <span class="sep">›</span>
+      <span>SQL 기본</span>
+    </nav>
+
+    <h1>SQL 기본 — DDL / DML / DCL / TCL</h1>
+
+    <div class="definition">
+      <strong>SQL(Structured Query Language)</strong>은 관계형 데이터베이스와 대화하기 위한 표준 언어입니다.
+      "이런 결과를 원해"라고 <em>선언</em>하면 DBMS가 어떻게 가져올지 결정합니다.
+      하는 일에 따라 <strong>DDL(스키마)</strong>, <strong>DML(데이터)</strong>, <strong>DCL(권한)</strong>, <strong>TCL(트랜잭션)</strong> 네 가지 카테고리로 묶입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      SQL은 1974년 IBM에서 만들어진 언어로, "<em>어떻게</em> 가져올지" 대신 "<em>무엇을</em> 원하는지"를 적는 <strong>선언형(declarative)</strong> 언어입니다.
+      <code>SELECT name FROM users WHERE age &gt; 30</code>이라고 쓰면, DBMS가 인덱스를 쓸지 풀스캔할지, 어떤 순서로 조인할지를 옵티마이저가 알아서 결정합니다.
+    </p>
+    <p>
+      SQL이 다루는 작업은 크게 네 부류로 나뉩니다. 이 네 부류는 각각 <strong>스키마를 다루는가, 데이터를 다루는가, 권한을 다루는가, 트랜잭션을 다루는가</strong>에 대응합니다.
+      이 분류를 알면 어떤 명령이 어떤 결과를 만드는지 직관적으로 떠올릴 수 있습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>한 줄 요약 — 4가지 카테고리</strong></p>
+      <ul style="margin:8px 0;">
+        <li><strong>DDL</strong> (Data Definition) — 표·인덱스 같은 구조를 정의 (<code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>, <code>TRUNCATE</code>)</li>
+        <li><strong>DML</strong> (Data Manipulation) — 행을 읽고 쓰고 바꾸기 (<code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>)</li>
+        <li><strong>DCL</strong> (Data Control) — 권한 부여·회수 (<code>GRANT</code>, <code>REVOKE</code>)</li>
+        <li><strong>TCL</strong> (Transaction Control) — 트랜잭션 경계 (<code>BEGIN</code>, <code>COMMIT</code>, <code>ROLLBACK</code>, <code>SAVEPOINT</code>)</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      SQL이 없다면 우리는 디스크 블록 번호를 직접 지정해 데이터를 읽고 쓰거나, 각 DB마다 다른 API를 배워야 합니다.
+      관계형 DB가 30년 넘게 표준이 된 핵심 이유 중 하나가 SQL입니다.
+    </p>
+    <ul>
+      <li><strong>표현 통일</strong> — Oracle·MySQL·PostgreSQL이 방언은 다르지만 SQL이라는 공통 언어를 공유합니다. 한 번 배우면 어느 DB에서든 시작할 수 있습니다.</li>
+      <li><strong>옵티마이저에 위임</strong> — "이 결과가 필요하다"만 적으면 <em>어떻게</em>는 DBMS가 결정합니다. 데이터가 늘어나도 같은 SQL을 그대로 쓸 수 있습니다.</li>
+      <li><strong>집합 연산</strong> — for 루프 대신 한 번의 <code>JOIN</code>·<code>GROUP BY</code>로 집합 단위 사고를 할 수 있어 코드와 성능이 모두 단순해집니다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) DDL — 구조를 정의·변경</h3>
+    <p>
+      DDL은 테이블·인덱스·뷰·제약조건처럼 <strong>스키마 자체</strong>를 다룹니다.
+      대부분 자동 커밋되어 한 번 실행하면 이전 상태로 되돌릴 수 없는 DBMS도 있고(MySQL),
+      트랜잭션 안에서 롤백 가능한 DBMS도 있습니다(PostgreSQL).
+    </p>
+<pre><code>-- 테이블 생성
+CREATE TABLE users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    age INT CHECK (age &gt;= 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 컬럼 추가
+ALTER TABLE users ADD COLUMN nickname VARCHAR(50);
+
+-- 인덱스 생성
+CREATE INDEX idx_users_email ON users(email);
+
+-- 표 자체 삭제(스키마까지) vs 데이터만 비우기
+DROP TABLE users;        -- 스키마 + 데이터 모두 사라짐
+TRUNCATE TABLE users;    -- 스키마는 유지, 데이터만 빠르게 비움
+</code></pre>
+
+    <h3>2) DML — 데이터를 읽고 쓰기</h3>
+    <p>
+      가장 자주 쓰이는 카테고리입니다. <code>SELECT</code>는 데이터를 가져오기, 나머지는 데이터를 바꾸기에 쓰입니다.
+      <code>SELECT</code>의 절(clause) 실행 순서는 작성 순서와 다릅니다 — 이게 SQL을 처음 배울 때 가장 많이 헷갈리는 지점입니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="280" viewBox="0 0 680 280" role="img" aria-label="SELECT 절 실행 순서">
+        <defs>
+          <marker id="sqlA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="label" x="340" y="20" text-anchor="middle">작성 순서: SELECT → FROM → WHERE → GROUP BY → HAVING → ORDER BY → LIMIT</text>
+        <text class="label" x="340" y="40" text-anchor="middle">실행 순서:</text>
+
+        <rect class="node highlight" x="20" y="60" width="100" height="50" rx="6"/>
+        <text class="node-text" x="70" y="85" fill="#1a1a1a" font-weight="bold">FROM</text>
+        <text class="label" x="70" y="100" text-anchor="middle" fill="#1a1a1a">테이블 선택</text>
+
+        <rect class="node" x="140" y="60" width="100" height="50" rx="6"/>
+        <text class="node-text" x="190" y="85">WHERE</text>
+        <text class="label" x="190" y="100" text-anchor="middle">행 필터</text>
+
+        <rect class="node" x="260" y="60" width="120" height="50" rx="6"/>
+        <text class="node-text" x="320" y="85">GROUP BY</text>
+        <text class="label" x="320" y="100" text-anchor="middle">그룹화</text>
+
+        <rect class="node" x="400" y="60" width="100" height="50" rx="6"/>
+        <text class="node-text" x="450" y="85">HAVING</text>
+        <text class="label" x="450" y="100" text-anchor="middle">그룹 필터</text>
+
+        <rect class="node highlight" x="520" y="60" width="120" height="50" rx="6"/>
+        <text class="node-text" x="580" y="85" fill="#1a1a1a" font-weight="bold">SELECT</text>
+        <text class="label" x="580" y="100" text-anchor="middle" fill="#1a1a1a">컬럼 투영</text>
+
+        <rect class="node" x="200" y="160" width="120" height="50" rx="6"/>
+        <text class="node-text" x="260" y="185">ORDER BY</text>
+        <text class="label" x="260" y="200" text-anchor="middle">정렬</text>
+
+        <rect class="node" x="360" y="160" width="120" height="50" rx="6"/>
+        <text class="node-text" x="420" y="185">LIMIT</text>
+        <text class="label" x="420" y="200" text-anchor="middle">개수 자르기</text>
+
+        <line x1="120" y1="85" x2="140" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#sqlA)"/>
+        <line x1="240" y1="85" x2="260" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#sqlA)"/>
+        <line x1="380" y1="85" x2="400" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#sqlA)"/>
+        <line x1="500" y1="85" x2="520" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#sqlA)"/>
+        <path d="M 580 110 C 580 140 320 140 320 160" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#sqlA)"/>
+        <line x1="320" y1="185" x2="360" y2="185" stroke="var(--accent)" stroke-width="2" marker-end="url(#sqlA)"/>
+
+        <text class="label" x="340" y="255" text-anchor="middle">"WHERE는 그룹화 전, HAVING은 그룹화 후" — 이 차이가 핵심</text>
+      </svg>
+      <span class="viz-caption">SELECT 절은 마지막에 실행되기에 SELECT에서 만든 별칭(alias)을 WHERE에서는 못 쓰고 ORDER BY에서는 쓸 수 있다.</span>
+    </div>
+<pre><code>-- 조회
+SELECT u.email, COUNT(*) AS post_count
+FROM users u
+JOIN posts p ON p.user_id = u.id
+WHERE u.created_at &gt;= '2025-01-01'
+GROUP BY u.email
+HAVING COUNT(*) &gt;= 3
+ORDER BY post_count DESC
+LIMIT 10;
+
+-- 삽입 / 변경 / 삭제
+INSERT INTO users (email, age) VALUES ('a@x.com', 28);
+UPDATE users SET age = age + 1 WHERE email = 'a@x.com';
+DELETE FROM users WHERE age &lt; 18;
+</code></pre>
+
+    <h3>3) DCL — 권한 부여와 회수</h3>
+    <p>
+      누가 어떤 테이블에 어떤 작업을 할 수 있는지 통제합니다. 보안의 1차 방어선이지만, 실무에선 OS·애플리케이션 레벨 인증과 함께 다층 방어를 구성합니다.
+      DBA가 주로 다루지만, 백엔드 개발자도 "<em>왜 이 계정으로는 이 쿼리가 안 되는가</em>"를 디버깅할 때 알아야 합니다.
+    </p>
+<pre><code>-- 권한 부여
+GRANT SELECT, INSERT ON orders TO app_user;
+
+-- 권한 회수
+REVOKE INSERT ON orders FROM app_user;
+
+-- 역할 기반(많은 DB가 지원)
+CREATE ROLE readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;
+GRANT readonly TO analytics_user;
+</code></pre>
+
+    <h3>4) TCL — 트랜잭션 경계</h3>
+    <p>
+      여러 DML을 하나의 단위로 묶어 "전부 적용되거나, 전부 무효" 둘 중 하나로 만드는 명령입니다.
+      ACID의 'A(원자성)'를 SQL 차원에서 통제하는 통로입니다. 자세한 메커니즘은 <a href="transaction-acid.html">트랜잭션 ACID</a> 페이지에서 다룹니다.
+    </p>
+<pre><code>BEGIN;                  -- 또는 START TRANSACTION
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT;                 -- 둘 다 반영 (실패 시 ROLLBACK)
+
+-- 부분 롤백
+BEGIN;
+INSERT INTO logs (msg) VALUES ('start');
+SAVEPOINT sp1;
+UPDATE accounts SET balance = balance - 9999 WHERE id = 1;
+ROLLBACK TO sp1;        -- UPDATE만 취소, INSERT는 살아있음
+COMMIT;
+</code></pre>
+
+    <h3>5) SQL 한 문장이 실행되는 흐름</h3>
+    <div class="viz">
+      <svg width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="SQL 실행 흐름">
+        <defs>
+          <marker id="exA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="20" y="80" width="100" height="60" rx="6"/>
+        <text class="node-text" x="70" y="108">파서</text>
+        <text class="label" x="70" y="125" text-anchor="middle">구문 분석</text>
+
+        <rect class="node" x="150" y="80" width="120" height="60" rx="6"/>
+        <text class="node-text" x="210" y="108">분석기</text>
+        <text class="label" x="210" y="125" text-anchor="middle">테이블/컬럼 검증</text>
+
+        <rect class="node highlight" x="300" y="80" width="120" height="60" rx="6"/>
+        <text class="node-text" x="360" y="108" fill="#1a1a1a" font-weight="bold">옵티마이저</text>
+        <text class="label" x="360" y="125" text-anchor="middle" fill="#1a1a1a">실행 계획 선택</text>
+
+        <rect class="node" x="450" y="80" width="100" height="60" rx="6"/>
+        <text class="node-text" x="500" y="108">실행기</text>
+        <text class="label" x="500" y="125" text-anchor="middle">계획대로 실행</text>
+
+        <rect class="node" x="580" y="80" width="80" height="60" rx="6" fill="#444"/>
+        <text class="node-text" x="620" y="108">결과</text>
+
+        <line x1="120" y1="110" x2="150" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#exA)"/>
+        <line x1="270" y1="110" x2="300" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#exA)"/>
+        <line x1="420" y1="110" x2="450" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#exA)"/>
+        <line x1="550" y1="110" x2="580" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#exA)"/>
+
+        <text class="label" x="340" y="190" text-anchor="middle">옵티마이저가 인덱스 선택·조인 순서·접근 방식을 결정한다 — EXPLAIN으로 그 결과를 들여다볼 수 있다.</text>
+      </svg>
+      <span class="viz-caption">SQL은 선언형이지만, 그 안에서 옵티마이저라는 명령형 결정이 일어난다.</span>
+    </div>
+
+    <h3>6) 자주 헷갈리는 SQL 함정</h3>
+    <ul>
+      <li><strong>NULL 비교</strong> — <code>x = NULL</code>은 항상 <code>UNKNOWN</code>입니다. <code>IS NULL</code>·<code>IS NOT NULL</code>을 써야 합니다.</li>
+      <li><strong><code>COUNT(*)</code> vs <code>COUNT(col)</code></strong> — 후자는 NULL을 빼고 셉니다. 전자는 행의 존재만 셉니다.</li>
+      <li><strong><code>INNER JOIN</code> vs <code>LEFT JOIN</code></strong> — INNER는 양쪽에 모두 있는 행만, LEFT는 왼쪽 모든 행 + 매칭이 없으면 오른쪽은 NULL.</li>
+      <li><strong><code>GROUP BY</code> + 비집계 컬럼</strong> — SELECT에 들어간 비집계 컬럼은 GROUP BY에 모두 있어야 합니다(표준).</li>
+      <li><strong><code>WHERE</code> vs <code>HAVING</code></strong> — 그룹화 전 필터는 WHERE, 그룹 결과 필터는 HAVING.</li>
+      <li><strong>정렬 안정성</strong> — <code>ORDER BY</code> 없이 <code>LIMIT</code>만 쓰면 결과 순서가 보장되지 않습니다.</li>
+    </ul>
+
+    <h2>trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>설계 결정</th><th>장점</th><th>비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>선언형 SQL</td><td>읽기 쉽고, 옵티마이저가 자동 최적화</td><td>"왜 이렇게 느린가?"가 옵티마이저 선택에 의존 → EXPLAIN 필수</td></tr>
+        <tr><td>표준 SQL 고수</td><td>이식성, 학습 비용 절감</td><td>DB별 강력한 기능(<code>RETURNING</code>, JSON 연산자 등)을 못 씀</td></tr>
+        <tr><td>ORM 사용 (SQL 자동 생성)</td><td>객체 모델과 일치, 보일러플레이트 감소</td><td>N+1 쿼리, 복잡 쿼리에서 SQL 직시(直視) 필요</td></tr>
+        <tr><td>저장 프로시저로 로직 이전</td><td>네트워크 왕복 감소, 권한 통제</td><td>버전 관리·테스트가 어려워지고, 벤더 종속성 증가</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>스키마 마이그레이션</strong> — Flyway·Liquibase는 DDL 스크립트를 버전 관리해 배포 자동화에 씁니다.</li>
+      <li><strong>분석 쿼리</strong> — BI 도구·노트북에서 <code>SELECT … GROUP BY … HAVING …</code>로 집계 리포트를 만듭니다.</li>
+      <li><strong>ORM 디버깅</strong> — JPA·SQLAlchemy가 만든 SQL을 읽고 N+1, 카르테시안 곱을 식별합니다.</li>
+      <li><strong>데이터 보정</strong> — 운영 사고 시 한 번의 <code>UPDATE … WHERE …</code>로 잘못된 행을 일괄 수정합니다(트랜잭션으로 감싸야 함).</li>
+      <li><strong>권한 격리</strong> — 운영용·읽기 전용·배치용 계정을 GRANT로 분리해 사고 범위를 줄입니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">SQL은 어떤 언어이고, 왜 선언형이라고 부르나요?</div>
+      <div class="a">
+        SQL은 관계형 DB와 대화하기 위한 표준 언어로, 데이터를 어떻게 가져올지가 아니라 무엇을 원하는지를 적습니다.
+        같은 결과를 만드는 방법이 여러 가지일 때, 옵티마이저가 통계와 인덱스를 바탕으로 가장 빠른 방법을 자동으로 고릅니다.
+        그래서 같은 SQL이 데이터 양이 늘어도 옵티마이저 선택에 따라 빠르게 동작할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DDL, DML, DCL, TCL의 차이는 무엇인가요?</div>
+      <div class="a">
+        DDL은 테이블·인덱스 같은 스키마를 정의·변경하는 명령(CREATE/ALTER/DROP),
+        DML은 행 단위로 데이터를 읽고 쓰는 명령(SELECT/INSERT/UPDATE/DELETE),
+        DCL은 권한을 주고 회수하는 명령(GRANT/REVOKE),
+        TCL은 트랜잭션 경계를 통제하는 명령(BEGIN/COMMIT/ROLLBACK)입니다. 다루는 대상이 달라서 분리되어 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">WHERE와 HAVING은 어떻게 다른가요?</div>
+      <div class="a">
+        WHERE는 그룹화(GROUP BY) 전에 개별 행을 필터링하고, HAVING은 그룹화 후 집계 결과를 필터링합니다.
+        예를 들어 <code>WHERE age &gt; 30</code>은 30살 초과 행만 그룹에 들어가게 하고,
+        <code>HAVING COUNT(*) &gt;= 3</code>은 그룹 중 행이 3개 이상인 그룹만 남깁니다.
+        실행 순서로 봐도 WHERE가 GROUP BY보다 먼저, HAVING은 더 나중입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DELETE, TRUNCATE, DROP의 차이는 무엇인가요?</div>
+      <div class="a">
+        DELETE는 DML로, 조건을 걸어 행을 지우고 트랜잭션 안에서 롤백할 수 있으며 트리거가 동작합니다.
+        TRUNCATE는 DDL에 가깝고 테이블의 모든 행을 빠르게 비우며, 보통 트랜잭션 롤백·트리거가 제한됩니다.
+        DROP은 테이블 자체(스키마 + 데이터)를 삭제합니다. 속도와 가역성이 다르므로 의도에 맞게 골라야 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">INNER JOIN과 LEFT JOIN의 차이는 무엇인가요?</div>
+      <div class="a">
+        INNER JOIN은 양쪽 테이블에서 조인 조건을 만족하는 행만 결과에 포함합니다.
+        LEFT JOIN은 왼쪽 테이블의 모든 행을 보존하고, 오른쪽에 매칭이 없으면 NULL로 채웁니다.
+        "왼쪽 모든 사용자와 그들이 쓴 글(없을 수도 있음)"을 한 번에 가져올 때 LEFT JOIN을 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">NULL 비교는 왜 조심해야 하나요?</div>
+      <div class="a">
+        SQL의 NULL은 "값이 없음"을 의미하며, 어떤 값과의 비교(<code>=</code>, <code>&lt;&gt;</code>, <code>&gt;</code>)도 결과가 TRUE/FALSE가 아닌 UNKNOWN이 됩니다.
+        그래서 <code>WHERE col = NULL</code>은 어떤 행도 매칭되지 않습니다. 반드시 <code>IS NULL</code>·<code>IS NOT NULL</code>을 사용해야 하고,
+        집계 함수도 NULL을 어떻게 다루는지(예: <code>COUNT(col)</code>은 NULL 제외) 정확히 알아야 합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="normalization.html">정규화</a></li>
+      <li><a href="transaction-acid.html">트랜잭션 ACID</a></li>
+      <li><a href="indexing.html">인덱스</a></li>
+      <li><a href="execution-plan.html">실행 계획</a></li>
+      <li><a href="index.html">데이터베이스 목록</a></li>
+    </ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="er-modeling.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">ER 모델링과 DB 설계</span>
+            <span class="hint">SQL을 쓰기 전에 — 어떤 테이블을 만들지 결정하는 단계</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="normalization.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">정규화</span>
+            <span class="hint">스키마를 깔끔하게 다듬는 다음 단계</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="er-modeling.html">
+        <span class="label">이전</span>
+        ← ER 모델링
+      </a>
+      <a href="index.html">📂 데이터베이스로</a>
+      <a class="next" href="normalization.html">
+        <span class="label">다음</span>
+        정규화 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

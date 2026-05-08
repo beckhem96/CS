@@ -65,5 +65,28 @@ container.textContent = userComment;</code></pre>
 <div class="qa"><div class="q">localStorage에 JWT를 저장하면 왜 위험한가요?</div><div class="a">localStorage는 JS에서 접근 가능하므로 XSS가 발생하면 토큰을 그대로 읽어 외부로 보낼 수 있습니다. 인증 토큰은 가능하면 짧은 수명의 access token + HttpOnly refresh cookie 또는 서버 세션 방식으로 관리하는 것이 안전합니다.</div></div>
 
 <h2>관련 개념</h2><ul class="related-chips"><li><a href="http-web-api.html">HTTP와 Web API</a></li><li><a href="../network/cors.html">CORS</a></li><li><a href="../network/cookies-session-jwt.html">쿠키 / 세션 / JWT</a></li><li><a href="index.html">Web 목록</a></li></ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="../network/cookies-session-jwt.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">쿠키 / 세션 / JWT</span>
+            <span class="hint">보안과 직결된 인증 메커니즘</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="../network/http-https.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">HTTPS</span>
+            <span class="hint">보안 통신의 기반 한 번 더 점검</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
 <nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="http-web-api.html"><span class="label">이전</span>← HTTP와 Web API</a><a href="index.html">📂 Web으로</a><span></span></nav>
 </main><script src="../assets/js/common.js"></script></body></html>

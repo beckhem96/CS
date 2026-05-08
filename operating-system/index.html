@@ -87,6 +87,36 @@
     </section>
 
     <section class="concept-section">
+      <h3>프로세스 내부 구조</h3>
+      <p>OS가 프로세스 하나를 어떻게 관리하고, 그 안에 메모리를 어떻게 배치하는지 다룹니다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="pcb-tcb.html">PCB / TCB</a>
+          <span class="summary">프로세스/스레드 제어 블록 — OS가 실행 단위마다 들고 있는 자료구조의 정체.</span>
+        </li>
+        <li>
+          <a href="memory-layout.html">프로세스 메모리 레이아웃</a>
+          <span class="summary">code / data / heap / stack / 공유 라이브러리 영역과 각각의 성장 방향.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>커널 인터페이스</h3>
+      <p>응용 프로그램이 커널의 힘을 빌리는 통로 — 모든 시스템 동작의 출발점입니다.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="system-call.html">시스템 콜 / 유저 vs 커널 모드</a>
+          <span class="summary">진입 메커니즘(syscall, sysenter), 모드 전환 비용, 권한 분리.</span>
+        </li>
+        <li>
+          <a href="ipc.html">IPC (프로세스 간 통신)</a>
+          <span class="summary">파이프, 메시지 큐, 공유 메모리, 시그널, 도메인 소켓.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
       <h3>메모리와 파일</h3>
       <p>프로그램에 메모리와 저장 공간을 어떻게 보여주고 관리하는지 다룹니다.</p>
       <ul class="concept-list">
@@ -121,14 +151,6 @@
     <section class="concept-section">
       <h3>커널·I/O 심화</h3>
       <ul class="concept-list">
-        <li class="todo">
-          <a>IPC(Inter-Process Communication) <span class="badge-todo">작성 예정</span></a>
-          <span class="summary">파이프, 메시지 큐, 공유 메모리, 시그널, 도메인 소켓.</span>
-        </li>
-        <li class="todo">
-          <a>시스템 콜과 커널/사용자 모드 <span class="badge-todo">작성 예정</span></a>
-          <span class="summary">진입 메커니즘(syscall, sysenter), 컨텍스트 비용.</span>
-        </li>
         <li class="todo">
           <a>I/O 모델 <span class="badge-todo">작성 예정</span></a>
           <span class="summary">블로킹/논블로킹/비동기, select·poll·epoll·io_uring.</span>

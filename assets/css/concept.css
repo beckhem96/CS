@@ -141,3 +141,52 @@ table.complexity td code {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* 다음으로 알아볼 개념 - 학습 순서 카드 */
+.next-concepts {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.next-concepts li { margin: 0; }
+.next-concepts a {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.next-concepts a:hover {
+  border-color: var(--accent);
+  transform: translateX(2px);
+}
+.next-concepts .arrow {
+  font-size: 18px;
+  line-height: 1.5;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.next-concepts .body {
+  flex: 1;
+  min-width: 0;
+}
+.next-concepts .title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.next-concepts .hint {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}

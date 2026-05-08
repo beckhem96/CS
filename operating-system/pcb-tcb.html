@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PCB / TCB · 운영체제 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">운영체제</a>
+      <span class="sep">›</span>
+      <span>PCB / TCB</span>
+    </nav>
+
+    <h1>PCB / TCB — 프로세스·스레드 제어 블록</h1>
+
+    <div class="definition">
+      <strong>PCB(Process Control Block)</strong>는 운영체제가 프로세스 하나를 관리하기 위해 들고 있는 자료구조이고,
+      <strong>TCB(Thread Control Block)</strong>는 그 안에서 스레드 하나를 관리하기 위한 자료구조입니다.
+      프로세스/스레드가 사라지기 전까지 OS는 이 블록 안에 <em>지금까지 어디까지 실행했는지</em>, <em>어떤 자원을 쓰고 있는지</em>를 전부 적어둡니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      OS 입장에서 프로세스는 코드와 메모리만으로는 부족합니다. CPU에서 잠시 내려와 다른 프로세스에 자리를 양보했다가 다시 돌아왔을 때
+      "내가 어디까지 실행했지?", "어떤 파일을 열어뒀지?", "어떤 시그널을 처리하기로 했지?"를 OS가 대신 기억해 줘야 합니다.
+      이 정보를 모아 둔 <strong>커널 메모리 안의 구조체</strong>가 바로 PCB입니다.
+    </p>
+    <p>
+      현대 OS는 한 프로세스에 여러 스레드를 둘 수 있기 때문에, 실제로는 <strong>주소 공간·열린 파일·프로세스 권한 같은 공유 자원은 PCB가</strong>,
+      <strong>프로그램 카운터·스택 포인터·레지스터 같은 실행 흐름 정보는 TCB가</strong> 들고 있습니다.
+      PCB와 TCB는 부모-자식처럼 연결되어 있어, 한 프로세스의 모든 TCB는 같은 PCB를 가리킵니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>"프로세스" = 자원의 컨테이너, "스레드" = 그 안의 실행 흐름</strong></p>
+      <p>
+        그래서 PCB는 격리된 자원(메모리 맵·FD 테이블·시그널 핸들러·UID/GID 등)을 들고,
+        TCB는 흐름 자체(레지스터·커널 스택·스케줄링 우선순위·상태)를 들고 있습니다.
+        이 분리를 알면 fork/clone, 스레드 안전성, 컨텍스트 스위칭 비용이 한 번에 이해됩니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      OS가 다중 작업을 지원하려면 "지금 CPU에 안 올라와 있는 프로세스의 상태"를 어딘가에 적어둬야 합니다.
+      그렇지 않으면 다시 그 프로세스에 CPU를 줬을 때 어디서부터 실행해야 할지를 알 수 없습니다.
+      이 "어딘가"가 바로 PCB이고, OS는 PCB를 통해 다음 세 가지를 동시에 해냅니다.
+    </p>
+    <ul>
+      <li><strong>실행 재개</strong> — 컨텍스트 스위칭 시 CPU 레지스터를 PCB/TCB에 저장하고 복원합니다.</li>
+      <li><strong>스케줄링</strong> — ready/waiting 큐는 사실 PCB 포인터들의 연결 리스트입니다. 우선순위·상태·CPU 친화도 같은 메타데이터가 모두 PCB에 있습니다.</li>
+      <li><strong>자원 회수</strong> — 프로세스가 종료될 때 OS는 PCB를 보고 열린 파일·메모리·자식 프로세스를 정리합니다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) PCB 안에 들어가는 정보</h3>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="PCB 구조">
+        <rect class="node highlight" x="240" y="20" width="200" height="44" rx="8"/>
+        <text class="node-text" x="340" y="48" fill="#1a1a1a" font-weight="bold">PCB (process_t)</text>
+
+        <rect class="node" x="40" y="90" width="200" height="50" rx="6"/>
+        <text class="node-text" x="140" y="112">식별 정보</text>
+        <text class="label" x="140" y="130" text-anchor="middle">PID, PPID, UID/GID</text>
+
+        <rect class="node" x="260" y="90" width="200" height="50" rx="6"/>
+        <text class="node-text" x="360" y="112">상태</text>
+        <text class="label" x="360" y="130" text-anchor="middle">new / ready / running / waiting / terminated</text>
+
+        <rect class="node" x="480" y="90" width="160" height="50" rx="6"/>
+        <text class="node-text" x="560" y="112">스케줄링 정보</text>
+        <text class="label" x="560" y="130" text-anchor="middle">우선순위, nice, 정책</text>
+
+        <rect class="node" x="40" y="160" width="200" height="50" rx="6"/>
+        <text class="node-text" x="140" y="182">CPU 컨텍스트</text>
+        <text class="label" x="140" y="200" text-anchor="middle">PC, SP, 레지스터 스냅샷</text>
+
+        <rect class="node" x="260" y="160" width="200" height="50" rx="6"/>
+        <text class="node-text" x="360" y="182">메모리 정보</text>
+        <text class="label" x="360" y="200" text-anchor="middle">페이지 테이블, 영역 매핑</text>
+
+        <rect class="node" x="480" y="160" width="160" height="50" rx="6"/>
+        <text class="node-text" x="560" y="182">FD 테이블</text>
+        <text class="label" x="560" y="200" text-anchor="middle">열린 파일·소켓</text>
+
+        <rect class="node" x="40" y="230" width="200" height="50" rx="6"/>
+        <text class="node-text" x="140" y="252">시그널·IPC</text>
+        <text class="label" x="140" y="270" text-anchor="middle">핸들러, 마스크, 큐</text>
+
+        <rect class="node" x="260" y="230" width="200" height="50" rx="6"/>
+        <text class="node-text" x="360" y="252">통계 / 회계</text>
+        <text class="label" x="360" y="270" text-anchor="middle">CPU 사용 시간, 시작 시각</text>
+
+        <rect class="node" x="480" y="230" width="160" height="50" rx="6"/>
+        <text class="node-text" x="560" y="252">관계</text>
+        <text class="label" x="560" y="270" text-anchor="middle">부모/자식, 스레드 리스트</text>
+
+        <text class="label" x="340" y="305" text-anchor="middle">PCB 하나에 한 프로세스를 운영하기 위한 모든 메타데이터가 들어있다.</text>
+      </svg>
+      <span class="viz-caption">PCB의 9개 핵심 카테고리 — 어떤 OS든 이름만 다를 뿐 거의 같은 정보를 담는다.</span>
+    </div>
+
+    <h3>2) 프로세스 상태 모델과 PCB의 state 필드</h3>
+    <div class="viz">
+      <svg width="680" height="240" viewBox="0 0 680 240" role="img" aria-label="프로세스 5-state 모델">
+        <defs>
+          <marker id="pcbA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="20" y="100" width="100" height="50" rx="8"/><text class="node-text" x="70" y="130">New</text>
+        <rect class="node" x="160" y="100" width="100" height="50" rx="8"/><text class="node-text" x="210" y="130">Ready</text>
+        <rect class="node highlight" x="300" y="100" width="100" height="50" rx="8"/><text class="node-text" x="350" y="130" fill="#1a1a1a" font-weight="bold">Running</text>
+        <rect class="node" x="440" y="100" width="100" height="50" rx="8"/><text class="node-text" x="490" y="130">Waiting</text>
+        <rect class="node" x="580" y="100" width="80" height="50" rx="8"/><text class="node-text" x="620" y="130">Terminated</text>
+
+        <line x1="120" y1="125" x2="160" y2="125" stroke="var(--accent)" stroke-width="2" marker-end="url(#pcbA)"/>
+        <text class="label" x="140" y="115" text-anchor="middle">admit</text>
+
+        <line x1="260" y1="125" x2="300" y2="125" stroke="var(--accent)" stroke-width="2" marker-end="url(#pcbA)"/>
+        <text class="label" x="280" y="115" text-anchor="middle">dispatch</text>
+
+        <path d="M 350 100 C 320 60 240 60 210 100" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#pcbA)"/>
+        <text class="label" x="280" y="56" text-anchor="middle">timer / preempt</text>
+
+        <line x1="400" y1="125" x2="440" y2="125" stroke="var(--accent)" stroke-width="2" marker-end="url(#pcbA)"/>
+        <text class="label" x="420" y="115" text-anchor="middle">I/O wait</text>
+
+        <path d="M 490 150 C 400 200 270 200 210 150" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#pcbA)"/>
+        <text class="label" x="350" y="200" text-anchor="middle">I/O complete</text>
+
+        <line x1="400" y1="135" x2="580" y2="135" stroke="var(--accent)" stroke-width="2" marker-end="url(#pcbA)"/>
+        <text class="label" x="490" y="155" text-anchor="middle">exit</text>
+      </svg>
+      <span class="viz-caption">PCB의 <code>state</code> 필드는 이 다이어그램의 한 노드 값을 그대로 담는다.</span>
+    </div>
+
+    <h3>3) PCB는 큐로 묶여 스케줄러에 노출된다</h3>
+    <p>
+      OS의 스케줄러는 PCB를 직접 들여다보지 않고, <strong>"준비 큐(ready queue)"·"대기 큐(I/O wait queue)" 같은 PCB 포인터의 연결 리스트</strong>로 보관합니다.
+      준비 큐의 head를 꺼내 CPU에 올리고, 타이머 인터럽트가 오면 다시 큐 끝에 붙입니다. 그래서 PCB에는 <em>큐 연결을 위한 다음 PCB 포인터</em>가 거의 항상 들어있습니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="200" viewBox="0 0 680 200" role="img" aria-label="ready queue로 연결된 PCB">
+        <defs>
+          <marker id="qA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="label" x="40" y="40">Ready Queue</text>
+        <rect class="node highlight" x="40" y="60" width="120" height="60" rx="8"/>
+        <text class="node-text" x="100" y="86" fill="#1a1a1a" font-weight="bold">PCB #42</text>
+        <text class="label" x="100" y="106" text-anchor="middle" fill="#1a1a1a">state=ready</text>
+
+        <rect class="node" x="200" y="60" width="120" height="60" rx="8"/>
+        <text class="node-text" x="260" y="86">PCB #15</text>
+        <text class="label" x="260" y="106" text-anchor="middle">state=ready</text>
+
+        <rect class="node" x="360" y="60" width="120" height="60" rx="8"/>
+        <text class="node-text" x="420" y="86">PCB #88</text>
+        <text class="label" x="420" y="106" text-anchor="middle">state=ready</text>
+
+        <line x1="160" y1="90" x2="200" y2="90" stroke="var(--accent)" stroke-width="2" marker-end="url(#qA)"/>
+        <line x1="320" y1="90" x2="360" y2="90" stroke="var(--accent)" stroke-width="2" marker-end="url(#qA)"/>
+
+        <rect class="node" x="540" y="60" width="120" height="60" rx="8" fill="#444"/>
+        <text class="node-text" x="600" y="86">CPU 코어 0</text>
+        <text class="label" x="600" y="106" text-anchor="middle">running PCB #7</text>
+
+        <line x1="480" y1="90" x2="540" y2="90" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#qA)"/>
+        <text class="label" x="510" y="78" text-anchor="middle">dispatch</text>
+
+        <text class="label" x="340" y="170" text-anchor="middle">스케줄러는 PCB의 next 포인터를 따라 다음 실행 후보를 고른다.</text>
+      </svg>
+      <span class="viz-caption">"프로세스 테이블"은 PCB 배열, "준비 큐"는 PCB 포인터 리스트다.</span>
+    </div>
+
+    <h3>4) Linux의 PCB — <code>task_struct</code></h3>
+    <p>
+      리눅스에서는 PCB와 TCB의 구분이 없습니다. <strong>모든 실행 단위(스레드 포함)는 <code>task_struct</code> 한 종류로 표현</strong>되고,
+      "프로세스"는 같은 메모리 맵·FD 테이블을 공유하는 <code>task_struct</code> 그룹일 뿐입니다.
+      <code>clone()</code> 시 어떤 자원을 공유할지 플래그로 결정합니다.
+    </p>
+<pre><code>// 핵심 필드만 추린 task_struct (Linux 커널 일부 발췌)
+struct task_struct {
+    pid_t pid;                 // 스레드 ID
+    pid_t tgid;                // 같은 프로세스의 스레드들이 공유하는 ID
+    long state;                // TASK_RUNNING, TASK_INTERRUPTIBLE 등
+
+    struct mm_struct *mm;      // 메모리 맵 (스레드끼리 공유 → 같은 mm)
+    struct files_struct *files;// FD 테이블
+    struct signal_struct *signal;
+    struct cred *cred;         // 보안 자격(UID, capabilities)
+
+    struct sched_entity se;    // 스케줄러용 메타데이터
+    struct list_head tasks;    // 전역 task 리스트 연결
+
+    struct task_struct *parent;
+    struct list_head children;
+};
+</code></pre>
+
+    <h3>5) PCB와 TCB의 관계 — 스레드는 무엇을 따로 갖는가</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>자원</th><th>프로세스(PCB) 수준</th><th>스레드(TCB) 수준</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>주소 공간 / 페이지 테이블</td><td>공유 — 같은 mm</td><td>공유</td></tr>
+        <tr><td>FD 테이블</td><td>공유</td><td>공유</td></tr>
+        <tr><td>시그널 핸들러</td><td>공유</td><td>마스크는 별도</td></tr>
+        <tr><td>UID/GID, capabilities</td><td>공유</td><td>공유</td></tr>
+        <tr><td>레지스터 / PC / SP</td><td>—</td><td>각자</td></tr>
+        <tr><td>커널 스택</td><td>—</td><td>각자</td></tr>
+        <tr><td>스케줄링 상태·우선순위</td><td>—</td><td>각자</td></tr>
+        <tr><td>TLS (Thread-Local Storage)</td><td>—</td><td>각자</td></tr>
+      </tbody>
+    </table>
+    <p>
+      이 표가 그대로 <strong>스레드 컨텍스트 스위칭이 프로세스 스위칭보다 싼 이유</strong>입니다.
+      페이지 테이블이 같으니 TLB를 비우지 않아도 되고, FD 테이블도 그대로 쓰면 됩니다.
+    </p>
+
+    <h2>trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>설계 결정</th><th>장점</th><th>비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>PCB를 크게 (많은 정보)</td><td>스케줄러·디버거·관측 도구가 모두 행복</td><td>스위칭 시 캐시 오염, 메모리 사용 증가</td></tr>
+        <tr><td>PCB와 TCB를 분리 (전통 OS)</td><td>구조가 명확</td><td>스레드 모델이 PCB에 갇혀 유연성 부족</td></tr>
+        <tr><td>리눅스식 단일 task_struct</td><td>fork/clone을 같은 코드로 처리, 유연함</td><td>"프로세스"의 정의가 코드가 아닌 플래그에 의존</td></tr>
+        <tr><td>PID 정수 vs 64비트 식별자</td><td>좁은 범위는 캐시 친화·인덱스 효율</td><td>장기 운영 서버에서 PID 재사용 충돌</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong><code>ps</code>, <code>top</code>, <code>htop</code></strong> — 모두 커널의 PCB 정보를 읽어 보여주는 사용자 도구입니다.</li>
+      <li><strong><code>/proc/&lt;pid&gt;/</code></strong> — 리눅스에서 PCB의 일부 필드(상태, 메모리 맵, 열린 FD)를 가상 파일로 노출합니다.</li>
+      <li><strong>좀비 프로세스</strong> — 자식이 종료됐는데 부모가 <code>wait()</code> 하지 않으면 PCB가 회수되지 않고 남아 PID 슬롯을 차지합니다.</li>
+      <li><strong>성능 분석</strong> — <code>perf</code>, <code>eBPF</code>는 PCB 필드(컨텍스트 스위칭 횟수, on-CPU 시간)를 읽어 동작합니다.</li>
+      <li><strong>보안</strong> — UID, capabilities, namespaces 같은 격리 정보가 PCB에 들어있어 컨테이너 격리의 기반이 됩니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">PCB가 왜 필요한가요?</div>
+      <div class="a">
+        OS가 멀티태스킹을 하려면, CPU에서 잠시 내려와 있는 프로세스의 실행 상태와 자원 정보를 어딘가에 저장해 둬야 합니다.
+        PCB는 그 정보(레지스터·PC·메모리 맵·FD·상태·스케줄링 메타데이터 등)를 모아 둔 커널 메모리 안의 구조체로,
+        컨텍스트 스위칭·스케줄링·자원 회수가 모두 PCB를 거쳐 일어납니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PCB와 TCB는 어떤 점에서 다르고, 왜 분리할까요?</div>
+      <div class="a">
+        PCB는 격리되어야 할 자원(주소 공간·FD 테이블·시그널 핸들러·자격)을 담고, TCB는 실행 흐름 정보(레지스터·PC·SP·커널 스택)를 담습니다.
+        한 프로세스의 여러 스레드는 같은 PCB를 공유하면서 각자 TCB만 따로 가지므로, 스레드 스위칭이 프로세스 스위칭보다 가벼워집니다.
+        대표적으로 페이지 테이블이 같아 TLB를 비울 필요가 없습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">리눅스에서는 왜 PCB·TCB를 구분하지 않고 task_struct 하나로 처리하나요?</div>
+      <div class="a">
+        리눅스는 <code>clone()</code> 시스템 콜의 플래그(CLONE_VM, CLONE_FILES, CLONE_THREAD …)로 자원 공유 여부를 정합니다.
+        스레드는 메모리 맵·FD 테이블을 공유하는 task일 뿐이고, 프로세스는 그것들을 공유하지 않는 task일 뿐입니다.
+        이 일반화 덕분에 fork·thread create·컨테이너 namespace 분리가 같은 코드 경로에서 처리됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PCB의 state 필드가 왜 중요한가요?</div>
+      <div class="a">
+        스케줄러가 어떤 PCB를 어떤 큐에 넣을지 결정하는 기준이 state입니다.
+        running에서 timer interrupt가 발생하면 ready로, I/O를 시작하면 waiting으로 바뀌고, I/O가 끝나면 다시 ready로 돌아옵니다.
+        이 전이 그래프가 5-state(또는 7-state) 모델이고, PCB는 그 상태를 단 한 필드로 표현합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">좀비 프로세스(zombie)와 PCB의 관계를 설명해 주세요.</div>
+      <div class="a">
+        자식 프로세스가 종료되면 자원은 거의 회수되지만, 종료 코드 같은 정보가 부모에게 전달되어야 하므로 PCB는 잠시 남아있습니다.
+        부모가 <code>wait()</code> 또는 <code>waitpid()</code>로 종료 상태를 거둬가야 PCB가 완전히 해제됩니다.
+        부모가 이를 게을리하면 PCB가 계속 쌓여 PID 슬롯을 소진할 수 있고, 이게 좀비 누적 문제입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PCB는 어디에 저장되나요? 사용자 프로세스가 직접 읽을 수 있나요?</div>
+      <div class="a">
+        PCB는 커널 메모리 영역에 있어 사용자 프로세스가 직접 읽거나 수정할 수 없습니다.
+        다만 리눅스는 <code>/proc/&lt;pid&gt;/</code>라는 가상 파일 시스템을 통해 PCB의 안전한 일부(상태·메모리 맵·통계)를 노출하고,
+        <code>ps</code>·<code>top</code> 같은 도구는 이 정보를 읽어 보여줍니다. 직접 PCB를 만지려면 시스템 콜을 통해 커널에 요청해야 합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="process-thread.html">프로세스와 스레드</a></li>
+      <li><a href="context-switching.html">컨텍스트 스위칭</a></li>
+      <li><a href="cpu-scheduling.html">CPU 스케줄링</a></li>
+      <li><a href="index.html">운영체제 목록</a></li>
+    </ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="memory-layout.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">프로세스 메모리 레이아웃</span>
+            <span class="hint">PCB의 mm 필드가 가리키는 그 가상 주소 공간을 영역별로 분해</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="context-switching.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">컨텍스트 스위칭</span>
+            <span class="hint">PCB/TCB가 실제로 저장·복원되는 그 순간의 동작</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="process-thread.html">
+        <span class="label">이전</span>
+        ← 프로세스와 스레드
+      </a>
+      <a href="index.html">📂 운영체제로</a>
+      <a class="next" href="memory-layout.html">
+        <span class="label">다음</span>
+        프로세스 메모리 레이아웃 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

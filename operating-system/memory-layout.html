@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>프로세스 메모리 레이아웃 · 운영체제 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">운영체제</a>
+      <span class="sep">›</span>
+      <span>프로세스 메모리 레이아웃</span>
+    </nav>
+
+    <h1>프로세스 메모리 레이아웃 — code / data / heap / stack</h1>
+
+    <div class="definition">
+      <strong>프로세스 메모리 레이아웃</strong>은 한 프로세스가 자신의 가상 주소 공간을 어떻게 영역별로 나눠 쓰는지에 대한 약속입니다.
+      코드와 상수, 전역 변수, 동적 할당, 함수 호출, 공유 라이브러리가 각각 정해진 자리에 놓이고,
+      OS와 컴파일러는 이 약속에 따라 메모리를 만들고 보호합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      프로세스 하나에는 0번지부터 끝번지까지 자기만의 <strong>가상 주소 공간</strong>이 주어집니다.
+      이 공간은 단순한 평면이 아니라 <em>역할이 다른 영역들의 합</em>입니다.
+      프로그램 코드는 어디에, 전역 변수는 어디에, <code>malloc</code>으로 잡은 동적 메모리는 어디에,
+      함수 호출 시 만들어지는 지역 변수는 어디에 놓일지가 미리 정해져 있습니다.
+    </p>
+    <p>
+      OS는 이 영역을 <strong>읽기 전용·읽기쓰기·실행 가능</strong>처럼 권한 단위로 보호하기도 하고,
+      필요할 때 <em>동적으로 늘리거나 줄이기</em>도 합니다. 이 약속을 알면 segfault, 스택 오버플로우, 메모리 누수 같은
+      문제가 어느 영역의 사고인지 한 번에 파악할 수 있습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>주소가 낮은 쪽부터 — text · data · bss · heap → ↓ ↑ ← stack</strong></p>
+      <p>
+        리눅스/유닉스의 전형적인 배치는 위와 같습니다. heap은 위로 자라고, stack은 아래로 자랍니다.
+        그 사이의 큰 빈 공간을 <strong>mmap 영역</strong>이 채우고, 공유 라이브러리·익명 매핑·큰 malloc이 모두 거기에 놓입니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <p>
+      한 프로세스 안의 모든 데이터를 무작위로 섞어 두면 OS가 보호도, 회수도, 디버깅도 할 수 없습니다.
+      영역을 나누는 이유는 명확합니다.
+    </p>
+    <ul>
+      <li><strong>권한 분리</strong> — 코드는 실행만 가능하고, 데이터는 실행 불가능하게 막아야 코드 주입 공격을 어렵게 합니다.</li>
+      <li><strong>수명 구분</strong> — 함수 호출 단위로 사라지는 값(스택), 명시적으로 해제되는 값(힙), 프로그램이 끝날 때 사라지는 값(전역)은 관리 방식이 달라야 합니다.</li>
+      <li><strong>공유 라이브러리</strong> — 여러 프로세스가 같은 libc를 메모리에서 공유하려면 그 영역이 분리되어 있어야 합니다.</li>
+      <li><strong>디버깅·관측</strong> — 코어 덤프, <code>/proc/&lt;pid&gt;/maps</code>, 메모리 프로파일러는 모두 이 영역 구분 위에서 동작합니다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 전형적인 가상 주소 공간 배치</h3>
+    <div class="viz">
+      <svg width="680" height="430" viewBox="0 0 680 430" role="img" aria-label="프로세스 가상 주소 공간 레이아웃">
+        <defs>
+          <marker id="memA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="label" x="80" y="20" text-anchor="middle">낮은 주소 (0x00...)</text>
+        <text class="label" x="80" y="420" text-anchor="middle">높은 주소</text>
+
+        <rect class="node" x="180" y="30" width="320" height="40" rx="4" fill="#3a3a3a"/>
+        <text class="node-text" x="340" y="55">text (코드)</text>
+        <text class="label" x="600" y="55">읽기 + 실행</text>
+
+        <rect class="node" x="180" y="80" width="320" height="40" rx="4" fill="#3a4a4a"/>
+        <text class="node-text" x="340" y="105">rodata (상수, 문자열 리터럴)</text>
+        <text class="label" x="600" y="105">읽기 전용</text>
+
+        <rect class="node" x="180" y="130" width="320" height="40" rx="4" fill="#3a4a3a"/>
+        <text class="node-text" x="340" y="155">data (초기화된 전역/정적)</text>
+        <text class="label" x="600" y="155">읽기 + 쓰기</text>
+
+        <rect class="node" x="180" y="180" width="320" height="40" rx="4" fill="#3a4a3a"/>
+        <text class="node-text" x="340" y="205">bss (0으로 초기화된 전역)</text>
+        <text class="label" x="600" y="205">읽기 + 쓰기</text>
+
+        <rect class="node highlight" x="180" y="230" width="320" height="50" rx="4"/>
+        <text class="node-text" x="340" y="252" fill="#1a1a1a" font-weight="bold">heap (malloc/new)</text>
+        <text class="label" x="340" y="270" text-anchor="middle" fill="#1a1a1a">↓ 위로 자람 (brk / sbrk)</text>
+        <text class="label" x="600" y="258">동적 할당</text>
+
+        <rect class="node" x="180" y="290" width="320" height="50" rx="4" fill="#444"/>
+        <text class="node-text" x="340" y="312">mmap 영역</text>
+        <text class="label" x="340" y="330" text-anchor="middle">공유 라이브러리, 큰 malloc, 파일 매핑</text>
+        <text class="label" x="600" y="318">필요 시 할당</text>
+
+        <rect class="node highlight" x="180" y="350" width="320" height="50" rx="4"/>
+        <text class="node-text" x="340" y="372" fill="#1a1a1a" font-weight="bold">stack (함수 호출 프레임)</text>
+        <text class="label" x="340" y="390" text-anchor="middle" fill="#1a1a1a">↑ 아래로 자람</text>
+        <text class="label" x="600" y="378">자동 변수</text>
+
+        <line x1="340" y1="280" x2="340" y2="295" stroke="var(--accent)" stroke-width="2" marker-end="url(#memA)"/>
+        <line x1="340" y1="350" x2="340" y2="335" stroke="var(--accent)" stroke-width="2" marker-end="url(#memA)"/>
+      </svg>
+      <span class="viz-caption">한 프로세스의 가상 주소 공간 — 영역마다 권한과 성장 방향이 다르다.</span>
+    </div>
+
+    <h3>2) heap과 stack은 서로를 향해 자란다</h3>
+    <p>
+      heap은 <code>brk</code>/<code>sbrk</code> 시스템 콜로 위쪽으로 늘리고, stack은 함수 호출이 깊어질 때마다 아래로 늘립니다.
+      과거에는 둘이 맞닿으면 메모리 부족이었지만, 지금은 사이에 mmap 영역이 끼어들어 있어 그렇게 단순하지 않습니다.
+      대신 stack은 <strong>리미트(예: 8MB)</strong>를 두고 그걸 넘으면 segfault를 발생시킵니다 — 이게 스택 오버플로우입니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="200" viewBox="0 0 680 200" role="img" aria-label="heap과 stack 성장 방향">
+        <defs>
+          <marker id="growA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node highlight" x="40" y="60" width="160" height="80" rx="6"/>
+        <text class="node-text" x="120" y="90" fill="#1a1a1a" font-weight="bold">heap</text>
+        <text class="label" x="120" y="115" text-anchor="middle" fill="#1a1a1a">malloc/free</text>
+        <text class="label" x="120" y="132" text-anchor="middle" fill="#1a1a1a">brk 위로 ↑</text>
+
+        <line x1="120" y1="60" x2="120" y2="20" stroke="var(--accent)" stroke-width="2" marker-end="url(#growA)"/>
+        <text class="label" x="120" y="14" text-anchor="middle">자라는 방향</text>
+
+        <rect class="node" x="240" y="60" width="200" height="80" rx="6" fill="#444"/>
+        <text class="node-text" x="340" y="90">mmap 영역</text>
+        <text class="label" x="340" y="115" text-anchor="middle">큰 malloc / .so / 파일 매핑</text>
+
+        <rect class="node highlight" x="480" y="60" width="160" height="80" rx="6"/>
+        <text class="node-text" x="560" y="90" fill="#1a1a1a" font-weight="bold">stack</text>
+        <text class="label" x="560" y="115" text-anchor="middle" fill="#1a1a1a">함수 호출 프레임</text>
+        <text class="label" x="560" y="132" text-anchor="middle" fill="#1a1a1a">아래로 ↓</text>
+
+        <line x1="560" y1="140" x2="560" y2="180" stroke="var(--accent)" stroke-width="2" marker-end="url(#growA)"/>
+        <text class="label" x="560" y="195" text-anchor="middle">자라는 방향</text>
+      </svg>
+      <span class="viz-caption">heap은 위로, stack은 아래로 — 그 사이의 mmap 영역이 동적으로 채워진다.</span>
+    </div>
+
+    <h3>3) 영역별 수명·권한 비교</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>영역</th><th>예시</th><th>권한</th><th>수명</th><th>해제 책임</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>text</td><td>함수의 기계어</td><td>R + X</td><td>프로그램 종료까지</td><td>OS</td></tr>
+        <tr><td>rodata</td><td><code>"hello"</code> 문자열</td><td>R</td><td>프로그램 종료까지</td><td>OS</td></tr>
+        <tr><td>data</td><td><code>int g = 5;</code></td><td>R + W</td><td>프로그램 종료까지</td><td>OS</td></tr>
+        <tr><td>bss</td><td><code>int g;</code></td><td>R + W</td><td>프로그램 종료까지</td><td>OS</td></tr>
+        <tr><td>heap</td><td><code>malloc()</code> 결과</td><td>R + W</td><td>명시적 해제까지</td><td>프로그래머</td></tr>
+        <tr><td>stack</td><td>지역 변수, 호출 프레임</td><td>R + W</td><td>함수 반환 시</td><td>컴파일러 자동</td></tr>
+        <tr><td>mmap</td><td>공유 라이브러리, mmap 호출</td><td>설정 가능</td><td>munmap 또는 종료까지</td><td>프로그래머/OS</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4) heap을 키우는 두 가지 길 — brk와 mmap</h3>
+    <p>
+      <code>malloc</code>은 직접 OS에 매번 메모리를 요청하지 않습니다. libc의 메모리 할당자(예: ptmalloc, jemalloc)가 큰 덩어리를 미리 받아두고
+      쪼개서 나눠 줍니다. 이때 큰 덩어리를 받아오는 통로가 두 개입니다.
+    </p>
+    <ul>
+      <li><strong>brk / sbrk</strong> — heap 끝을 위로 밀어 올리는 시스템 콜. 작은 할당에 유리하지만, 한 번 늘어난 heap은 중간 부분만 비어도 OS에 돌려주기 어렵습니다.</li>
+      <li><strong>mmap (anonymous)</strong> — mmap 영역에 새 페이지를 익명으로 매핑. 큰 할당에 유리하고, 해제 시 즉시 OS에 반환할 수 있습니다.</li>
+    </ul>
+    <p>
+      <code>malloc</code> 한 번이 어느 길을 타는지는 보통 <strong>임계값(예: glibc 기본 128KB)</strong>으로 결정됩니다.
+      그래서 같은 양을 한 번에 할당하느냐 잘게 쪼개 할당하느냐가 메모리 반환 행동을 다르게 만듭니다.
+    </p>
+
+    <h3>5) 보안 메커니즘 — 레이아웃 위에 덧씌워지는 보호</h3>
+    <ul>
+      <li><strong>NX bit (W^X)</strong> — data·heap·stack에서 명령어 실행을 금지합니다. 코드 주입 공격을 막는 가장 기본적인 장치입니다.</li>
+      <li><strong>ASLR (Address Space Layout Randomization)</strong> — text·heap·stack·라이브러리 시작 주소를 매 실행마다 무작위로 바꿉니다. ROP/공격에 사용되는 주소 추측을 어렵게 합니다.</li>
+      <li><strong>Stack canary</strong> — 함수 호출 시 스택 프레임에 무작위 값을 박아두고, 반환 직전 그 값이 그대로인지 검사해 스택 버퍼 오버플로우를 잡습니다.</li>
+      <li><strong>Guard page</strong> — 스택 끝과 다른 영역 사이에 접근 금지 페이지를 둬, 스택 오버플로우 시 즉시 segfault로 잡히게 합니다.</li>
+    </ul>
+
+    <h3>6) 코드로 보는 메모리 레이아웃</h3>
+<pre><code>// C 코드 — 각 변수가 어느 영역에 들어가는지
+#include &lt;stdlib.h&gt;
+
+int g_init = 5;       // data
+int g_zero;           // bss
+const char *msg = "hello";  // 포인터 g_init 위치, "hello"는 rodata
+
+void f(int n) {
+    int local = n;          // stack
+    int *buf = malloc(64);  // 포인터는 stack, 실제 64바이트는 heap
+    free(buf);
+}
+
+int main() {
+    f(3);
+    return 0;
+}
+</code></pre>
+
+    <h2>trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>설계 결정</th><th>장점</th><th>비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>heap을 brk로 관리</td><td>작은 할당에 빠르고 가볍다</td><td>fragmentation 발생 시 OS에 반환이 어렵다</td></tr>
+        <tr><td>heap을 mmap으로 관리</td><td>큰 할당, 즉시 반환 가능</td><td>매번 시스템 콜 비용, 페이지 단위 정렬</td></tr>
+        <tr><td>스택을 작게 (예: 1MB)</td><td>스레드 많이 만들기 좋음</td><td>깊은 재귀에서 오버플로우 위험</td></tr>
+        <tr><td>스택을 크게</td><td>재귀·큰 자동 배열에 안전</td><td>스레드당 메모리 비용 증가</td></tr>
+        <tr><td>ASLR 적용</td><td>주소 추측 공격 차단</td><td>디버깅·캐시 친화도에서 약간의 손해</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>segfault 디버깅</strong> — 잘못된 주소에 접근했을 때, 그 주소가 어느 영역인지(또는 어느 영역에도 없는지)가 첫 번째 단서입니다.</li>
+      <li><strong>메모리 누수 추적</strong> — heap 영역만 무한히 자라면 누수, stack이 자라면 재귀 폭주, mmap 영역이 자라면 큰 객체 누수입니다.</li>
+      <li><strong>스택 크기 튜닝</strong> — 서버에서 스레드 수가 수천 개면 스택 1MB만 해도 GB 단위가 됩니다. <code>ulimit -s</code>, <code>pthread_attr_setstacksize</code>로 조절합니다.</li>
+      <li><strong><code>/proc/&lt;pid&gt;/maps</code> 읽기</strong> — 운영 중인 프로세스의 실제 영역 배치를 그대로 볼 수 있습니다.</li>
+      <li><strong>JIT / 동적 코드 생성</strong> — JVM·V8 같은 JIT는 mmap 영역에 R+W로 코드를 쓰고, 권한을 R+X로 바꿔 실행합니다(W^X 위반 회피).</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">프로세스의 메모리 영역은 어떻게 나뉘나요?</div>
+      <div class="a">
+        text(코드), rodata(상수), data(초기화 전역), bss(0 초기화 전역), heap(동적 할당), stack(자동 변수), mmap(공유 라이브러리·큰 매핑)으로 나뉩니다.
+        text·rodata는 읽기 전용 또는 실행 가능, data·bss·heap·stack은 읽기/쓰기로 구분되며, OS가 페이지 단위 권한으로 보호합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">heap과 stack의 차이는 무엇인가요?</div>
+      <div class="a">
+        스택은 함수 호출 단위로 자동으로 늘었다 줄어드는 영역으로, 지역 변수가 놓이고 함수 반환 시 자동 해제됩니다.
+        힙은 <code>malloc</code>/<code>new</code>로 명시적으로 잡고 <code>free</code>/<code>delete</code>로 명시적으로 해제하는 영역입니다.
+        스택은 빠르고 단순하지만 크기에 한계가 있고, 힙은 유연하지만 단편화·해제 누락이 발생할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">스택 오버플로우는 왜 발생하나요?</div>
+      <div class="a">
+        함수 호출이 너무 깊거나 큰 자동 배열을 잡아 스택 사용량이 OS가 정한 스택 크기 한도를 넘으면, 가드 페이지에 접근해 segfault가 발생합니다.
+        대표적으로 종료 조건이 빠진 재귀, 수십 MB짜리 지역 배열 선언이 원인입니다. 해결은 재귀 → 반복 변환, 큰 데이터를 heap으로 옮기기, 스택 크기 자체를 늘리기입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">data와 bss는 왜 분리되어 있나요?</div>
+      <div class="a">
+        둘 다 전역/정적 변수가 들어가지만, data는 0이 아닌 초기값이 있는 변수, bss는 0으로 초기화될 변수입니다.
+        bss는 실행 파일에 실제 0을 적어둘 필요 없이 "이만큼의 영역을 0으로 만들어 달라"고만 적어두면 되므로,
+        실행 파일 크기를 줄이는 효과가 있습니다. 로딩 시 OS가 그만큼의 페이지를 0으로 채워 매핑합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ASLR과 NX bit가 막아주는 공격은 무엇인가요?</div>
+      <div class="a">
+        NX bit는 데이터 영역(stack/heap)의 코드 실행을 금지해, 버퍼에 셸코드를 넣고 실행하는 전통적인 코드 주입 공격을 차단합니다.
+        ASLR은 영역들의 시작 주소를 매 실행마다 무작위화해, 공격자가 라이브러리 함수나 가젯의 주소를 미리 알 수 없게 합니다.
+        둘이 함께 쓰이면 단순 버퍼 오버플로우만으로 임의 코드 실행에 도달하기가 매우 어려워집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">malloc은 항상 시스템 콜인가요?</div>
+      <div class="a">
+        아닙니다. libc의 메모리 할당자가 OS로부터 brk나 mmap으로 큰 덩어리를 받아두고, 그 안을 쪼개 사용자에게 나눠 줍니다.
+        대부분의 <code>malloc</code> 호출은 사용자 모드에서 끝나고 시스템 콜이 발생하지 않습니다.
+        다만 임계값(예: 128KB)을 넘는 큰 할당이나 캐시가 부족할 때만 brk/mmap이 호출됩니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="process-thread.html">프로세스와 스레드</a></li>
+      <li><a href="pcb-tcb.html">PCB / TCB</a></li>
+      <li><a href="paging-segmentation.html">페이징 / 세그먼테이션</a></li>
+      <li><a href="../computer-architecture/virtual-memory.html">가상 메모리</a></li>
+      <li><a href="index.html">운영체제 목록</a></li>
+    </ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="system-call.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">시스템 콜 / 유저 vs 커널 모드</span>
+            <span class="hint">heap 확장(brk·mmap) 같은 메모리 변경이 어떻게 커널까지 도달하는가</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="paging-segmentation.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">페이징 / 세그먼테이션</span>
+            <span class="hint">이 가상 주소 공간이 실제 물리 메모리에 매핑되는 방식</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="pcb-tcb.html">
+        <span class="label">이전</span>
+        ← PCB / TCB
+      </a>
+      <a href="index.html">📂 운영체제로</a>
+      <a class="next" href="system-call.html">
+        <span class="label">다음</span>
+        시스템 콜 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
