@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>컬렉션 프레임워크 · Java · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">Java</a>
+      <span class="sep">›</span>
+      <span>컬렉션 프레임워크</span>
+    </nav>
+
+    <h1>컬렉션 프레임워크 — List·Set·Map·Queue</h1>
+
+    <div class="definition">
+      <strong>컬렉션 프레임워크(Java Collections Framework, JCF)</strong>는 객체 그룹을 다루는 자료구조와 알고리즘을 통일된 인터페이스로 묶어 둔 표준 라이브러리입니다.
+      모든 구현은 <code>Iterable</code> 또는 <code>Map</code> 인터페이스에 뿌리를 두며, 어떤 자료구조 위에서 동작하든 같은 메서드 이름과 의미를 보장합니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      이 프레임워크가 만들어 준 가장 큰 가치는 <strong>"인터페이스로 받고, 구현체는 갈아끼운다"</strong>는 코딩 습관을 표준화한 것입니다.
+      메서드 시그니처를 <code>List&lt;Order&gt;</code>로 받으면 호출자는 <code>ArrayList</code>·<code>LinkedList</code>·<code>CopyOnWriteArrayList</code> 등 어떤 구현이든 넘길 수 있고, 본문은 그대로입니다.
+    </p>
+    <p>
+      각 구현체는 동일한 의미를 다른 방식으로 달성하므로 <strong>성능 특성이 다릅니다</strong>. <code>ArrayList.get(i)</code>은 O(1)이지만 <code>LinkedList.get(i)</code>은 O(n)이고,
+      <code>HashMap.get</code>은 평균 O(1)이지만 <code>TreeMap.get</code>은 O(log n)입니다. 같은 인터페이스를 구현해도 "어떻게 동작하는가"는 자료구조 그 자체이므로, 알고리즘 페이지에서 다룬 내용을 여기서는 Java 관점으로 다시 봅니다.
+    </p>
+
+    <p style="color:var(--text-muted); font-size:14px;">
+      자료구조 자체에 대한 설명은 <a href="../data-structure/array.html">자료구조 → 배열</a>·<a href="../data-structure/linked-list.html">연결 리스트</a>·<a href="../data-structure/hash-table.html">해시 테이블</a>를 함께 보세요. 이 페이지는 <em>Java 구현체의 차이와 함정</em>에 초점을 둡니다.
+    </p>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>표준 인터페이스</strong> — 어디서든 같은 사용법으로 자료를 다룰 수 있다.</li>
+      <li><strong>구현체 교체 자유</strong> — 시그니처가 인터페이스라면 성능·동시성 요구가 바뀌어도 한 줄로 교체.</li>
+      <li><strong>풍부한 알고리즘</strong> — <code>Collections.sort</code>, <code>Arrays.binarySearch</code>처럼 표준 알고리즘이 같이 옴.</li>
+      <li><strong>제네릭 통합</strong> — 컴파일 타임 타입 안전성, 런타임 캐스팅 제거.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 전체 구조 — 두 뿌리(Iterable, Map)</h3>
+    <div class="viz">
+      <svg width="780" height="320" viewBox="0 0 780 320" role="img" aria-label="JCF hierarchy">
+        <g font-size="12" text-anchor="middle">
+          <rect x="40" y="20" width="180" height="40" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="130" y="44" font-weight="bold">Iterable</text>
+
+          <line x1="130" y1="60" x2="130" y2="90" stroke="var(--accent)" stroke-width="1.5"/>
+
+          <rect x="40" y="90" width="180" height="40" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="130" y="114" font-weight="bold">Collection</text>
+
+          <line x1="130" y1="130" x2="60"  y2="170" stroke="var(--accent)" stroke-width="1.5"/>
+          <line x1="130" y1="130" x2="200" y2="170" stroke="var(--accent)" stroke-width="1.5"/>
+          <line x1="130" y1="130" x2="340" y2="170" stroke="var(--accent)" stroke-width="1.5"/>
+
+          <rect x="0"   y="170" width="120" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="4"/>
+          <text x="60"  y="194" font-weight="bold">List</text>
+          <text x="60"  y="222" font-size="11" fill="var(--text-muted)">ArrayList</text>
+          <text x="60"  y="238" font-size="11" fill="var(--text-muted)">LinkedList</text>
+
+          <rect x="140" y="170" width="120" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="4"/>
+          <text x="200" y="194" font-weight="bold">Set</text>
+          <text x="200" y="222" font-size="11" fill="var(--text-muted)">HashSet</text>
+          <text x="200" y="238" font-size="11" fill="var(--text-muted)">LinkedHashSet</text>
+          <text x="200" y="254" font-size="11" fill="var(--text-muted)">TreeSet</text>
+
+          <rect x="280" y="170" width="120" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="4"/>
+          <text x="340" y="194" font-weight="bold">Queue / Deque</text>
+          <text x="340" y="222" font-size="11" fill="var(--text-muted)">ArrayDeque</text>
+          <text x="340" y="238" font-size="11" fill="var(--text-muted)">PriorityQueue</text>
+          <text x="340" y="254" font-size="11" fill="var(--text-muted)">LinkedList</text>
+
+          <rect x="500" y="20" width="180" height="40" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="590" y="44" font-weight="bold">Map (별도 트리)</text>
+          <text x="590" y="76" font-size="11" fill="var(--text-muted)">Iterable이 아니다 — entrySet()으로 순회</text>
+          <line x1="590" y1="90" x2="590" y2="120" stroke="var(--accent)" stroke-width="1.5"/>
+          <rect x="450" y="120" width="280" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="4"/>
+          <text x="590" y="144" font-weight="bold">HashMap · LinkedHashMap · TreeMap</text>
+          <text x="590" y="174" font-size="11" fill="var(--text-muted)">동시성: ConcurrentHashMap</text>
+        </g>
+      </svg>
+      <span class="viz-caption">Map은 Collection이 아니라 별도 계층 — 키로 값을 찾는 도구라 "그룹"의 의미가 다르기 때문이다.</span>
+    </div>
+
+    <h3>2) List — ArrayList vs LinkedList</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>연산</th><th>ArrayList</th><th>LinkedList</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>get(i)</td><td>O(1)</td><td>O(n)</td></tr>
+        <tr><td>add(e) — 끝에 추가</td><td>amortized O(1)</td><td>O(1)</td></tr>
+        <tr><td>add(0, e) — 앞에 추가</td><td>O(n) (전부 한 칸씩 밀어야)</td><td>O(1)</td></tr>
+        <tr><td>remove(i)</td><td>O(n)</td><td>O(n) (탐색 + 제거)</td></tr>
+        <tr><td>iteration</td><td>매우 빠름 (캐시 친화)</td><td>느림 (포인터 추적)</td></tr>
+        <tr><td>메모리</td><td>요소당 1 슬롯</td><td>요소당 노드 객체 + 양방향 포인터</td></tr>
+      </tbody>
+    </table>
+    <p>
+      이름이 주는 인상과 달리 <strong>실무에서는 거의 항상 ArrayList가 정답</strong>입니다.
+      "삽입/삭제가 많으니 LinkedList"라는 말은 옛날 이야기고, 현대 CPU는 캐시 친화적인 연속 메모리 배치에 워낙 유리해서 LinkedList의 노드 추적 비용이 크기 때문입니다.
+      LinkedList는 큐/덱(Deque)이 필요할 때만 쓰는 게 좋고, 그마저도 <code>ArrayDeque</code>가 보통 더 빠릅니다.
+    </p>
+
+<pre><code>// ArrayList의 내부 동작 — 동적 배열
+List&lt;Integer&gt; list = new ArrayList&lt;&gt;();      // 기본 capacity 0, 첫 add에서 10
+list.add(1); list.add(2); ... list.add(11);   // capacity 부족 → 1.5배로 확장 후 복사
+
+// 미리 크기를 알면 초기 capacity를 주면 resize 비용 제거
+List&lt;Integer&gt; list = new ArrayList&lt;&gt;(10_000);
+
+// 불변 리스트
+List&lt;Integer&gt; immut = List.of(1, 2, 3);       // add 시 UnsupportedOperationException</code></pre>
+
+    <h3>3) HashMap — 충돌·resize·treeify</h3>
+    <p>
+      HashMap은 Java 코드 어디서나 등장합니다. 핵심 메커니즘 세 가지를 알아야 합니다.
+    </p>
+
+    <div class="viz">
+      <svg width="780" height="220" viewBox="0 0 780 220" role="img" aria-label="HashMap bucket">
+        <g font-size="12" text-anchor="middle">
+          <text x="100" y="24" font-weight="bold" fill="var(--accent)">버킷 배열 (table)</text>
+
+          <rect x="20" y="40" width="160" height="30" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="100" y="60">index 0 → null</text>
+          <rect x="20" y="70" width="160" height="30" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="100" y="90">index 1 → 노드</text>
+          <rect x="20" y="100" width="160" height="30" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="100" y="120">index 2 → 충돌!</text>
+          <rect x="20" y="130" width="160" height="30" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="100" y="150">index 3 → null</text>
+
+          <line x1="180" y1="115" x2="220" y2="115" stroke="var(--accent)"/>
+          <rect x="220" y="100" width="80" height="30" fill="var(--bg-card)" stroke="var(--accent)"/>
+          <text x="260" y="120">k1, v1</text>
+          <line x1="300" y1="115" x2="320" y2="115" stroke="var(--accent)"/>
+          <rect x="320" y="100" width="80" height="30" fill="var(--bg-card)" stroke="var(--accent)"/>
+          <text x="360" y="120">k2, v2</text>
+          <line x1="400" y1="115" x2="420" y2="115" stroke="var(--accent)"/>
+          <rect x="420" y="100" width="80" height="30" fill="var(--bg-card)" stroke="var(--accent)"/>
+          <text x="460" y="120">k3, v3</text>
+          <text x="380" y="150" font-size="11" fill="var(--text-muted)">→ 같은 버킷에 8개 이상 쌓이면 트리(Red-Black)로 변환</text>
+
+          <rect x="540" y="40" width="220" height="160" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="650" y="62" font-weight="bold" fill="var(--accent)">Resize 트리거</text>
+          <text x="650" y="86" font-size="11">capacity = 16 (기본)</text>
+          <text x="650" y="106" font-size="11">load factor = 0.75</text>
+          <text x="650" y="126" font-size="11">size &gt; capacity × LF 시</text>
+          <text x="650" y="146" font-size="11">→ 두 배로 확장</text>
+          <text x="650" y="170" font-size="11" fill="var(--text-muted)">전체 entry 재해싱</text>
+          <text x="650" y="186" font-size="11" fill="var(--text-muted)">→ O(n) 비용</text>
+        </g>
+      </svg>
+      <span class="viz-caption">기본 16 버킷 + 0.75 load factor + 8개 이상 충돌 시 트리화 — Java 8 HashMap의 3대 마법.</span>
+    </div>
+
+    <ul>
+      <li><strong>버킷 배열</strong> — <code>hash(key) % capacity</code> 위치에 entry 저장.</li>
+      <li><strong>충돌 처리</strong> — Separate Chaining(연결 리스트). 한 버킷에 8개 이상 쌓이고 capacity가 64 이상이면 <strong>Red-Black Tree</strong>로 변환해 최악 O(n) → O(log n).</li>
+      <li><strong>Resize</strong> — <code>size &gt; capacity × loadFactor(0.75)</code>이 되면 capacity를 2배로 늘리고 모든 entry를 재해싱. <em>O(n)</em> 비용이라 큰 맵에선 일시적 latency 폭증 원인.</li>
+    </ul>
+
+<pre><code>// 미리 크기를 알면 capacity를 직접 지정 → resize 회피
+Map&lt;String, User&gt; m = new HashMap&lt;&gt;(/* expected */ 10_000, 0.75f);
+
+// hash() — Java 8부터 상위 16비트와 XOR로 분포 개선
+static final int hash(Object key) {
+    int h = key.hashCode();
+    return h ^ (h &gt;&gt;&gt; 16);
+}</code></pre>
+
+    <div class="callout warn">
+      <p><strong>치명적 함정 — equals/hashCode</strong></p>
+      <p>
+        키로 쓰는 객체는 <strong><code>equals()</code>와 <code>hashCode()</code>를 둘 다 일관되게 재정의</strong>해야 합니다.
+        한 쪽만 재정의하면 같은 키로 put한 값이 get에서 안 나옵니다. record는 자동 생성되므로 안전하고, 클래스라면 IDE 자동 생성을 쓰세요.
+        그리고 키가 mutable 객체라면 put 후 필드를 바꾸면 안 됩니다 — hash가 바뀌어 영영 못 찾는 "버킷 미아"가 됩니다.
+      </p>
+    </div>
+
+    <h3>4) TreeMap·LinkedHashMap — 순서가 필요할 때</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>구현</th><th>순서</th><th>get/put</th><th>특징</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>HashMap</td><td>없음 (보장 X)</td><td>평균 O(1)</td><td>가장 빠름. 디폴트 선택.</td></tr>
+        <tr><td>LinkedHashMap</td><td>삽입 순서 (또는 access 순서)</td><td>평균 O(1)</td><td>이중 연결 리스트로 순서 유지. <strong>LRU 캐시 구현에 적합</strong>.</td></tr>
+        <tr><td>TreeMap</td><td>키 정렬 순서</td><td>O(log n)</td><td>Red-Black Tree. range query, floor/ceiling 가능.</td></tr>
+        <tr><td>ConcurrentHashMap</td><td>없음</td><td>평균 O(1)</td><td>동시성 안전. 락 분할(bin lock)로 전체 락 회피.</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>// LinkedHashMap으로 LRU 캐시 한 줄
+class LRU&lt;K, V&gt; extends LinkedHashMap&lt;K, V&gt; {
+    private final int capacity;
+    LRU(int capacity) {
+        super(16, 0.75f, /* accessOrder */ true);  // get할 때 맨 뒤로 이동
+        this.capacity = capacity;
+    }
+    @Override
+    protected boolean removeEldestEntry(Map.Entry&lt;K, V&gt; eldest) {
+        return size() &gt; capacity;                  // 초과 시 가장 오래된 키 제거
+    }
+}
+
+// TreeMap의 range
+NavigableMap&lt;Integer, String&gt; tm = new TreeMap&lt;&gt;();
+tm.floorKey(50);    // 50 이하 가장 큰 키
+tm.subMap(10, 30);  // 10 &lt;= k &lt; 30</code></pre>
+
+    <h3>5) Set — Map의 키만 쓰는 친구</h3>
+    <p>
+      <code>HashSet</code>·<code>LinkedHashSet</code>·<code>TreeSet</code>은 내부적으로 각각 <code>HashMap</code>·<code>LinkedHashMap</code>·<code>TreeMap</code>의 키를 쓰는 얇은 래퍼입니다.
+      그래서 성능 특성도 동일합니다 — 중복을 막고 싶을 때 가장 자연스러운 선택입니다.
+    </p>
+
+    <h3>6) Queue·Deque — 양방향 큐</h3>
+    <p>
+      <code>Deque</code>는 양 끝에서 모두 추가·제거 가능한 큐입니다. <strong>스택과 큐가 모두 필요하면 무조건 ArrayDeque</strong> — 옛 <code>Stack</code>은 동기화된 Vector 기반이라 느리고, <code>LinkedList</code>는 캐시 비친화적입니다.
+    </p>
+<pre><code>Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+stack.push(1); stack.push(2);
+stack.pop();   // 2
+
+Deque&lt;Integer&gt; queue = new ArrayDeque&lt;&gt;();
+queue.offer(1); queue.offer(2);
+queue.poll();  // 1
+
+PriorityQueue&lt;Integer&gt; pq = new PriorityQueue&lt;&gt;();   // 최소 힙
+pq.offer(3); pq.offer(1); pq.offer(2);
+pq.poll();   // 1</code></pre>
+
+    <h3>7) Iterator와 fail-fast</h3>
+    <p>
+      Java의 컬렉션 대부분은 <strong>fail-fast iterator</strong>를 사용합니다. 순회 도중 컬렉션이 외부에서 수정되면 즉시 <code>ConcurrentModificationException</code>을 던져 일찍 실패합니다.
+      자주 발생하는 함정 — 순회 중 <code>remove()</code>는 반드시 <em>iterator의 메서드</em>로 해야 합니다.
+    </p>
+<pre><code>List&lt;Integer&gt; list = new ArrayList&lt;&gt;(List.of(1, 2, 3, 4));
+
+// ❌ ConcurrentModificationException
+for (Integer x : list) {
+    if (x % 2 == 0) list.remove(x);
+}
+
+// ✅ Iterator의 remove
+Iterator&lt;Integer&gt; it = list.iterator();
+while (it.hasNext()) {
+    if (it.next() % 2 == 0) it.remove();
+}
+
+// ✅ Java 8+ 더 깔끔
+list.removeIf(x -&gt; x % 2 == 0);</code></pre>
+
+    <p>
+      <code>ConcurrentHashMap</code>·<code>CopyOnWriteArrayList</code>의 iterator는 <strong>fail-safe</strong>로, 순회 시점의 스냅샷을 보거나 약한 일관성(weakly consistent)을 보장합니다.
+      예외는 안 나지만 새로 들어온 변경이 보일 수도 안 보일 수도 있다는 의미입니다.
+    </p>
+
+    <h3>8) 동시성 컬렉션 — synchronizedXxx vs concurrentXxx</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>방식</th><th>락 단위</th><th>iterator 안전성</th><th>적합한 상황</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Collections.synchronizedList</code></td><td>전체 객체 락</td><td>외부 수동 동기화 필요</td><td>레거시 호환</td></tr>
+        <tr><td><code>ConcurrentHashMap</code></td><td>bin/노드 단위 락 + CAS</td><td>fail-safe (약한 일관성)</td><td>동시 접근이 흔한 맵</td></tr>
+        <tr><td><code>CopyOnWriteArrayList</code></td><td>쓰기마다 전체 복사</td><td>스냅샷 (예외 안 남)</td><td>읽기 절대 다수, 쓰기 드문 경우</td></tr>
+        <tr><td><code>BlockingQueue</code></td><td>락 + condition</td><td>—</td><td>생산자-소비자 패턴</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9) 불변(immutable) 컬렉션</h3>
+<pre><code>// Java 9+ — 불변 컬렉션 팩토리
+List&lt;Integer&gt; l = List.of(1, 2, 3);
+Set&lt;String&gt;  s = Set.of("a", "b");
+Map&lt;String, Integer&gt; m = Map.of("a", 1, "b", 2);
+
+// 기존 컬렉션의 불변 뷰 (수정 시도 시 예외)
+List&lt;Integer&gt; view = Collections.unmodifiableList(list);
+
+// copyOf — 입력의 변경과 무관한 진짜 복사본 (Java 10+)
+List&lt;Integer&gt; copy = List.copyOf(list);</code></pre>
+    <p>
+      불변 컬렉션은 <em>스레드 안전</em>이 자동으로 보장되고, 방어적 복사가 필요 없으며, hashCode를 캐시할 수 있어 키로 쓰기에도 적합합니다.
+      외부에 컬렉션을 노출할 땐 가능한 한 불변으로 두세요.
+    </p>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>구현</th><th>get/contains</th><th>add</th><th>순서 보장</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ArrayList</td><td>O(1) (인덱스), O(n) (값)</td><td>amortized O(1) 끝, O(n) 중간</td><td>삽입 순서</td></tr>
+        <tr><td>LinkedList</td><td>O(n)</td><td>O(1) 끝/앞, O(n) 중간</td><td>삽입 순서</td></tr>
+        <tr><td>HashMap/HashSet</td><td>평균 O(1), 최악 O(log n)</td><td>평균 O(1)</td><td>없음</td></tr>
+        <tr><td>LinkedHashMap/Set</td><td>평균 O(1)</td><td>평균 O(1)</td><td>삽입 또는 access 순서</td></tr>
+        <tr><td>TreeMap/TreeSet</td><td>O(log n)</td><td>O(log n)</td><td>키 정렬 순서</td></tr>
+        <tr><td>ArrayDeque</td><td>—</td><td>amortized O(1) 양 끝</td><td>FIFO/LIFO</td></tr>
+        <tr><td>PriorityQueue</td><td>O(1) (peek)</td><td>O(log n)</td><td>우선순위</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>일반 리스트</strong> → ArrayList. 의심하지 말고 시작.</li>
+      <li><strong>중복 제거</strong> → HashSet (순서 무관) / LinkedHashSet (입력 순서 유지).</li>
+      <li><strong>키-값 매핑</strong> → HashMap (대부분), TreeMap (정렬·범위 쿼리), ConcurrentHashMap (동시 접근).</li>
+      <li><strong>LRU 캐시</strong> → LinkedHashMap의 accessOrder + removeEldestEntry.</li>
+      <li><strong>스택·큐·덱</strong> → ArrayDeque.</li>
+      <li><strong>우선순위 작업 큐</strong> → PriorityQueue / PriorityBlockingQueue.</li>
+      <li><strong>읽기 위주 + 외부 노출</strong> → List.of / Map.of로 불변.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">ArrayList와 LinkedList 중 무엇을 쓰나요?</div>
+      <div class="a">
+        대부분 ArrayList입니다. 인덱스 접근이 O(1)이고, 캐시 친화적인 연속 메모리 배치라 순회·검색이 압도적으로 빠릅니다.
+        LinkedList는 양 끝 삽입/삭제가 O(1)이지만 노드마다 객체가 따로 만들어져 메모리·캐시 미스가 많고, 인덱스 접근이 O(n)입니다.
+        스택·큐·덱이 필요하면 LinkedList보다 ArrayDeque가 더 빠르므로, LinkedList의 자리는 사실상 거의 없습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">HashMap에 키를 넣었는데 get으로 못 찾는 경우가 있다는데?</div>
+      <div class="a">
+        <code>equals</code>와 <code>hashCode</code>의 일관성이 깨져 있을 때 발생합니다. 한쪽만 재정의했거나, mutable 키 객체를 put한 뒤 필드를 바꿔 hashCode가 변한 경우가 대표적입니다.
+        record는 자동 생성이라 안전하고, 일반 클래스는 IDE의 generate equals/hashCode를 항상 함께 쓰세요.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">HashMap이 한 버킷에 키가 많이 쌓이면 어떻게 되나요?</div>
+      <div class="a">
+        Java 8부터는 한 버킷의 충돌 항목 수가 8 이상이고 전체 capacity가 64 이상이면 그 버킷을 Red-Black Tree로 변환합니다(treeify).
+        이로써 최악 시간 복잡도가 O(n)에서 O(log n)으로 떨어져 의도적인 hash 충돌 공격(예: 오래전의 요청 파라미터 해시 충돌)에도 견디게 됐습니다. 충돌이 다시 6 이하로 줄면 untreeify로 다시 리스트가 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">HashMap의 resize는 언제 일어나고 왜 비용이 큰가요?</div>
+      <div class="a">
+        <code>size &gt; capacity × loadFactor(기본 0.75)</code>가 되면 capacity를 2배로 늘립니다. 단순 메모리 확장이 아니라 <strong>모든 entry를 새 버킷으로 재해싱</strong>해야 해서 O(n)이 들고,
+        그 순간 모든 put이 그 비용을 부담하므로 큰 맵에선 latency 스파이크가 됩니다. 미리 크기를 알면 <code>new HashMap&lt;&gt;(expectedSize / loadFactor + 1)</code>처럼 capacity를 지정해 resize 자체를 피하는 게 좋습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ConcurrentHashMap은 어떻게 동시성을 처리하나요?</div>
+      <div class="a">
+        Java 7까지는 16개 segment로 나눠 segment 단위 락을 잡았지만, Java 8부터는 segment를 없애고 <strong>버킷(bin) 단위 락 + CAS</strong>로 동작합니다.
+        없는 키 추가는 CAS로 락 없이 시도하고, 충돌이 나면 그 노드만 짧게 락을 잡습니다. iterator는 fail-safe라 순회 도중 다른 스레드가 수정해도 예외가 안 나며, 약한 일관성(weakly consistent) 스냅샷을 봅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">List를 순회하면서 요소를 지우려면?</div>
+      <div class="a">
+        for-each + <code>list.remove()</code>는 fail-fast iterator가 ConcurrentModificationException을 던집니다. 정답은 (1) Iterator를 직접 얻어 <code>it.remove()</code>를 쓰거나,
+        (2) Java 8+의 <code>list.removeIf(predicate)</code>를 쓰는 것입니다. 후자가 가장 깔끔합니다. ArrayList의 removeIf는 내부적으로 한 번에 압축하므로 성능도 우수합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">LRU 캐시를 직접 구현해 보세요.</div>
+      <div class="a">
+        가장 간단한 방법은 <code>LinkedHashMap</code>을 accessOrder=true로 만들고 <code>removeEldestEntry</code>를 오버라이드하는 것입니다 — get할 때마다 맨 뒤로 옮겨지고, 크기를 넘으면 가장 오래 안 쓰인 키가 자동 제거됩니다.
+        면접에서 손코딩이 필요하면 HashMap + 이중 연결 리스트로 직접 구현하는 형태도 자주 나옵니다(get/put 모두 O(1) 보장).
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">불변 컬렉션과 unmodifiable 뷰의 차이는?</div>
+      <div class="a">
+        <code>Collections.unmodifiableList</code>는 <em>래퍼 뷰</em>라 원본을 수정하면 뷰에서도 보입니다. 즉 "이 핸들로는 수정 못하지만 원본이 바뀌면 노출"되는 셈입니다.
+        반면 <code>List.copyOf</code>나 <code>List.of</code>는 진짜 불변 객체로 원본 변경에 영향을 받지 않습니다. 외부에 안전하게 노출하고 싶다면 copyOf 쪽이 정답입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="../data-structure/array.html">자료구조 — 배열</a></li>
+      <li><a href="../data-structure/linked-list.html">자료구조 — 연결 리스트</a></li>
+      <li><a href="../data-structure/hash-table.html">자료구조 — 해시 테이블</a></li>
+      <li><a href="generics.html">제네릭</a></li>
+      <li><a href="lambda-stream.html">람다와 Stream</a></li>
+      <li><a href="index.html">Java 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="exception-handling.html">
+        <span class="label">이전</span>
+        ← 예외 처리
+      </a>
+      <a href="index.html">📂 Java로</a>
+      <a class="next" href="generics.html">
+        <span class="label">다음</span>
+        제네릭 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

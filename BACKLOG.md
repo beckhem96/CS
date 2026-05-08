@@ -221,14 +221,172 @@
 
 ---
 
-## 데이터통신 (전체 미작성)
+## 🧰 기술 / 실무 스택 트랙 (CS 이론과 분리)
+
+CS 핵심 이론 카테고리와 별도로, 실제 개발에서 바로 쓰는 언어·프레임워크·웹·SQL 기술을 정리합니다.
+각 기술도 동일하게 **🧩 핵심 페이지**와 **🔬 심화 / 상세**로 분리합니다.
+
+### 작성 방향
+- 기술 페이지도 한국어 설명 + Java/Python/SQL 등 해당 기술의 실제 코드 예시를 포함합니다.
+- "문법 나열"보다 **왜 그렇게 동작하는지**, **실무에서 어디서 실수하는지**, **면접에서 어떻게 묻는지**를 중심으로 작성합니다.
+- 언어/프레임워크는 버전별 차이가 있으므로, 페이지 상단에 기준 버전을 명시합니다. 예: Java 21, Python 3.12, Spring Boot 3.x.
+- 기술 트랙 카테고리 인덱스도 기존 카테고리처럼 `🧩 핵심 개념` / `🔬 심화 / 상세`를 시각적으로 분리합니다.
+
+---
+
+## Java (기술 트랙) ✅ 카테고리 핵심 완성
+
+### 🧩 핵심 페이지 — 작성 완료
+- ✅ 카테고리 페이지 (`java/index.html`) — 핵심/심화 분리 구조
+- ✅ Java 언어 기본 — JVM·JDK·JRE, 컴파일/실행 흐름, 클래스 로딩 단계, JIT
+- ✅ 객체지향과 Java 문법 — class/interface/abstract/record/enum, 접근 제어자, 오버로딩 vs 오버라이딩, sealed
+- ✅ 예외 처리 — Throwable 계층, checked vs unchecked, try-with-resources, 스택 트레이스 읽기
+- ✅ 컬렉션 프레임워크 — List/Set/Map/Queue, ArrayList vs LinkedList, HashMap 충돌·resize·treeify, fail-fast
+- ✅ 제네릭(Generic) — 타입 소거, bounded wildcard, PECS, raw type 위험, 불공변
+- ✅ 람다와 Stream API — 함수형 인터페이스, method reference, lazy evaluation, 병렬 스트림 함정, Optional
+- ✅ JVM 메모리 구조 — heap(Young/Old)·stack·metaspace, GC 개요(Mark/Sweep/Compact), 참조 4단계, OOM 진단
+- ✅ 멀티스레딩 기초 — Thread/ExecutorService, synchronized·volatile·Atomic*, CompletableFuture, Interrupt
+
+### 🔬 심화 / 상세 — 작성 예정
+- [ ] **JVM 내부 구조 심층** — class loader, bytecode, JIT, tiered compilation, escape analysis
+- [ ] **GC 알고리즘 심층** — Serial/Parallel/G1/ZGC/Shenandoah, generational hypothesis, pause time tuning
+- [ ] **Java Memory Model(JMM)** — happens-before, visibility, atomicity, reordering, volatile/synchronized 의미
+- [ ] **동시성 유틸리티** — Lock/ReentrantLock, Semaphore, CountDownLatch, CyclicBarrier, Phaser, BlockingQueue
+- [ ] **ConcurrentHashMap 내부** — CAS, bin locking, tree bin, resize 동작
+- [ ] **CompletableFuture 심층** — 비동기 체이닝, 예외 처리, executor 선택, thread pool 고갈
+- [ ] **Reflection / Annotation / Proxy** — Spring AOP와 DI의 기반, dynamic proxy vs CGLIB
+- [ ] **NIO / Netty 입문** — blocking I/O vs non-blocking I/O, Selector, ByteBuffer, event loop
+- [ ] **Java 성능 튜닝** — JFR/JMC, heap dump, thread dump, allocation profiling
+
+---
+
+## Python (기술 트랙)
 
 ### 🧩 핵심 페이지 — 작성 예정
-- [ ] **변조** — AM / FM / PM의 파형 차이 SVG, 디지털 변조(ASK/FSK/PSK/QAM)와 심볼 다이어그램
-- [ ] **다중화** — TDM / FDM / WDM / CDM 비교, 시간/주파수 슬롯 시각화
-- [ ] **오류 검출/정정** — 패리티 / CRC 다항식 나눗셈 단계, 해밍 코드 비트 위치
-- [ ] **매체 접근 제어** — CSMA/CD(이더넷), CSMA/CA(Wi-Fi), 충돌 회피 메커니즘
-- [ ] **신호 인코딩** — NRZ / Manchester / 4B/5B / 8B/10B, 자기 동기화
+- [ ] **Python 언어 기본** — 인터프리터 실행 모델, 동적 타이핑, 들여쓰기, 모듈/패키지
+- [ ] **자료형과 컬렉션** — list/tuple/dict/set, slicing, comprehension, mutability
+- [ ] **함수와 스코프** — first-class function, closure, LEGB rule, default argument 함정
+- [ ] **객체지향 Python** — class, instance, `self`, dunder method, dataclass
+- [ ] **예외와 컨텍스트 매니저** — try/except/finally, custom exception, `with`, `__enter__/__exit__`
+- [ ] **이터레이터 / 제너레이터** — iterator protocol, `yield`, generator expression, lazy evaluation
+- [ ] **파일 / 표준 라이브러리** — pathlib, json, datetime, collections, itertools
+- [ ] **가상환경과 패키징** — venv, pip, requirements, pyproject.toml, uv/poetry 개요
+
+### 🔬 심화 / 상세 — 작성 예정
+- [ ] **CPython 실행 모델** — bytecode, frame object, reference counting, garbage collection
+- [ ] **GIL(Global Interpreter Lock)** — 왜 필요한지, CPU-bound vs I/O-bound, multiprocessing/asyncio 대안
+- [ ] **asyncio 심층** — event loop, coroutine, task, await, cancellation, backpressure
+- [ ] **타입 힌트 심층** — mypy/pyright, Protocol, Generic, TypedDict, Pydantic과 런타임 검증
+- [ ] **데코레이터와 메타프로그래밍** — function/class decorator, descriptor, metaclass
+- [ ] **성능 최적화** — profiling(cProfile/py-spy), vectorization, C extension, PyPy
+- [ ] **테스트와 품질 도구** — pytest fixture, monkeypatch, coverage, ruff, black
+- [ ] **데이터 처리 기본** — pandas/numpy 핵심 구조, 벡터화, 메모리 주의점
+
+---
+
+## Web (기술 트랙)
+
+### 🧩 핵심 페이지 — 작성 예정
+- [ ] **Web 동작 큰 그림** — 브라우저 주소 입력부터 화면 렌더링까지: DNS/TCP/TLS/HTTP/HTML/CSS/JS
+- [ ] **HTML 핵심** — 시맨틱 태그, form, 접근성 기본, SEO 기초
+- [ ] **CSS 핵심** — 박스 모델, cascade/specificity, flex/grid, responsive layout
+- [ ] **JavaScript 핵심** — 실행 컨텍스트, scope, closure, prototype, module
+- [ ] **DOM과 이벤트** — DOM tree, event bubbling/capturing, delegation, rendering cost
+- [ ] **브라우저 렌더링 파이프라인** — HTML parsing, CSSOM, render tree, layout, paint, composite
+- [ ] **HTTP와 Web API** — fetch, REST, JSON, CORS, 쿠키/스토리지
+- [ ] **웹 보안 기본** — XSS, CSRF, CORS 오해, CSP, SameSite/HttpOnly/Secure
+
+### 🔬 심화 / 상세 — 작성 예정
+- [ ] **JavaScript 이벤트 루프 심층** — call stack, task queue, microtask, rendering frame, async/await
+- [ ] **브라우저 저장소** — Cookie / localStorage / sessionStorage / IndexedDB / Cache Storage 비교
+- [ ] **웹 성능 최적화** — Core Web Vitals, LCP/INP/CLS, lazy loading, code splitting, caching
+- [ ] **Service Worker / PWA** — offline cache, push notification, background sync
+- [ ] **WebSocket / SSE / WebRTC** — 실시간 통신 선택 기준
+- [ ] **OAuth/OIDC 웹 로그인 흐름** — Authorization Code + PKCE, token storage 위험
+- [ ] **프론트엔드 아키텍처** — SPA/MPA/SSR/SSG/ISR, hydration, island architecture
+- [ ] **TypeScript 입문** — structural typing, union/intersection, generic, type narrowing
+
+---
+
+## Spring (기술 트랙)
+
+### 🧩 핵심 페이지 — 작성 예정
+- [ ] **Spring 큰 그림** — IoC Container, Bean, DI, AOP, Spring Boot 자동 설정
+- [ ] **Bean과 의존성 주입** — Bean lifecycle, scope, constructor injection, circular dependency
+- [ ] **Spring MVC** — DispatcherServlet, HandlerMapping, Controller, ArgumentResolver, ViewResolver
+- [ ] **요청/응답 처리** — DTO, validation, exception handler, message converter, content negotiation
+- [ ] **Spring Data JPA 기초** — Entity, Repository, 영속성 컨텍스트, dirty checking, transaction boundary
+- [ ] **트랜잭션 관리** — `@Transactional`, propagation, isolation, rollback rule, proxy self-invocation 문제
+- [ ] **Spring Security 기초** — filter chain, authentication/authorization, session vs JWT
+- [ ] **Spring Boot 운영 기본** — Actuator, profile, configuration properties, logging
+
+### 🔬 심화 / 상세 — 작성 예정
+- [ ] **Spring Bean lifecycle 심층** — BeanDefinition, post processor, initialization order
+- [ ] **AOP / Proxy 심층** — JDK dynamic proxy vs CGLIB, pointcut, advice, self-invocation
+- [ ] **Spring MVC 내부 구조** — DispatcherServlet 전체 흐름, HandlerAdapter, Interceptor, Filter 차이
+- [ ] **JPA 성능 문제** — N+1, fetch join, batch size, entity graph, pagination 함정
+- [ ] **Hibernate 영속성 컨텍스트 심층** — 1차 캐시, flush, detach/merge, write-behind
+- [ ] **트랜잭션 전파 심층** — REQUIRED/REQUIRES_NEW/NESTED, savepoint, unexpected rollback
+- [ ] **Spring Security 심층** — SecurityContext, CSRF, OAuth2 Login, Resource Server, method security
+- [ ] **Spring WebFlux** — Reactor, Mono/Flux, backpressure, MVC와 선택 기준
+- [ ] **테스트 전략** — slice test, `@SpringBootTest`, Testcontainers, MockMvc, WebTestClient
+- [ ] **관측성 / 운영** — Micrometer, tracing, metrics, health check, graceful shutdown
+
+---
+
+## SQL (기술 트랙)
+
+### 🧩 핵심 페이지 — 작성 예정
+- [ ] **SQL 기본 문법** — SELECT/FROM/WHERE/GROUP BY/HAVING/ORDER BY/LIMIT 실행 순서
+- [ ] **JOIN 실전** — INNER/LEFT/RIGHT/FULL/CROSS, anti join, semi join, NULL 처리
+- [ ] **집계와 그룹화** — aggregate function, GROUP BY, HAVING, grouping sets 개요
+- [ ] **서브쿼리와 CTE** — scalar/table/correlated subquery, WITH, materialization 차이
+- [ ] **윈도우 함수** — OVER/PARTITION BY/ORDER BY, rank/lag/lead/running total
+- [ ] **데이터 변경 SQL** — INSERT/UPDATE/DELETE/MERGE, upsert, returning
+- [ ] **인덱스를 고려한 SQL 작성** — sargable predicate, covering query, pagination
+- [ ] **NULL과 3값 논리** — TRUE/FALSE/UNKNOWN, NOT IN 함정, COALESCE/NULLIF
+
+### 🔬 심화 / 상세 — 작성 예정
+- [ ] **SQL 실행 순서 심층** — 논리적 처리 순서 vs 물리 실행 계획 차이
+- [ ] **쿼리 튜닝 패턴** — keyset pagination, OR 분해, exists vs in, count 최적화
+- [ ] **고급 윈도우 함수** — frame clause, rows/range/groups, percentile, gap-and-island
+- [ ] **Recursive CTE** — 계층형 데이터, 그래프 탐색, cycle 방지
+- [ ] **JSON SQL** — PostgreSQL JSONB / MySQL JSON 함수, 인덱싱
+- [ ] **DB별 SQL 차이** — PostgreSQL/MySQL/Oracle의 dialect, limit/offset, upsert, lock syntax
+- [ ] **락을 의식한 SQL** — `SELECT FOR UPDATE`, SKIP LOCKED, NOWAIT, deadlock 줄이는 쿼리 순서
+- [ ] **분석 SQL 패턴** — retention, funnel, cohort, sessionization
+
+---
+
+## Git / Linux / Tooling (기술 트랙)
+
+### 🧩 핵심 페이지 — 작성 예정
+- [ ] **Git 기본** — working tree/index/repository, add/commit/status/diff/log
+- [ ] **브랜치와 머지** — branch, merge, rebase 개념, conflict 해결
+- [ ] **Git 협업 흐름** — PR, code review, trunk-based vs git-flow
+- [ ] **Linux CLI 기본** — file/process/permission, pipe/redirection, systemctl/logs
+- [ ] **Shell scripting 기본** — bash 변수, 조건문, 반복문, exit code, 안전한 quoting
+- [ ] **Docker 기본** — image/container/layer, Dockerfile, volume/network
+
+### 🔬 심화 / 상세 — 작성 예정
+- [ ] **Git 내부 구조** — object/blob/tree/commit, ref, reflog, packfile
+- [ ] **rebase / cherry-pick 심층** — conflict 재현, interactive rebase, commit 정리 전략
+- [ ] **Linux 네트워크 디버깅** — ss, lsof, tcpdump, dig, curl, iptables 기초
+- [ ] **Docker 심층** — multi-stage build, build cache, healthcheck, compose, distroless
+- [ ] **Kubernetes 입문** — Pod/Deployment/Service/Ingress/ConfigMap/Secret
+- [ ] **Observability 도구** — log/metric/trace, Prometheus/Grafana, OpenTelemetry
+
+---
+
+## 데이터통신 ✅ 카테고리 핵심 완성
+
+### 🧩 핵심 페이지 — 작성 완료
+- ✅ 카테고리 페이지 (`data-communication/index.html`) — 핵심/심화 분리 구조
+- ✅ 변조 — AM/FM/PM, 디지털 변조(ASK/FSK/PSK/QAM), 성상도와 SNR trade-off
+- ✅ 다중화 — TDM/FDM/WDM/CDM 비교, MUX/DEMUX, 슬롯/주파수 대역 시각화
+- ✅ 오류 검출/정정 — 패리티/체크섬/CRC/해밍 코드, ARQ vs FEC
+- ✅ 매체 접근 제어 — CSMA/CD, CSMA/CA, hidden node, RTS/CTS
+- ✅ 신호 인코딩 — NRZ/Manchester/4B/5B/8B/10B, DC 균형과 자기 동기화
 
 ### 🔬 심화 / 상세 — 작성 예정
 - [ ] **샤논 한계와 채널 용량** — Shannon-Hartley, 잡음과 대역폭의 관계

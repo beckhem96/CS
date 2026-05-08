@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>변조 · 데이터통신 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">데이터통신</a>
+      <span class="sep">›</span>
+      <span>변조</span>
+    </nav>
+
+    <h1>변조(Modulation)</h1>
+
+    <div class="definition">
+      <strong>변조</strong>는 데이터를 멀리 보내기 위해 높은 주파수의 <strong>반송파(Carrier)</strong>에 실어 보내는 기술입니다.
+      반송파의 <strong>진폭(Amplitude), 주파수(Frequency), 위상(Phase)</strong> 중 무엇을 바꾸느냐에 따라 AM/FM/PM 또는 ASK/FSK/PSK/QAM으로 나뉩니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      컴퓨터 안의 0과 1은 그대로 공기 중이나 케이블을 통해 멀리 갈 수 없습니다.
+      실제 매체는 특정 주파수 대역의 전자기파나 전압 변화를 잘 전달하므로, 데이터를 그 매체가 잘 전달하는 파형에 얹어야 합니다.
+      이때 사용하는 기본 파형이 반송파이고, 데이터를 싣기 위해 반송파의 성질을 바꾸는 과정이 변조입니다.
+    </p>
+    <p>
+      아날로그 변조는 라디오 방송처럼 연속적인 정보를 싣는 데서 출발했고, 디지털 변조는 0과 1 또는 여러 비트 묶음을 심볼(Symbol)로 만들어 전송합니다.
+      현대 Wi-Fi, LTE, 5G, 케이블 모뎀은 모두 QAM 같은 디지털 변조를 기반으로 합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>비유 — 택배 트럭</strong></p>
+      <p>
+        데이터가 택배 상자라면 반송파는 고속도로를 달릴 수 있는 트럭입니다.
+        상자를 손에 들고 고속도로를 걸어갈 수 없으니 트럭에 실어 보내야 하죠.
+        변조는 "상자를 트럭에 어떻게 실을지"를 정하는 방식입니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>전송 거리 확보</strong> — 낮은 주파수 원신호(baseband)는 감쇠와 간섭에 약하다.</li>
+      <li><strong>안테나 크기 현실화</strong> — 효율적인 안테나는 파장의 일부 크기여야 하므로 높은 주파수 반송파가 필요.</li>
+      <li><strong>주파수 대역 분리</strong> — 여러 방송국·기기가 서로 다른 주파수 대역을 써 동시에 전송.</li>
+      <li><strong>전송률 향상</strong> — QAM처럼 한 심볼에 여러 비트를 실어 같은 대역폭에서 더 많은 데이터 전송.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 반송파의 세 요소</h3>
+    <p>
+      반송파는 보통 사인파로 생각합니다. 수식으로는 <code>A sin(2πft + φ)</code>입니다.
+      여기서 <strong>A는 진폭</strong>, <strong>f는 주파수</strong>, <strong>φ는 위상</strong>입니다. 변조는 이 셋 중 하나 또는 여러 개를 데이터에 따라 바꾸는 일입니다.
+    </p>
+
+    <h3>2) 아날로그 변조 — AM / FM / PM</h3>
+    <div class="viz">
+      <svg width="760" height="360" viewBox="0 0 760 360" role="img" aria-label="AM FM PM waveform comparison">
+        <text x="380" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">같은 반송파를 무엇으로 흔들 것인가?</text>
+        <line x1="100" y1="80" x2="720" y2="80" stroke="var(--border)"/>
+        <line x1="100" y1="160" x2="720" y2="160" stroke="var(--border)"/>
+        <line x1="100" y1="240" x2="720" y2="240" stroke="var(--border)"/>
+        <line x1="100" y1="320" x2="720" y2="320" stroke="var(--border)"/>
+
+        <text x="45" y="84" font-size="13" font-weight="bold" fill="var(--accent)">Carrier</text>
+        <text x="45" y="164" font-size="13" font-weight="bold" fill="var(--accent)">AM</text>
+        <text x="45" y="244" font-size="13" font-weight="bold" fill="var(--accent)">FM</text>
+        <text x="45" y="324" font-size="13" font-weight="bold" fill="var(--accent)">PM</text>
+
+        <path d="M100 80 C115 40,130 40,145 80 S175 120,190 80 S220 40,235 80 S265 120,280 80 S310 40,325 80 S355 120,370 80 S400 40,415 80 S445 120,460 80 S490 40,505 80 S535 120,550 80 S580 40,595 80 S625 120,640 80 S670 40,685 80 S715 120,730 80" fill="none" stroke="var(--text)" stroke-width="1.8"/>
+        <path d="M100 160 C115 135,130 135,145 160 S175 185,190 160 S220 110,235 160 S265 210,280 160 S310 130,325 160 S355 190,370 160 S400 118,415 160 S445 202,460 160 S490 140,505 160 S535 180,550 160 S580 112,595 160 S625 208,640 160 S670 136,685 160 S715 184,730 160" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+        <path d="M100 240 C118 200,136 200,154 240 S190 280,208 240 S236 200,250 240 S270 280,286 240 S326 200,346 240 S386 280,406 240 S434 200,448 240 S468 280,484 240 S524 200,544 240 S584 280,604 240 S632 200,646 240 S666 280,682 240 S722 200,742 240" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+        <path d="M100 320 C116 280,132 280,148 320 S178 360,192 320 S216 280,236 320 S276 360,294 320 S330 280,346 320 S376 360,390 320 S414 280,434 320 S474 360,492 320 S528 280,544 320 S574 360,588 320 S612 280,632 320 S672 360,690 320 S726 280,742 320" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+
+        <text x="725" y="164" font-size="11" fill="var(--text-muted)">진폭 변화</text>
+        <text x="725" y="244" font-size="11" fill="var(--text-muted)">주파수 변화</text>
+        <text x="725" y="324" font-size="11" fill="var(--text-muted)">위상 변화</text>
+      </svg>
+      <span class="viz-caption">AM은 높낮이, FM은 빽빽함, PM은 파형의 시작 위치를 바꾼다.</span>
+    </div>
+
+    <ul>
+      <li><strong>AM(Amplitude Modulation)</strong> — 진폭을 바꿉니다. 구현이 단순하지만 잡음이 진폭을 흔들기 때문에 잡음에 약합니다.</li>
+      <li><strong>FM(Frequency Modulation)</strong> — 주파수를 바꿉니다. 진폭 잡음에 강하지만 더 넓은 대역폭을 씁니다.</li>
+      <li><strong>PM(Phase Modulation)</strong> — 위상을 바꿉니다. 디지털 변조의 PSK와 연결됩니다.</li>
+    </ul>
+
+    <h3>3) 디지털 변조 — ASK / FSK / PSK / QAM</h3>
+    <p>
+      디지털 변조는 비트 또는 비트 묶음을 <strong>심볼</strong>로 바꿉니다.
+      예를 들어 QPSK는 한 심볼이 2비트, 16-QAM은 한 심볼이 4비트, 64-QAM은 한 심볼이 6비트를 표현합니다.
+    </p>
+
+    <div class="viz">
+      <svg width="720" height="300" viewBox="0 0 720 300" role="img" aria-label="digital modulation constellation">
+        <text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">성상도(Constellation): 한 점 = 한 심볼</text>
+        <g transform="translate(60,50)">
+          <text x="80" y="0" text-anchor="middle" font-weight="bold">ASK</text>
+          <line x1="20" y1="100" x2="150" y2="100" stroke="var(--border)"/>
+          <line x1="85" y1="20" x2="85" y2="170" stroke="var(--border)"/>
+          <circle cx="65" cy="100" r="6" fill="var(--accent)"/>
+          <circle cx="125" cy="100" r="12" fill="var(--accent)" fill-opacity="0.45" stroke="var(--accent)"/>
+          <text x="65" y="125" font-size="11" text-anchor="middle">0</text>
+          <text x="125" y="125" font-size="11" text-anchor="middle">1</text>
+          <text x="80" y="195" font-size="11" text-anchor="middle" fill="var(--text-muted)">진폭 차이</text>
+        </g>
+
+        <g transform="translate(250,50)">
+          <text x="80" y="0" text-anchor="middle" font-weight="bold">PSK / QPSK</text>
+          <line x1="20" y1="100" x2="150" y2="100" stroke="var(--border)"/>
+          <line x1="85" y1="20" x2="85" y2="170" stroke="var(--border)"/>
+          <circle cx="45" cy="60" r="7" fill="var(--accent)"/><text x="45" y="45" font-size="10" text-anchor="middle">00</text>
+          <circle cx="125" cy="60" r="7" fill="var(--accent)"/><text x="125" y="45" font-size="10" text-anchor="middle">01</text>
+          <circle cx="45" cy="140" r="7" fill="var(--accent)"/><text x="45" y="160" font-size="10" text-anchor="middle">11</text>
+          <circle cx="125" cy="140" r="7" fill="var(--accent)"/><text x="125" y="160" font-size="10" text-anchor="middle">10</text>
+          <text x="80" y="195" font-size="11" text-anchor="middle" fill="var(--text-muted)">위상 차이</text>
+        </g>
+
+        <g transform="translate(470,50)">
+          <text x="100" y="0" text-anchor="middle" font-weight="bold">16-QAM</text>
+          <line x1="20" y1="100" x2="180" y2="100" stroke="var(--border)"/>
+          <line x1="100" y1="20" x2="100" y2="180" stroke="var(--border)"/>
+          <g fill="var(--accent)">
+            <circle cx="55" cy="55" r="5"/><circle cx="85" cy="55" r="5"/><circle cx="115" cy="55" r="5"/><circle cx="145" cy="55" r="5"/>
+            <circle cx="55" cy="85" r="5"/><circle cx="85" cy="85" r="5"/><circle cx="115" cy="85" r="5"/><circle cx="145" cy="85" r="5"/>
+            <circle cx="55" cy="115" r="5"/><circle cx="85" cy="115" r="5"/><circle cx="115" cy="115" r="5"/><circle cx="145" cy="115" r="5"/>
+            <circle cx="55" cy="145" r="5"/><circle cx="85" cy="145" r="5"/><circle cx="115" cy="145" r="5"/><circle cx="145" cy="145" r="5"/>
+          </g>
+          <text x="100" y="205" font-size="11" text-anchor="middle" fill="var(--text-muted)">진폭 + 위상 조합, 1심볼=4비트</text>
+        </g>
+      </svg>
+      <span class="viz-caption">성상도 점 간격이 좁을수록 더 많은 비트를 싣지만 잡음에 약해진다.</span>
+    </div>
+
+    <h3>4) QAM과 SNR의 trade-off</h3>
+    <p>
+      16-QAM, 64-QAM, 256-QAM처럼 점을 촘촘히 배치하면 한 심볼에 더 많은 비트를 담을 수 있습니다.
+      하지만 점 사이 거리가 좁아져 잡음이 조금만 섞여도 이웃 점으로 잘못 판정됩니다.
+      그래서 무선 품질이 좋을 때는 높은 QAM, 품질이 나쁠 때는 낮은 QAM으로 자동 조절합니다. 이를 <strong>적응 변조(Adaptive Modulation)</strong>라고 합니다.
+    </p>
+
+    <h3>5) 심볼율과 비트율</h3>
+    <p>
+      <strong>심볼율(Baud rate)</strong>은 초당 심볼 수이고, <strong>비트율(Bit rate)</strong>은 초당 비트 수입니다.
+      한 심볼이 여러 비트를 담으면 비트율은 심볼율보다 커집니다.
+    </p>
+<pre><code>비트율 = 심볼율 × log2(심볼 개수)
+
+QPSK:   4개 심볼  → 1심볼 = 2비트
+16-QAM: 16개 심볼 → 1심볼 = 4비트
+64-QAM: 64개 심볼 → 1심볼 = 6비트
+</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>방식</th><th>바꾸는 요소</th><th>장점</th><th>단점</th><th>대표 사용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>AM / ASK</td><td>진폭</td><td>구현 단순</td><td>진폭 잡음에 약함</td><td>AM 라디오, 단순 디지털 링크</td></tr>
+        <tr><td>FM / FSK</td><td>주파수</td><td>진폭 잡음에 강함</td><td>대역폭 사용량 큼</td><td>FM 라디오, 블루투스 일부</td></tr>
+        <tr><td>PM / PSK</td><td>위상</td><td>전력 효율 좋음</td><td>동기화 필요</td><td>위성, Wi-Fi 일부 모드</td></tr>
+        <tr><td>QAM</td><td>진폭+위상</td><td>높은 전송률</td><td>SNR 요구 높음</td><td>Wi-Fi, LTE, 5G, 케이블</td></tr>
+        <tr><td>고차 QAM</td><td>더 촘촘한 점</td><td>대역폭 효율 ↑</td><td>오류율 ↑</td><td>채널 품질 좋을 때만</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>Wi-Fi</strong> — 채널 품질에 따라 BPSK/QPSK/16-QAM/64-QAM/256-QAM/1024-QAM 등을 선택.</li>
+      <li><strong>LTE/5G</strong> — 기지국과 단말이 CQI(Channel Quality Indicator)를 보고 변조·코딩률을 조정.</li>
+      <li><strong>케이블 모뎀</strong> — DOCSIS가 QAM 기반으로 동축 케이블에서 높은 데이터율 제공.</li>
+      <li><strong>라디오 방송</strong> — AM/FM은 이름 그대로 변조 방식에서 온 용어.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+    <div class="qa">
+      <div class="q">변조가 왜 필요한가요?</div>
+      <div class="a">데이터를 매체가 잘 전달하는 주파수 대역의 반송파에 실어 멀리 보내기 위해 필요합니다. 또한 서로 다른 주파수 대역을 사용해 여러 신호를 동시에 보낼 수 있고, QAM처럼 한 심볼에 여러 비트를 담아 전송률을 높일 수 있습니다.</div>
+    </div>
+    <div class="qa">
+      <div class="q">AM, FM, PM의 차이는?</div>
+      <div class="a">AM은 반송파의 진폭을, FM은 주파수를, PM은 위상을 정보에 따라 바꿉니다. AM은 단순하지만 진폭 잡음에 약하고, FM은 잡음에 강하지만 대역폭을 더 씁니다. PM은 디지털 PSK 계열과 연결됩니다.</div>
+    </div>
+    <div class="qa">
+      <div class="q">QAM이 전송률을 높이는 원리는?</div>
+      <div class="a">진폭과 위상을 동시에 바꿔 성상도에 여러 점을 만들고, 각 점을 여러 비트 묶음에 대응시킵니다. 16-QAM은 한 심볼에 4비트, 64-QAM은 6비트를 담기 때문에 같은 심볼율에서 비트율이 올라갑니다.</div>
+    </div>
+    <div class="qa">
+      <div class="q">고차 QAM은 왜 잡음에 약한가요?</div>
+      <div class="a">성상도에 점을 촘촘히 배치하기 때문에 점 사이 거리가 가까워집니다. 잡음으로 수신점이 조금만 흔들려도 이웃 심볼로 오인될 수 있어 높은 SNR이 필요합니다.</div>
+    </div>
+    <div class="qa">
+      <div class="q">심볼율과 비트율은 같은가요?</div>
+      <div class="a">다릅니다. 심볼율은 초당 전송하는 심볼 수이고, 비트율은 초당 전송하는 비트 수입니다. 한 심볼이 여러 비트를 표현하면 비트율 = 심볼율 × 심볼당 비트 수가 됩니다.</div>
+    </div>
+    <div class="qa">
+      <div class="q">적응 변조란 무엇인가요?</div>
+      <div class="a">채널 상태가 좋을 때는 높은 QAM으로 전송률을 높이고, 잡음이 많거나 신호가 약할 때는 낮은 변조로 안정성을 높이는 방식입니다. Wi-Fi, LTE, 5G에서 링크 품질에 따라 동적으로 적용됩니다.</div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="multiplexing.html">다중화</a></li>
+      <li><a href="signal-encoding.html">신호 인코딩</a></li>
+      <li><a href="error-detection-correction.html">오류 검출/정정</a></li>
+      <li><a href="index.html">데이터통신 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="index.html">📂 데이터통신으로</a>
+      <a class="next" href="multiplexing.html"><span class="label">다음</span>다중화 →</a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

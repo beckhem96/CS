@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>람다와 Stream API · Java · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">Java</a>
+      <span class="sep">›</span>
+      <span>람다와 Stream API</span>
+    </nav>
+
+    <h1>람다와 Stream API — 함수형 인터페이스·lazy evaluation</h1>
+
+    <div class="definition">
+      <strong>람다 표현식</strong>은 "동작을 데이터처럼 전달"하기 위한 단축 문법이고, 그 동작을 받는 그릇이 <strong>함수형 인터페이스</strong>(추상 메서드 1개)입니다.
+      <strong>Stream API</strong>는 컬렉션 위에 얹혀 람다를 흘려보내며 데이터를 변환·필터링·집계하는 파이프라인이며, 모든 중간 연산이 <strong>지연 평가(lazy)</strong>되는 점이 핵심입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      Java 8 이전에는 "동작 하나를 넘기기 위해" 익명 클래스를 길게 써야 했습니다. 람다는 이를 한 줄로 줄이고, 메서드 레퍼런스는 이미 있는 메서드를 그대로 가리키게 해 코드 의도를 한 단어로 만듭니다.
+    </p>
+    <p>
+      Stream은 컬렉션의 "for + if + 결과 컬렉션 누적" 패턴을 선언적으로 표현합니다. 더 중요한 건 <strong>실제 작업이 종단 연산(terminal)을 만나기 전까지 미뤄진다</strong>는 점입니다 — 그 덕에
+      여러 중간 연산을 합쳐 한 번의 순회로 처리할 수 있고, 무한 스트림 같은 것도 말이 됩니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>주의 — Stream은 "함수형 컬렉션"이 아니다</strong></p>
+      <p>
+        Stream은 자료구조가 아니라 <em>일회성 파이프라인</em>입니다. 종단 연산을 한 번 호출하면 끝이고, 같은 Stream을 다시 사용하려 하면 <code>IllegalStateException</code>이 납니다.
+        결과를 보관하려면 <code>collect</code>로 컬렉션으로 빼야 합니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>가독성</strong> — "<em>무엇을 하는가</em>"가 한눈에 — for 루프의 의도 분석 비용이 줄어듦.</li>
+      <li><strong>합성</strong> — 작은 연산을 체인으로 결합해 복잡한 변환을 표현.</li>
+      <li><strong>지연·단락 평가</strong> — 필요한 만큼만 처리해 무한 시퀀스도 다룰 수 있다.</li>
+      <li><strong>병렬화</strong> — <code>parallelStream</code>으로 멀티코어 활용. 단, 함정이 많으니 신중히.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 함수형 인터페이스 — 람다의 "타입"</h3>
+    <p>
+      추상 메서드가 정확히 하나인 인터페이스를 함수형 인터페이스라 부르며, 컴파일러는 이런 인터페이스가 필요한 자리에 람다를 자동으로 매핑합니다.
+      <code>@FunctionalInterface</code>를 붙이면 컴파일러가 "추상 메서드 1개" 규칙을 검증해 줍니다.
+    </p>
+    <table class="complexity">
+      <thead>
+        <tr><th>인터페이스</th><th>메서드</th><th>의미</th><th>예시 람다</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Function&lt;T,R&gt;</code></td><td>R apply(T)</td><td>변환</td><td><code>x -&gt; x.toString()</code></td></tr>
+        <tr><td><code>Predicate&lt;T&gt;</code></td><td>boolean test(T)</td><td>필터/조건</td><td><code>x -&gt; x &gt; 0</code></td></tr>
+        <tr><td><code>Consumer&lt;T&gt;</code></td><td>void accept(T)</td><td>부수 효과</td><td><code>x -&gt; log(x)</code></td></tr>
+        <tr><td><code>Supplier&lt;T&gt;</code></td><td>T get()</td><td>생성</td><td><code>() -&gt; new User()</code></td></tr>
+        <tr><td><code>BiFunction&lt;T,U,R&gt;</code></td><td>R apply(T,U)</td><td>2-인자 변환</td><td><code>(a, b) -&gt; a + b</code></td></tr>
+        <tr><td><code>UnaryOperator&lt;T&gt;</code></td><td>T apply(T)</td><td>같은 타입 변환</td><td><code>s -&gt; s.toUpperCase()</code></td></tr>
+        <tr><td><code>Comparator&lt;T&gt;</code></td><td>int compare(T,T)</td><td>비교</td><td><code>(a, b) -&gt; a.age - b.age</code></td></tr>
+      </tbody>
+    </table>
+
+<pre><code>// 람다의 4가지 표기
+Function&lt;Integer, Integer&gt; f1 = x -&gt; x * 2;        // 단일 표현식
+Function&lt;Integer, Integer&gt; f2 = (Integer x) -&gt; x * 2; // 타입 명시
+Function&lt;Integer, Integer&gt; f3 = (x) -&gt; { return x * 2; };  // 블록 본문
+Function&lt;Integer, Integer&gt; f4 = x -&gt; {
+    int y = x * 2;
+    return y;
+};</code></pre>
+
+    <h3>2) 메서드 레퍼런스 — 람다의 단축형 4종</h3>
+<pre><code>// (1) 정적 메서드     ClassName::staticMethod
+Function&lt;String, Integer&gt; parser = Integer::parseInt;
+// 같음: x -&gt; Integer.parseInt(x)
+
+// (2) 인스턴스 메서드 (특정 객체)  instance::method
+String prefix = "[INFO] ";
+Function&lt;String, String&gt; addPrefix = prefix::concat;
+
+// (3) 인스턴스 메서드 (임의 객체)  ClassName::instanceMethod
+Function&lt;String, Integer&gt; len = String::length;
+// 같음: s -&gt; s.length()
+
+// (4) 생성자 레퍼런스             ClassName::new
+Supplier&lt;ArrayList&lt;String&gt;&gt; factory = ArrayList::new;</code></pre>
+
+    <h3>3) Stream 파이프라인 — Source → Intermediate → Terminal</h3>
+    <div class="viz">
+      <svg width="780" height="220" viewBox="0 0 780 220" role="img" aria-label="Stream pipeline">
+        <defs>
+          <marker id="sarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <g font-size="12" text-anchor="middle">
+          <rect x="20" y="60" width="140" height="60" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="90" y="84" font-weight="bold">Source</text>
+          <text x="90" y="104" font-size="11" fill="var(--text-muted)">collection.stream()</text>
+
+          <line x1="160" y1="90" x2="200" y2="90" stroke="var(--accent)" stroke-width="2" marker-end="url(#sarr)"/>
+
+          <rect x="200" y="20" width="380" height="140" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="390" y="44" font-weight="bold" fill="var(--accent)">Intermediate (lazy)</text>
+
+          <rect x="220" y="60" width="100" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="270" y="84">filter</text>
+          <rect x="330" y="60" width="100" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="380" y="84">map</text>
+          <rect x="440" y="60" width="100" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="490" y="84">sorted</text>
+
+          <rect x="220" y="110" width="100" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="270" y="134">distinct</text>
+          <rect x="330" y="110" width="100" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="380" y="134">limit</text>
+          <rect x="440" y="110" width="100" height="40" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="490" y="134">peek</text>
+
+          <line x1="580" y1="90" x2="620" y2="90" stroke="var(--accent)" stroke-width="2" marker-end="url(#sarr)"/>
+
+          <rect x="620" y="60" width="140" height="60" fill="var(--bg-card)" stroke="var(--success)" rx="4"/>
+          <text x="690" y="84" font-weight="bold" fill="var(--success)">Terminal</text>
+          <text x="690" y="104" font-size="11" fill="var(--text-muted)">collect / forEach / reduce</text>
+
+          <text x="390" y="200" font-size="11" fill="var(--text-muted)">Terminal이 호출돼야만 위 단계들이 실제로 실행된다 (lazy + 단락)</text>
+        </g>
+      </svg>
+      <span class="viz-caption">중간 연산은 "쌓이기만" 하고, 종단 연산이 호출돼야 한 번에 흘러간다.</span>
+    </div>
+
+<pre><code>// 명령형 — for + if
+List&lt;String&gt; result = new ArrayList&lt;&gt;();
+for (User u : users) {
+    if (u.age() &gt;= 18) {
+        result.add(u.name().toUpperCase());
+    }
+}
+
+// Stream — 선언적
+List&lt;String&gt; result = users.stream()
+    .filter(u -&gt; u.age() &gt;= 18)
+    .map(User::name)
+    .map(String::toUpperCase)
+    .collect(Collectors.toList());</code></pre>
+
+    <h3>4) Lazy Evaluation — 흐름의 핵심</h3>
+    <p>
+      중간 연산을 호출해도 즉시 실행되지 않습니다. 종단 연산이 발동하는 순간, 데이터가 한 원소씩 파이프라인을 흘러갑니다(<em>요소 한 번 → 모든 단계 통과 → 다음 요소</em>).
+      이 동작 모델 덕분에 다음과 같은 효과가 가능해집니다.
+    </p>
+    <ul>
+      <li><strong>단락 평가(short-circuit)</strong> — <code>findFirst</code>·<code>anyMatch</code>는 답이 정해지면 즉시 멈춤.</li>
+      <li><strong>무한 스트림</strong> — <code>Stream.iterate</code>·<code>Stream.generate</code> + <code>limit</code>로 안전하게 사용.</li>
+      <li><strong>한 번 순회</strong> — filter→map→...을 합쳐 컬렉션 전체를 한 번만 훑음(여러 list 생성 없음).</li>
+    </ul>
+<pre><code>// peek로 실행 흐름 관찰
+List&lt;Integer&gt; result = Stream.of(1, 2, 3, 4, 5)
+    .peek(x -&gt; System.out.println("filter 입력: " + x))
+    .filter(x -&gt; x % 2 == 0)
+    .peek(x -&gt; System.out.println("map 입력: " + x))
+    .map(x -&gt; x * 10)
+    .limit(1)
+    .collect(Collectors.toList());
+
+// 출력 — 한 원소씩 흐름이 끝까지, 1개 모이면 종료
+// filter 입력: 1
+// filter 입력: 2
+// map 입력: 2
+// (limit 충족 → 즉시 종료, 3·4·5는 처리 안 됨)</code></pre>
+
+    <h3>5) 종단 연산 (Terminal Operations)</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>종류</th><th>대표 메서드</th><th>리턴</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>수집</td><td>collect, toList, toSet, toMap</td><td>컬렉션</td></tr>
+        <tr><td>축약</td><td>reduce, count, sum, max, min, average</td><td>단일 값</td></tr>
+        <tr><td>탐색</td><td>findFirst, findAny, anyMatch, allMatch, noneMatch</td><td>Optional / boolean</td></tr>
+        <tr><td>부수효과</td><td>forEach, forEachOrdered</td><td>void</td></tr>
+      </tbody>
+    </table>
+<pre><code>// 그룹화·집계
+Map&lt;Department, List&lt;Employee&gt;&gt; byDept =
+    employees.stream().collect(Collectors.groupingBy(Employee::department));
+
+Map&lt;Department, Long&gt; countByDept =
+    employees.stream().collect(Collectors.groupingBy(Employee::department, Collectors.counting()));
+
+Map&lt;Department, Double&gt; avgSalaryByDept =
+    employees.stream().collect(Collectors.groupingBy(Employee::department,
+                                Collectors.averagingDouble(Employee::salary)));
+
+// reduce — 직접 누적
+int sum = nums.stream().reduce(0, Integer::sum);
+
+// joining — 문자열 합치기
+String csv = users.stream().map(User::name).collect(Collectors.joining(", ", "[", "]"));</code></pre>
+
+    <h3>6) 무한 스트림과 단락 평가</h3>
+<pre><code>// Stream.iterate(seed, next) — 무한 시퀀스
+List&lt;Integer&gt; firstTen = Stream.iterate(1, n -&gt; n + 1)
+                               .limit(10)
+                               .collect(Collectors.toList());
+
+// Stream.generate — 부수효과 없는 생산자
+Stream.generate(Math::random).limit(5).forEach(System.out::println);
+
+// 단락 — 조건 만족 즉시 종료
+boolean anyAdult = users.stream().anyMatch(u -&gt; u.age() &gt;= 18);</code></pre>
+
+    <h3>7) 병렬 스트림 — <code>parallelStream</code>의 함정</h3>
+    <p>
+      <code>parallelStream()</code> 또는 <code>.parallel()</code>로 멀티코어를 사용할 수 있지만 <strong>대부분의 경우 손해</strong>입니다. 다음 조건이 맞을 때만 이득입니다.
+    </p>
+    <ul>
+      <li>데이터 크기가 충분히 크고(보통 1만 원소 이상),</li>
+      <li>요소당 작업이 무겁고 CPU-bound이며,</li>
+      <li>중간 연산이 stateless·associative하고 부수효과가 없으며,</li>
+      <li>분할 가능한 source(ArrayList, 배열)가 좋고 LinkedList·Stream.iterate는 분할 비용이 큼.</li>
+    </ul>
+
+    <div class="callout warn">
+      <p><strong>치명적 함정 — 공유 ForkJoinPool</strong></p>
+      <p>
+        <code>parallelStream</code>은 기본적으로 <strong>JVM 전역의 공통 ForkJoinPool</strong>을 사용합니다. 같은 JVM 안의 다른 코드도 그 풀을 쓰면 서로 경쟁하므로,
+        하나가 풀을 점유하면 다른 작업들이 줄줄이 느려집니다. 웹 서버에서 요청 처리 코드에 parallelStream을 무심코 쓰면 latency 폭증이 자주 일어납니다.
+      </p>
+    </div>
+
+<pre><code>// ❌ 부수효과 포함 — 결과 비결정적
+List&lt;Integer&gt; out = new ArrayList&lt;&gt;();
+nums.parallelStream().forEach(out::add);   // race condition
+
+// ✅ collect로 안전하게 결과 누적
+List&lt;Integer&gt; out = nums.parallelStream().collect(Collectors.toList());
+
+// 별도 ForkJoinPool 지정 (트릭 — submit으로 감싸기)
+ForkJoinPool pool = new ForkJoinPool(4);
+pool.submit(() -&gt; nums.parallelStream().sum()).get();</code></pre>
+
+    <h3>8) Optional — null 회피의 표현</h3>
+    <p>
+      Stream의 <code>findFirst</code>·<code>reduce</code>처럼 "결과가 없을 수 있는" 메서드는 <code>Optional&lt;T&gt;</code>를 반환합니다.
+      Optional은 <strong>null 대신 "값이 있을 수도/없을 수도 있다"는 의도를 타입으로 표현</strong>하는 도구입니다.
+    </p>
+<pre><code>Optional&lt;User&gt; userOpt = repo.findById(id);
+
+// 좋은 사용
+String name = userOpt.map(User::name).orElse("(unknown)");
+userOpt.ifPresent(u -&gt; sendEmail(u));
+
+// ❌ 안티패턴
+if (userOpt.isPresent()) return userOpt.get();    // null 체크와 다를 바 없음
+return userOpt.orElse(null);                       // Optional의 의미 무력화
+
+// ❌ 필드/매개변수에 Optional 쓰기 — 권장 X (반환 타입에만)</code></pre>
+
+    <h3>9) 클로저와 변수 캡처 — "effectively final"</h3>
+    <p>
+      람다는 자기 바깥의 지역 변수를 참조할 수 있지만, 그 변수는 <strong>final이거나 final처럼 한 번만 대입되어야</strong> 합니다.
+      익명 클래스 시절부터 이어진 제약이며, 람다가 별도 스레드로 옮겨가도 캡처된 값이 바뀌지 않도록 하기 위함입니다.
+    </p>
+<pre><code>int counter = 0;
+list.forEach(x -&gt; counter += x);   // ❌ counter가 effectively final이 아님
+
+// 우회 — 가변 컨테이너 사용 (단, 멀티스레드면 동기화 필요)
+int[] sum = {0};
+list.forEach(x -&gt; sum[0] += x);
+
+// 또는 reduce로 함수형스럽게
+int total = list.stream().mapToInt(Integer::intValue).sum();</code></pre>
+
+    <h3>10) Primitive Stream — 박싱 비용 회피</h3>
+    <p>
+      <code>Stream&lt;Integer&gt;</code>는 박싱 객체를 거치므로 메모리·연산이 비쌉니다. 숫자 처리에는 <code>IntStream</code>·<code>LongStream</code>·<code>DoubleStream</code>을 쓰세요.
+    </p>
+<pre><code>// 박싱 회피
+int sum = users.stream().mapToInt(User::age).sum();
+
+// 통계 한 번에
+IntSummaryStatistics stats = users.stream().mapToInt(User::age).summaryStatistics();
+stats.getAverage(); stats.getMax(); stats.getCount();
+
+// IntStream → Stream&lt;Integer&gt; 박싱
+users.stream().mapToInt(User::age).boxed().collect(Collectors.toList());</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>오버헤드</strong> — 짧은 루프에서는 Stream이 for 루프보다 약간 느림(람다 인스턴스, 파이프라인 객체 생성). JIT가 메우는 경우가 많지만 핫 루프에선 측정 필요.</li>
+      <li><strong>스택 트레이스 가독성</strong> — Stream 내부 예외는 invokeDynamic·LambdaForm 프레임이 끼어 트레이스가 깊고 어렵다.</li>
+      <li><strong>디버깅</strong> — 한 줄 람다는 디버거 step over가 거칠다. <code>peek</code>로 중간 상태 관찰을 권장.</li>
+      <li><strong>병렬</strong> — 데이터 크기·작업 무게·source 분할성 모두 만족할 때만 이득. 공유 ForkJoinPool 충돌 주의.</li>
+      <li><strong>Stream은 일회용</strong> — 결과를 재사용하려면 collect로 컬렉션화.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>데이터 변환</strong> — 엔티티 → DTO 매핑, 그룹화·집계·정렬.</li>
+      <li><strong>검증·필터링</strong> — 컬렉션에서 조건 만족 원소만 추출.</li>
+      <li><strong>설정 빌더</strong> — <code>Stream.of(...).reduce(builder, ...)</code> 같은 합성.</li>
+      <li><strong>리포팅</strong> — Collectors.groupingBy/teeing으로 다중 집계 한 번에.</li>
+      <li><strong>Spring</strong> — <code>RestTemplate</code>·<code>WebClient</code>의 콜백, <code>@Async</code> 결과 처리.</li>
+      <li><strong>관측·디버깅</strong> — 흐름 마지막에 <code>peek</code>로 메트릭 기록.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">함수형 인터페이스란 무엇이고 왜 필요한가요?</div>
+      <div class="a">
+        추상 메서드가 정확히 하나인 인터페이스로, 람다와 메서드 레퍼런스의 "타입"이 됩니다. 컴파일러는 함수형 인터페이스가 필요한 자리에 람다를 자동으로 매핑해
+        익명 클래스 boilerplate 없이 동작을 일급 시민처럼 전달할 수 있게 합니다. <code>@FunctionalInterface</code>를 붙이면 추상 메서드가 1개여야 한다는 규칙을 컴파일러가 검사해 줍니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Stream의 lazy evaluation은 어떻게 동작하나요?</div>
+      <div class="a">
+        중간 연산은 즉시 실행되지 않고 파이프라인에 쌓입니다. 종단 연산이 호출되면 source에서 원소를 하나씩 꺼내 모든 중간 단계를 통과시킨 뒤 종단으로 전달합니다.
+        그 결과 (1) 한 번의 순회로 여러 변환을 처리하고, (2) <code>findFirst</code>·<code>limit</code>처럼 충족하면 즉시 멈추는 단락 평가가 가능하며, (3) 무한 스트림도 안전하게 다룰 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">map과 flatMap의 차이는?</div>
+      <div class="a">
+        <code>map</code>은 한 원소를 한 원소로 변환합니다(원소 수 보존). <code>flatMap</code>은 한 원소를 0개 이상의 Stream으로 변환한 뒤 그 결과를 펼쳐 하나의 Stream으로 합칩니다.
+        예를 들어 사용자별 주문 목록을 모든 주문의 단일 Stream으로 만들고 싶으면 <code>users.stream().flatMap(u -&gt; u.orders().stream())</code>을 씁니다.
+        Optional에도 같은 메서드가 있어 중첩 Optional을 펼치는 데 쓰입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">parallelStream을 쓸 때 주의할 점은?</div>
+      <div class="a">
+        (1) 작업이 충분히 크고 CPU-bound일 때만 이득입니다 — 작은 데이터엔 분할/병합 오버헤드가 더 큽니다.
+        (2) 람다 안에서 공유 가변 상태를 만지면 race condition. 결과 누적은 collect로.
+        (3) 모든 parallelStream은 JVM 전역의 공통 ForkJoinPool을 공유하므로, 웹 요청 핸들러 같은 곳에서 쓰면 다른 요청까지 줄줄이 느려질 수 있습니다.
+        (4) Source가 분할 가능해야 함 — ArrayList·배열은 좋고, LinkedList·Stream.iterate는 나쁩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Optional의 안티패턴 몇 가지를 들어 주세요.</div>
+      <div class="a">
+        (1) <code>opt.isPresent() ? opt.get() : default</code> — null 체크와 다를 게 없습니다. <code>orElse/orElseGet</code>으로 표현하세요.
+        (2) <code>opt.orElse(null)</code> — Optional로 감싼 의미를 무력화. 호출자에게 null 리스크를 다시 줍니다.
+        (3) Optional을 필드·매개변수에 사용 — 직렬화 문제와 표현력 손실. Optional은 <em>반환 타입</em>에만 쓰는 것이 권장입니다.
+        (4) <code>opt.get()</code>을 isPresent 체크 없이 호출 — NoSuchElementException.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">람다는 익명 클래스와 어떻게 다른가요?</div>
+      <div class="a">
+        문법뿐 아니라 컴파일 결과도 다릅니다. 익명 클래스는 별도 <code>.class</code> 파일이 만들어져 인스턴스화 시 객체 할당이 일어나지만, 람다는 <code>invokedynamic</code> 명령으로 컴파일되어 LambdaMetafactory가 런타임에 동적으로 클래스를 생성합니다.
+        그 덕에 첫 호출 시 약간의 비용이 있지만 이후엔 캐시되어 가볍고, 무엇보다 <code>this</code>가 바깥 클래스를 가리키며(익명 클래스는 자기 자신) 메모리 누수 위험도 줄어듭니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">람다에서 캡처한 변수가 final이어야 하는 이유는?</div>
+      <div class="a">
+        람다 인스턴스는 캡처 시점의 값을 자기 안에 복사해 둡니다(또는 그 변수를 가리키는 사실상 final 참조). 만약 캡처된 변수가 람다 외부에서 바뀐다면 람다가 다른 스레드에서 늦게 실행되었을 때 어떤 값을 봐야 하는지 보장할 수 없습니다.
+        그래서 컴파일러는 명시적 <code>final</code>이거나 한 번만 대입된 "effectively final"인 변수만 캡처를 허용합니다. 가변 누적이 필요하면 <code>AtomicInteger</code>나 단일-원소 배열을 쓰거나 reduce로 표현하세요.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Stream의 reduce는 언제 쓰나요?</div>
+      <div class="a">
+        모든 원소를 한 값으로 접어 합칠 때 씁니다 — 합/곱/최댓값 같은 표준 연산은 <code>sum/max/...</code>가 더 명확하지만, 사용자 정의 누적엔 reduce가 적합합니다.
+        병렬 스트림에서 reduce가 정확히 동작하려면 (1) 결합법칙을 만족하는 연산자(<code>(a,b,c) =&gt; (a op b) op c == a op (b op c)</code>), (2) identity 원소가 있어야 합니다.
+        그렇지 않으면 분할/병합 결과가 입력 순서에 따라 달라집니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="collections.html">컬렉션 프레임워크</a></li>
+      <li><a href="generics.html">제네릭</a></li>
+      <li><a href="multithreading.html">멀티스레딩 — CompletableFuture</a></li>
+      <li><a href="exception-handling.html">예외 처리 — 람다와 checked</a></li>
+      <li><a href="index.html">Java 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="generics.html">
+        <span class="label">이전</span>
+        ← 제네릭
+      </a>
+      <a href="index.html">📂 Java로</a>
+      <a class="next" href="jvm-memory.html">
+        <span class="label">다음</span>
+        JVM 메모리 구조 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>멀티스레딩 기초 · Java · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">Java</a>
+      <span class="sep">›</span>
+      <span>멀티스레딩 기초</span>
+    </nav>
+
+    <h1>멀티스레딩 기초 — synchronized·volatile·ExecutorService</h1>
+
+    <div class="definition">
+      Java의 <strong>스레드(Thread)</strong>는 OS 네이티브 스레드 하나에 1:1로 매핑되는 실행 단위입니다.
+      여러 스레드가 같은 메모리(힙)를 공유하므로 강력하지만, <em>가시성(visibility)·원자성(atomicity)·순서(ordering)</em> 이 세 가지를 잘못 다루면 race condition·deadlock·stale read가 발생합니다.
+      이를 해결하기 위한 기본 도구가 <code>synchronized</code>·<code>volatile</code>·<code>ExecutorService</code>·<code>CompletableFuture</code>입니다.
+    </div>
+
+    <p style="color:var(--text-muted); font-size:14px;">
+      OS 레벨의 스레드/프로세스 모델은 <a href="../operating-system/process-thread.html">운영체제 → 프로세스 vs 스레드</a>에서, 동기화 도구의 일반 이론은
+      <a href="../operating-system/synchronization.html">동기화</a>에서 다룹니다. 이 페이지는 <em>Java가 제공하는 도구</em>에 집중합니다.
+      Java 21의 가상 스레드(Virtual Thread)와 메모리 모델 심층은 별도 페이지로 분리합니다.
+    </p>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      두 스레드가 같은 변수를 읽고 쓰는 순간 — 컴파일러 최적화·CPU 캐시·메모리 재배치(reordering)가 끼어들면서 직관과 다른 일이 벌어집니다.
+      한 스레드가 변수에 1을 썼는데 다른 스레드는 영영 0만 보거나, "<code>x = 1; y = 1;</code>"이 다른 스레드에는 "<code>y = 1; x = 1;</code>"로 보이거나,
+      증가 연산 한 줄(<code>count++</code>)이 만 번 호출됐는데 결과는 9,500이 되는 현상입니다.
+    </p>
+    <p>
+      Java는 이를 다스리기 위해 <strong>Java Memory Model(JMM)</strong>을 정의하고, <code>synchronized</code>·<code>volatile</code>·<code>java.util.concurrent</code>의 도구들에 명확한 의미를 부여합니다.
+      이 도구들이 "happens-before" 관계를 형성해, 한쪽의 쓰기가 반대쪽의 읽기에 보이도록 보장합니다.
+    </p>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>병렬성</strong> — 멀티코어 CPU를 활용해 처리량 증가.</li>
+      <li><strong>응답성</strong> — UI/요청 처리 스레드와 별도로 무거운 작업을 백그라운드에 보냄.</li>
+      <li><strong>자원 활용</strong> — IO 대기 중인 스레드가 다른 스레드를 막지 않음.</li>
+      <li><strong>구조화</strong> — 생산자-소비자, 비동기 파이프라인, 이벤트 루프 같은 패턴.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) Thread vs Runnable vs Callable</h3>
+<pre><code>// (1) Thread 상속 — 권장 X (단일 상속을 낭비)
+class Worker extends Thread {
+    public void run() { ... }
+}
+new Worker().start();
+
+// (2) Runnable 구현 — 합성으로 깔끔
+Runnable task = () -&gt; System.out.println("hi");
+new Thread(task).start();
+
+// (3) Callable&lt;V&gt; — 반환값이나 예외가 필요할 때
+Callable&lt;Integer&gt; sum = () -&gt; 1 + 2;
+Future&lt;Integer&gt; f = executor.submit(sum);
+int result = f.get();   // 블로킹</code></pre>
+    <p>
+      <code>Runnable</code>은 반환값과 checked 예외가 없고, <code>Callable</code>은 둘 다 지원합니다. 일반적으로 결과가 필요하면 Callable + Future, 부수효과만 있으면 Runnable을 씁니다.
+    </p>
+
+    <h3>2) 동시성의 세 가지 문제 — Atomicity / Visibility / Ordering</h3>
+    <div class="viz">
+      <svg width="780" height="200" viewBox="0 0 780 200" role="img" aria-label="three concurrency problems">
+        <g font-size="12" text-anchor="middle">
+          <rect x="20" y="20" width="240" height="160" fill="var(--bg-card)" stroke="var(--danger)" rx="4"/>
+          <text x="140" y="44" font-weight="bold" fill="var(--danger)">Atomicity</text>
+          <text x="140" y="74" font-size="11">x++ = read · add · write</text>
+          <text x="140" y="92" font-size="11">3단계가 깨질 수 있음</text>
+          <text x="140" y="120" font-size="11" fill="var(--text-muted)">두 스레드가 동시에 읽으면</text>
+          <text x="140" y="138" font-size="11" fill="var(--text-muted)">하나의 증가가 사라짐</text>
+          <text x="140" y="160" font-size="11" fill="var(--success)">→ synchronized / Atomic*</text>
+
+          <rect x="280" y="20" width="240" height="160" fill="var(--bg-card)" stroke="var(--danger)" rx="4"/>
+          <text x="400" y="44" font-weight="bold" fill="var(--danger)">Visibility</text>
+          <text x="400" y="74" font-size="11">스레드 A가 쓴 값을</text>
+          <text x="400" y="92" font-size="11">B가 영영 못 볼 수 있음</text>
+          <text x="400" y="120" font-size="11" fill="var(--text-muted)">CPU 캐시·레지스터 때문에</text>
+          <text x="400" y="138" font-size="11" fill="var(--text-muted)">메인 메모리로 안 내려감</text>
+          <text x="400" y="160" font-size="11" fill="var(--success)">→ volatile / synchronized</text>
+
+          <rect x="540" y="20" width="220" height="160" fill="var(--bg-card)" stroke="var(--danger)" rx="4"/>
+          <text x="650" y="44" font-weight="bold" fill="var(--danger)">Ordering</text>
+          <text x="650" y="74" font-size="11">JIT/CPU가 명령어를</text>
+          <text x="650" y="92" font-size="11">재배치(reorder) 가능</text>
+          <text x="650" y="120" font-size="11" fill="var(--text-muted)">단일 스레드에선 안전,</text>
+          <text x="650" y="138" font-size="11" fill="var(--text-muted)">멀티에선 보이는 순서가 다름</text>
+          <text x="650" y="160" font-size="11" fill="var(--success)">→ happens-before 보장</text>
+        </g>
+      </svg>
+      <span class="viz-caption">세 가지 문제는 따로 설명되지만, JMM은 "happens-before" 한 개념으로 한 번에 처리한다.</span>
+    </div>
+
+    <h3>3) synchronized — 가장 기본적인 락</h3>
+    <p>
+      <code>synchronized</code>는 모니터(monitor) 락을 잡아 한 번에 한 스레드만 코드 블록에 들어가게 합니다. <strong>원자성·가시성·순서</strong> 셋 모두를 한 번에 보장합니다.
+    </p>
+<pre><code>// 인스턴스 락 — this를 락으로 사용
+public class Counter {
+    private long count = 0;
+    public synchronized void inc() { count++; }
+    public synchronized long get() { return count; }
+}
+
+// 클래스 락 — 정적 메서드는 Counter.class를 락으로 사용
+public synchronized static void resetAll() { ... }
+
+// 명시적 블록 — 락 객체를 따로 둠 (private final이 권장)
+private final Object lock = new Object();
+public void inc() {
+    synchronized (lock) { count++; }
+}</code></pre>
+
+    <div class="callout warn">
+      <p><strong>락 객체 선택의 함정</strong></p>
+      <ul>
+        <li><code>synchronized(this)</code>는 <em>외부에서 같은 인스턴스로 락을 잡을 수 있어</em> 의도치 않은 deadlock 위험.</li>
+        <li><code>synchronized(String literal)</code>이나 <code>Integer.valueOf(0)</code>처럼 캐시된 객체에 락 → 다른 코드와 락 공유.</li>
+        <li>안전한 선택: <code>private final Object lock = new Object();</code>처럼 외부에 노출 안 되는 자기 락.</li>
+      </ul>
+    </div>
+
+    <h3>4) volatile — 가시성 전용 도구</h3>
+    <p>
+      <code>volatile</code>은 변수 읽기/쓰기를 항상 메인 메모리와 동기화시킵니다. 즉 <strong>가시성과 순서</strong>는 보장하지만 <strong>원자성은 보장하지 않습니다</strong>.
+    </p>
+<pre><code>// ✅ 가시성 — 깃발 변수
+private volatile boolean running = true;
+public void shutdown() { running = false; }
+public void runLoop() {
+    while (running) { ... }    // 다른 스레드의 false가 즉시 보임
+}
+
+// ❌ 원자성 — 증가 연산은 여전히 unsafe
+private volatile long count = 0;
+public void inc() { count++; }   // race condition — read · add · write가 쪼개짐</code></pre>
+    <p>
+      증가/누적/check-then-act 같은 복합 연산에는 <strong>원자 연산 클래스</strong>를 쓰세요.
+    </p>
+<pre><code>private final AtomicLong count = new AtomicLong();
+public void inc() { count.incrementAndGet(); }   // CAS 기반, 락 없이 원자
+
+// CAS — Compare And Swap
+private final AtomicReference&lt;State&gt; state = new AtomicReference&lt;&gt;(INIT);
+state.compareAndSet(INIT, RUNNING);   // 현재가 INIT이면 RUNNING으로</code></pre>
+
+    <h3>5) Race Condition / Deadlock</h3>
+    <h4>Race Condition</h4>
+<pre><code>// ❌ 두 스레드가 동시에 inc()를 호출하면 일부 증가가 사라짐
+class UnsafeCounter {
+    private long count = 0;
+    public void inc() { count++; }     // read · add · write
+}
+
+// 결과: 각 스레드가 100,000번씩 inc() → 200,000이 되어야 하지만 종종 ~150,000
+
+// ✅ synchronized 또는 AtomicLong</code></pre>
+
+    <h4>Deadlock</h4>
+    <p>두 스레드가 서로 다른 순서로 락을 잡아 영원히 기다리는 상태입니다.</p>
+<pre><code>// 스레드 A: lock(a) → lock(b)
+// 스레드 B: lock(b) → lock(a)
+// 둘 다 첫 락을 잡고 두 번째를 기다림 → 영원
+
+// 해법: 모든 코드가 같은 순서로 락을 잡도록 약속</code></pre>
+    <p>
+      운영 중인 데드락 진단은 <code>jstack &lt;pid&gt;</code>로 스레드 덤프를 받아 "Found deadlock" 라인을 보면 됩니다 — 어떤 두 스레드가 어떤 락을 서로 잡고 있는지 알려줍니다.
+    </p>
+
+    <h3>6) wait / notify / notifyAll — 모니터의 옛 방식</h3>
+    <p>
+      synchronized 블록 안에서 조건이 충족되길 기다리거나 다른 스레드를 깨울 때 씁니다. 직접 쓰는 일은 점점 줄고, 보통 <code>BlockingQueue</code>나 <code>Lock + Condition</code>으로 대체합니다.
+    </p>
+<pre><code>private final Object lock = new Object();
+private boolean ready = false;
+
+void awaitReady() throws InterruptedException {
+    synchronized (lock) {
+        while (!ready) {     // ⚠️ if가 아닌 while — spurious wakeup 대비
+            lock.wait();
+        }
+    }
+}
+void signalReady() {
+    synchronized (lock) {
+        ready = true;
+        lock.notifyAll();    // 깨어난 스레드가 다시 조건 검사
+    }
+}</code></pre>
+
+    <h3>7) ExecutorService — 스레드를 직접 만들지 마라</h3>
+    <p>
+      매번 <code>new Thread()</code>는 (1) OS 자원 비싸고, (2) 무한정 만들 수 있어 위험하며, (3) 결과 수집이 번거롭습니다. <code>ExecutorService</code>는 풀에서 스레드를 재활용합니다.
+    </p>
+<pre><code>// 고정 풀 — N개 스레드, 큐는 무제한 LinkedBlockingQueue (백프레셔 없음, OOM 위험)
+ExecutorService fixed = Executors.newFixedThreadPool(8);
+
+// 캐시드 풀 — 필요할 때 스레드를 만들고 60초 idle 후 회수. 폭주 가능
+ExecutorService cached = Executors.newCachedThreadPool();
+
+// 스케줄 풀 — 지연·반복 작업
+ScheduledExecutorService sched = Executors.newScheduledThreadPool(2);
+
+// 권장: ThreadPoolExecutor 직접 구성으로 큐와 거부 정책까지 명시
+ThreadPoolExecutor pool = new ThreadPoolExecutor(
+    /*core*/ 4, /*max*/ 16, /*keepAlive*/ 60L, TimeUnit.SECONDS,
+    new ArrayBlockingQueue&lt;&gt;(100),                       // 백프레셔
+    new ThreadFactoryBuilder().setNameFormat("worker-%d").build(),
+    new ThreadPoolExecutor.CallerRunsPolicy());          // 폭주 시 호출 스레드가 처리
+
+// 작업 제출
+Future&lt;Integer&gt; f = pool.submit(() -&gt; expensive());
+int r = f.get(5, TimeUnit.SECONDS);                      // 타임아웃 권장
+
+// 종료
+pool.shutdown();                                          // 새 작업 거부, 기존은 끝까지
+pool.awaitTermination(30, TimeUnit.SECONDS);
+pool.shutdownNow();                                       // 인터럽트로 강제 종료</code></pre>
+
+    <div class="callout warn">
+      <p><strong>치명적 함정 — 무제한 큐</strong></p>
+      <p>
+        <code>newFixedThreadPool</code>의 큐는 무제한 LinkedBlockingQueue입니다. 처리 속도가 입력 속도를 못 따라가면 큐가 무한히 자라 OOM이 납니다.
+        실무에선 <strong>유한한 큐 + CallerRunsPolicy</strong> 조합으로 백프레셔를 직접 만드는 것이 안전합니다.
+      </p>
+    </div>
+
+    <h3>8) CompletableFuture — 비동기 합성</h3>
+    <p>
+      <code>Future.get()</code>은 블로킹입니다. <code>CompletableFuture</code>는 콜백 체인을 제공해 비동기 결과를 합성할 수 있게 합니다.
+    </p>
+<pre><code>// 비동기 시작
+CompletableFuture&lt;User&gt; userF = CompletableFuture.supplyAsync(() -&gt; userClient.find(id), pool);
+
+// 변환 (결과를 다른 결과로) — Stream의 map과 비슷
+CompletableFuture&lt;String&gt; nameF = userF.thenApply(User::name);
+
+// 체이닝 (또 다른 비동기 호출)
+CompletableFuture&lt;Profile&gt; profileF =
+    userF.thenCompose(u -&gt; CompletableFuture.supplyAsync(() -&gt; profileClient.find(u.id())));
+
+// 합치기 — 두 비동기 결과를 결합
+CompletableFuture&lt;Result&gt; combined = userF.thenCombine(profileF, (u, p) -&gt; new Result(u, p));
+
+// 여러 작업 병렬
+CompletableFuture&lt;Void&gt; all = CompletableFuture.allOf(f1, f2, f3);
+
+// 예외 처리
+userF.exceptionally(ex -&gt; new User("guest"))   // fallback
+     .handle((value, ex) -&gt; { ... });          // 둘 다 받기</code></pre>
+
+    <p>
+      Async 메서드(<code>thenApplyAsync</code>·<code>supplyAsync</code>)는 기본적으로 <strong>ForkJoinPool.commonPool</strong>에서 실행됩니다 — parallelStream과 같은 풀이라 충돌 가능성이 있으니, 운영 시스템에서는 <strong>전용 Executor</strong>를 명시 인자로 넘기세요.
+    </p>
+
+    <h3>9) ThreadLocal — 스레드별 변수</h3>
+    <p>
+      "이 변수는 스레드마다 독립된 값을 가져야 한다"고 표현하는 도구입니다. 사용자 컨텍스트, MDC(로그 컨텍스트), 트랜잭션 컨텍스트에 자주 쓰입니다.
+    </p>
+<pre><code>private static final ThreadLocal&lt;String&gt; userId = new ThreadLocal&lt;&gt;();
+
+userId.set("u-123");
+try {
+    process();   // 이 스레드에서만 "u-123" 보임
+} finally {
+    userId.remove();   // ⚠️ 반드시 정리 — 풀 스레드에서 누수의 단골 원인
+}</code></pre>
+
+    <p>
+      <strong>가상 스레드(Virtual Thread, Java 21)</strong> 시대에는 ThreadLocal보다 <code>ScopedValue</code>(JEP 446)를 권장합니다 — 가상 스레드 수억 개에 ThreadLocal을 두면 메모리 폭증.
+    </p>
+
+    <h3>10) 인터럽트 — 협조적 취소(cooperative cancellation)</h3>
+    <p>
+      Java는 스레드를 강제로 죽이는 안전한 방법을 제공하지 않습니다(<code>Thread.stop()</code>은 deprecated). 대신 <strong>인터럽트 신호</strong>를 보내고, 작업 코드가 그 신호를 확인해 스스로 멈추도록 협조합니다.
+    </p>
+<pre><code>// 작업자 — 인터럽트를 점검
+while (!Thread.currentThread().isInterrupted()) {
+    doStep();
+}
+
+// 블로킹 메서드는 InterruptedException을 던짐
+try {
+    queue.poll(10, TimeUnit.SECONDS);
+} catch (InterruptedException e) {
+    Thread.currentThread().interrupt();   // 인터럽트 상태 복원!
+    throw new RuntimeException(e);
+}
+
+// 호출자 — 취소 신호 보내기
+Future&lt;?&gt; f = pool.submit(...);
+f.cancel(/*mayInterruptIfRunning*/ true);</code></pre>
+
+    <p>
+      <strong>InterruptedException을 잡으면 인터럽트 상태가 지워지므로</strong> 반드시 <code>Thread.currentThread().interrupt()</code>로 복원하거나 다시 던져야 합니다. 안 그러면 상위 호출자가 취소를 감지하지 못합니다.
+    </p>
+
+    <h3>11) Java 21의 가상 스레드 — 한 마디만</h3>
+    <p>
+      <code>Thread.startVirtualThread(...)</code>로 만들 수 있는 <strong>가상 스레드</strong>는 OS 스레드 1개를 여러 가상 스레드가 공유합니다.
+      블로킹 호출(IO·sleep·lock 대기)이 일어나면 캐리어 OS 스레드에서 자동으로 떨어져 다른 가상 스레드가 그 자리를 씁니다.
+      "수천 개의 동시 IO"를 평범한 동기 코드 스타일로 작성할 수 있게 해 주는 큰 변화이지만, <strong>CPU-bound</strong>나 <code>synchronized</code> 안에서의 블로킹에는 여전히 OS 스레드가 묶여 있어 주의가 필요합니다.
+    </p>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>락의 비용</strong> — 짧으면 무시할 만하지만, 경합이 심하면 컨텍스트 스위칭과 캐시 무효화로 단일 스레드보다 더 느려진다.</li>
+      <li><strong>volatile vs synchronized</strong> — volatile은 가볍지만 원자성 보장 X. 복합 연산엔 synchronized 또는 Atomic*.</li>
+      <li><strong>CAS의 ABA</strong> — Atomic*.compareAndSet은 값이 같으면 같다고 본다. 중간에 A→B→A로 바뀐 경우를 구분하려면 <code>AtomicStampedReference</code>.</li>
+      <li><strong>스레드 수</strong> — 많을수록 좋지 않다. CPU-bound는 코어 수, IO-bound는 그 N배까지가 보통 한계.</li>
+      <li><strong>풀 큐 정책</strong> — 무제한 큐는 메모리 폭주, 작은 큐는 거부. 백프레셔를 의식하고 설계해야 한다.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>웹 요청 처리</strong> — Tomcat은 요청마다 풀 스레드를 할당. 컨트롤러 코드의 동시 접근 안전성 항상 중요.</li>
+      <li><strong>비동기 IO</strong> — 외부 API 동시 호출은 CompletableFuture로 합성, 가상 스레드로 코드 단순화.</li>
+      <li><strong>스케줄 작업</strong> — ScheduledExecutorService로 주기적 정리·하트비트.</li>
+      <li><strong>생산자-소비자</strong> — BlockingQueue + Worker 풀로 백프레셔 있는 파이프라인.</li>
+      <li><strong>관측성</strong> — MDC를 ThreadLocal로 두고 로그에 요청 ID·사용자 ID 자동 첨부.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">synchronized와 volatile의 차이는?</div>
+      <div class="a">
+        synchronized는 모니터 락으로 한 번에 한 스레드만 임계 영역에 들어가게 해 <strong>원자성·가시성·순서</strong> 모두를 보장합니다.
+        volatile은 변수 읽기/쓰기를 메인 메모리와 동기화해 <strong>가시성과 순서만</strong> 보장하고 원자성은 보장하지 않습니다.
+        그래서 단순한 깃발 변수에는 volatile이 가볍고 적합하지만, 증가/누적 같은 복합 연산은 synchronized 또는 <code>AtomicLong</code>이 필요합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">데드락은 어떻게 발생하고 어떻게 막나요?</div>
+      <div class="a">
+        두 스레드가 서로 다른 순서로 락을 잡고 상대 락을 기다릴 때 발생합니다. 가장 단순한 방어는 <strong>모든 코드가 같은 순서로 락을 잡도록 약속</strong>하는 것입니다.
+        그 외에 (1) <code>tryLock(timeout)</code>으로 일정 시간 후 포기, (2) 락 단위를 잘게 나눠 동시에 잡힐 가능성을 줄이고, (3) 가능한 한 락 안에서 외부 호출을 하지 않는 등이 표준 대책입니다.
+        진단은 <code>jstack</code>이 deadlock을 자동 보고합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">왜 <code>new Thread()</code> 대신 ExecutorService를 쓰나요?</div>
+      <div class="a">
+        스레드는 OS 자원이라 생성·종료 비용이 큽니다. ExecutorService는 풀에서 스레드를 재활용해 그 비용을 분산하고, 작업 큐로 폭주를 흡수하며, 결과를 Future로 추상화합니다.
+        직접 스레드를 만들면 (1) 동시 작업 수에 제한이 없어 OOM·OS 스레드 한도를 넘기기 쉽고, (2) 결과 수집·예외 처리가 번거로우며, (3) 스레드 이름·우선순위·정리 정책을 일일이 챙겨야 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q"><code>Executors.newFixedThreadPool</code>의 위험은?</div>
+      <div class="a">
+        내부 큐가 무제한 <code>LinkedBlockingQueue</code>여서 처리 속도가 입력 속도를 못 따라가면 큐가 무한히 자라 OOM이 납니다. 또 폭주 시 백프레셔가 없어 외부 의존(DB 커넥션 등)도 같이 넘어집니다.
+        실무에선 <code>ThreadPoolExecutor</code>를 직접 만들어 유한한 <code>ArrayBlockingQueue</code> + 거부 정책(<code>CallerRunsPolicy</code> 등)으로 백프레셔를 두는 것이 안전합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">CompletableFuture가 Future보다 좋은 점은?</div>
+      <div class="a">
+        Future는 결과를 받으려면 <code>get()</code>으로 블로킹하거나 폴링해야 합니다. CompletableFuture는 콜백 체인(<code>thenApply</code>·<code>thenCompose</code>·<code>thenCombine</code>)으로 비동기 결과를 합성할 수 있고, 예외 처리와 타임아웃도 일급으로 지원합니다.
+        다만 async 메서드는 기본적으로 ForkJoinPool.commonPool을 쓰므로, 운영 시스템에서는 전용 Executor를 인자로 명시해 다른 작업과의 풀 충돌을 피해야 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">InterruptedException을 어떻게 처리해야 하나요?</div>
+      <div class="a">
+        잡고 무시하면 안 됩니다. 두 가지 옳은 처리 — (1) <strong>다시 던지기</strong>(메서드 시그니처에 throws 추가), (2) <strong>인터럽트 상태 복원</strong>(<code>Thread.currentThread().interrupt()</code>) 후 별도 도메인 예외로 변환.
+        catch 후 그냥 continue하면 인터럽트 상태가 지워져 상위 코드가 취소를 감지하지 못해 작업이 영원히 끝나지 않을 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ThreadLocal을 쓰면 왜 메모리 누수가 생기나요?</div>
+      <div class="a">
+        Tomcat 같은 풀 기반 환경에선 한 요청이 끝나도 같은 스레드가 다음 요청에 재사용됩니다. ThreadLocal에 값을 넣고 <code>remove()</code>를 안 하면 그 값이 다음 요청까지 남고, 결국 풀의 모든 스레드가 점점 많은 객체를 잡고 있는 상태가 됩니다.
+        가비지 컬렉터는 살아 있는 스레드의 ThreadLocalMap을 회수할 수 없으므로 OOM으로 이어집니다. 사용 직후 finally에서 <code>remove()</code>를 호출하는 것이 정석입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">CAS와 락의 차이는?</div>
+      <div class="a">
+        락은 임계 영역에 들어가기 전에 차단(blocking)하지만, CAS(Compare-And-Swap)는 차단 없이 "내가 봤던 값이 그대로면 새 값으로 바꿔"라는 단일 원자 명령을 시도하고, 실패하면 다시 시도합니다.
+        경합이 적을 땐 락보다 훨씬 빠르고, <code>AtomicLong</code>·<code>ConcurrentHashMap</code>·non-blocking 자료구조의 기반입니다. 단점은 ABA 문제(<code>AtomicStampedReference</code>로 우회), 경합이 심할 때 재시도 지옥에 빠질 수 있다는 점입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="../operating-system/process-thread.html">운영체제 — 프로세스 vs 스레드</a></li>
+      <li><a href="../operating-system/synchronization.html">동기화 — 뮤텍스·세마포어</a></li>
+      <li><a href="../operating-system/deadlock.html">데드락</a></li>
+      <li><a href="jvm-memory.html">JVM 메모리 구조</a></li>
+      <li><a href="lambda-stream.html">람다와 Stream — CompletableFuture</a></li>
+      <li><a href="index.html">Java 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="jvm-memory.html">
+        <span class="label">이전</span>
+        ← JVM 메모리 구조
+      </a>
+      <a href="index.html">📂 Java로</a>
+      <a class="next" href="index.html">
+        <span class="label">다음</span>
+        Java 목록 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

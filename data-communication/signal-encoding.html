@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>신호 인코딩 · 데이터통신 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">데이터통신</a><span class="sep">›</span><span>신호 인코딩</span></nav>
+
+    <h1>신호 인코딩(Line Coding)</h1>
+
+    <div class="definition">
+      <strong>신호 인코딩</strong>은 디지털 비트 0과 1을 실제 전송 매체의 <strong>전압·전류·빛의 세기·전이 패턴</strong>으로 표현하는 규칙입니다.
+      대표 방식은 <strong>NRZ, Manchester, 4B/5B, 8B/10B</strong>이며, 핵심 기준은 DC 성분, 클록 복구, 대역폭, 오류 검출 가능성입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      컴퓨터의 비트는 추상적인 값이지만 케이블과 회로는 실제 전압 변화를 봅니다.
+      따라서 <code>101100</code> 같은 비트열을 어떤 전압 패턴으로 보낼지 정해야 합니다.
+      이 규칙이 라인 코딩(line coding), 즉 신호 인코딩입니다.
+    </p>
+    <p>
+      좋은 인코딩은 단순히 0과 1을 구분하는 것에서 끝나지 않습니다.
+      긴 0이나 1이 반복되어도 수신기가 타이밍을 잃지 않아야 하고, 평균 전압이 한쪽으로 치우치지 않아야 하며, 가능한 한 적은 대역폭을 써야 합니다.
+    </p>
+
+    <div class="callout"><p><strong>비유 — 북소리로 0과 1 보내기</strong></p><p>멀리 있는 사람에게 북으로 0과 1을 보내려면 "큰 소리는 1, 작은 소리는 0"처럼 약속이 필요합니다. 그런데 오랫동안 같은 소리만 반복되면 박자를 잃기 쉽죠. 그래서 중간에 일부러 박자 변화를 넣는 규칙이 필요합니다. Manchester나 8B/10B가 그런 역할을 합니다.</p></div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>비트를 물리 신호로 변환</strong> — 추상적 0/1을 전압 레벨이나 전이로 표현.</li>
+      <li><strong>클록 복구</strong> — 수신기가 언제 비트를 읽어야 하는지 동기화.</li>
+      <li><strong>DC 성분 제거</strong> — 평균 전압이 한쪽으로 치우치면 변압기/커패시터 결합 링크에서 문제 발생.</li>
+      <li><strong>오류 검출 보조</strong> — 허용되지 않는 코드 패턴이 나오면 오류로 판단 가능.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) NRZ — 가장 단순한 전압 레벨</h3>
+    <p>
+      NRZ(Non-Return-to-Zero)는 1은 높은 전압, 0은 낮은 전압처럼 비트 동안 전압을 유지합니다.
+      단순하고 대역폭 효율이 좋지만, 000000이나 111111처럼 같은 비트가 길게 이어지면 전이가 없어 수신기가 클록을 잃기 쉽습니다.
+    </p>
+
+    <h3>2) Manchester — 매 비트 중간에 전이</h3>
+    <p>
+      Manchester 인코딩은 비트 중간에 반드시 전이를 넣습니다.
+      예를 들어 0은 high→low, 1은 low→high처럼 정의합니다(표준마다 반대일 수 있음).
+      전이가 항상 있으므로 클록 복구가 쉽지만, 전이가 많아 필요한 대역폭이 커집니다.
+    </p>
+
+    <div class="viz">
+      <svg width="760" height="300" viewBox="0 0 760 300" role="img" aria-label="NRZ Manchester waveform">
+        <text x="380" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">비트열 1 0 1 1 0 0 1 의 인코딩 비교</text>
+        <g font-size="12" text-anchor="middle">
+          <text x="70" y="65">bit</text>
+          <text x="70" y="125">NRZ</text>
+          <text x="70" y="210">Manchester</text>
+          <g>
+            <rect x="110" y="45" width="80" height="30" fill="var(--bg-card)" stroke="var(--border)"/><text x="150" y="65">1</text>
+            <rect x="190" y="45" width="80" height="30" fill="var(--bg-card)" stroke="var(--border)"/><text x="230" y="65">0</text>
+            <rect x="270" y="45" width="80" height="30" fill="var(--bg-card)" stroke="var(--border)"/><text x="310" y="65">1</text>
+            <rect x="350" y="45" width="80" height="30" fill="var(--bg-card)" stroke="var(--border)"/><text x="390" y="65">1</text>
+            <rect x="430" y="45" width="80" height="30" fill="var(--bg-card)" stroke="var(--border)"/><text x="470" y="65">0</text>
+            <rect x="510" y="45" width="80" height="30" fill="var(--bg-card)" stroke="var(--border)"/><text x="550" y="65">0</text>
+            <rect x="590" y="45" width="80" height="30" fill="var(--bg-card)" stroke="var(--border)"/><text x="630" y="65">1</text>
+          </g>
+        </g>
+        <line x1="110" y1="150" x2="190" y2="150" stroke="var(--accent)" stroke-width="3"/><line x1="190" y1="150" x2="190" y2="180" stroke="var(--accent)" stroke-width="3"/><line x1="190" y1="180" x2="270" y2="180" stroke="var(--accent)" stroke-width="3"/><line x1="270" y1="180" x2="270" y2="150" stroke="var(--accent)" stroke-width="3"/><line x1="270" y1="150" x2="430" y2="150" stroke="var(--accent)" stroke-width="3"/><line x1="430" y1="150" x2="430" y2="180" stroke="var(--accent)" stroke-width="3"/><line x1="430" y1="180" x2="590" y2="180" stroke="var(--accent)" stroke-width="3"/><line x1="590" y1="180" x2="590" y2="150" stroke="var(--accent)" stroke-width="3"/><line x1="590" y1="150" x2="670" y2="150" stroke="var(--accent)" stroke-width="3"/>
+        <g stroke="var(--text-muted)" stroke-dasharray="3 3"><line x1="110" y1="80" x2="110" y2="250"/><line x1="190" y1="80" x2="190" y2="250"/><line x1="270" y1="80" x2="270" y2="250"/><line x1="350" y1="80" x2="350" y2="250"/><line x1="430" y1="80" x2="430" y2="250"/><line x1="510" y1="80" x2="510" y2="250"/><line x1="590" y1="80" x2="590" y2="250"/><line x1="670" y1="80" x2="670" y2="250"/></g>
+        <path d="M110 240 L150 240 L150 210 L190 210 L190 210 L230 210 L230 240 L270 240 L270 240 L310 240 L310 210 L350 210 L350 240 L390 240 L390 210 L430 210 L430 210 L470 210 L470 240 L510 240 L510 210 L550 210 L550 240 L590 240 L590 240 L630 240 L630 210 L670 210" fill="none" stroke="#6f9b73" stroke-width="3"/>
+        <text x="390" y="280" text-anchor="middle" font-size="12" fill="var(--text-muted)">Manchester는 매 비트 중간에 전이가 있어 자기 동기화가 쉽다.</text>
+      </svg>
+      <span class="viz-caption">NRZ는 전이가 적어 효율적이지만 긴 동일 비트열에 약하고, Manchester는 전이가 많아 클록 복구가 쉽다.</span>
+    </div>
+
+    <h3>3) 4B/5B — 긴 0을 막기 위한 블록 코딩</h3>
+    <p>
+      4비트 데이터를 5비트 코드로 바꿔 전송합니다. 5비트 코드 중 전이가 충분한 패턴만 골라 쓰기 때문에 긴 0이 이어지는 문제를 줄입니다.
+      4B/5B 자체는 보통 NRZI 같은 라인 코딩과 결합됩니다. 100Mbps 이더넷(100BASE-TX)에서 쓰였습니다.
+    </p>
+<pre><code>데이터 4비트 → 전송 5비트 예시
+0000 → 11110
+0001 → 01001
+0010 → 10100
+...
+효율 = 4/5 = 80%</code></pre>
+
+    <h3>4) 8B/10B — DC 균형과 전이 보장</h3>
+    <p>
+      8비트 데이터를 10비트 코드로 바꿉니다. 0과 1의 개수 균형을 맞춰 DC 성분을 줄이고, 전이가 충분히 생기도록 설계되어 클록 복구가 쉽습니다.
+      PCIe 1.x/2.x, SATA, Gigabit Ethernet 일부 물리 계층 등에서 사용됐습니다.
+    </p>
+    <div class="viz">
+      <svg width="720" height="190" viewBox="0 0 720 190" role="img" aria-label="4B5B 8B10B block coding">
+        <text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">블록 코딩: 데이터 비트를 더 긴 코드워드로 변환</text>
+        <g font-size="13" text-anchor="middle">
+          <rect x="70" y="60" width="150" height="50" fill="var(--bg-card)" stroke="var(--accent)"/><text x="145" y="90">4비트 데이터</text>
+          <text x="250" y="90" font-size="24" fill="var(--accent)">→</text>
+          <rect x="290" y="60" width="150" height="50" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="365" y="90">5비트 코드</text>
+          <text x="515" y="90" font-size="12" fill="var(--text-muted)">전이 보장, 효율 80%</text>
+          <rect x="70" y="125" width="150" height="50" fill="var(--bg-card)" stroke="var(--accent)"/><text x="145" y="155">8비트 데이터</text>
+          <text x="250" y="155" font-size="24" fill="var(--accent)">→</text>
+          <rect x="290" y="125" width="150" height="50" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="365" y="155">10비트 코드</text>
+          <text x="535" y="155" font-size="12" fill="var(--text-muted)">DC 균형 + 전이 보장, 효율 80%</text>
+        </g>
+      </svg>
+      <span class="viz-caption">블록 코딩은 비트를 더 많이 쓰는 대신 클록 복구와 신호 품질을 얻는다.</span>
+    </div>
+
+    <h3>5) DC 성분과 자기 동기화</h3>
+    <ul>
+      <li><strong>DC 성분</strong> — 신호 평균값이 0에서 멀어지는 성분. 길게 1만 이어지면 평균 전압이 올라가 회로가 포화되거나 기준 전압이 흔들릴 수 있습니다.</li>
+      <li><strong>자기 동기화(Self-clocking)</strong> — 신호 안의 전이만 보고 수신기가 클록을 복구할 수 있는 성질. 전이가 충분히 있어야 합니다.</li>
+      <li><strong>Run length</strong> — 같은 레벨이 연속되는 최대 길이. 짧을수록 클록 복구가 쉽지만 대역폭은 더 듭니다.</li>
+    </ul>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity">
+      <thead><tr><th>방식</th><th>효율</th><th>클록 복구</th><th>DC 균형</th><th>대표 사용</th></tr></thead>
+      <tbody>
+        <tr><td>NRZ</td><td>높음</td><td>약함</td><td>약함</td><td>짧은/단순 링크</td></tr>
+        <tr><td>Manchester</td><td>낮음</td><td>강함</td><td>좋음</td><td>초기 이더넷</td></tr>
+        <tr><td>4B/5B</td><td>80%</td><td>좋음</td><td>보통</td><td>100BASE-TX</td></tr>
+        <tr><td>8B/10B</td><td>80%</td><td>좋음</td><td>좋음</td><td>PCIe 1/2, SATA</td></tr>
+        <tr><td>64B/66B</td><td>약 97%</td><td>스크램블러 의존</td><td>좋음</td><td>10GbE 이상</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>이더넷 물리 계층</strong> — 10Mbps Manchester, 100Mbps 4B/5B, 10Gbps 이상 64B/66B 계열.</li>
+      <li><strong>PCI Express / SATA</strong> — 과거 세대에서 8B/10B 사용, 이후 더 효율적인 128B/130B로 이동.</li>
+      <li><strong>광통신</strong> — DC 균형과 클록 복구를 위해 블록 코딩과 스크램블링 사용.</li>
+      <li><strong>임베디드 버스</strong> — 링크 특성에 맞춰 NRZ, Manchester, NRZI 등이 사용.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+    <div class="qa"><div class="q">신호 인코딩과 변조는 뭐가 다른가요?</div><div class="a">신호 인코딩은 디지털 비트를 전압/전이 패턴으로 표현하는 규칙이고, 변조는 그 신호를 반송파의 진폭·주파수·위상 등에 실어 보내는 과정입니다. 유선 baseband 링크에서는 라인 코딩이 핵심이고, 무선/광대역 전송에서는 변조가 함께 등장합니다.</div></div>
+    <div class="qa"><div class="q">NRZ의 문제점은?</div><div class="a">같은 비트가 길게 이어지면 신호 전이가 없어 수신기가 클록을 복구하기 어렵고, 평균 전압이 한쪽으로 치우쳐 DC 성분 문제가 생길 수 있습니다. 대신 단순하고 대역폭 효율은 좋습니다.</div></div>
+    <div class="qa"><div class="q">Manchester 인코딩의 장단점은?</div><div class="a">매 비트 중간에 전이가 있어 클록 복구가 쉽고 DC 균형도 좋습니다. 하지만 전이가 많아 같은 데이터율을 보내려면 더 넓은 대역폭이 필요합니다.</div></div>
+    <div class="qa"><div class="q">4B/5B와 8B/10B는 왜 비트를 늘리나요?</div><div class="a">허용되는 코드워드를 골라 긴 0/1 반복을 막고 전이를 충분히 만들며, 특히 8B/10B는 0과 1의 균형까지 관리합니다. 비트 효율은 80%로 줄지만 클록 복구와 신호 안정성을 얻습니다.</div></div>
+    <div class="qa"><div class="q">DC 균형이 왜 중요한가요?</div><div class="a">평균 전압이 한쪽으로 치우치면 AC 결합 회로나 변압기 결합 링크에서 기준점이 흔들리거나 신호가 왜곡될 수 있습니다. DC 균형 코드는 장시간 평균을 0에 가깝게 유지해 이런 문제를 줄입니다.</div></div>
+    <div class="qa"><div class="q">64B/66B가 8B/10B보다 좋은 점은?</div><div class="a">8B/10B는 20% 오버헤드가 있지만 64B/66B는 64비트 데이터에 2비트 헤더만 붙여 오버헤드가 약 3%입니다. 고속 이더넷처럼 대역폭 효율이 중요한 곳에서 유리하며, 스크램블링으로 전이와 DC 특성을 보완합니다.</div></div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="modulation.html">변조</a></li>
+      <li><a href="medium-access-control.html">매체 접근 제어</a></li>
+      <li><a href="error-detection-correction.html">오류 검출/정정</a></li>
+      <li><a href="index.html">데이터통신 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="medium-access-control.html"><span class="label">이전</span>← 매체 접근 제어</a>
+      <a href="index.html">📂 데이터통신으로</a>
+      <span></span>
+    </nav>
+  </main>
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>제네릭 · Java · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">Java</a>
+      <span class="sep">›</span>
+      <span>제네릭</span>
+    </nav>
+
+    <h1>제네릭(Generic) — 타입 소거·bounded wildcard·PECS</h1>
+
+    <div class="definition">
+      <strong>제네릭(Generics)</strong>은 클래스·인터페이스·메서드를 <em>타입 매개변수</em>로 일반화하는 기능입니다.
+      덕분에 컴파일 타임에 타입 안전성을 보장하면서도 캐스팅 코드를 없앨 수 있습니다.
+      Java 제네릭은 <strong>런타임에 타입 정보가 사라지는(타입 소거, type erasure)</strong> 방식으로 구현돼, 이 점에서 다른 언어와 큰 차이가 납니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      제네릭이 없던 시절 Java 컬렉션은 모든 원소를 <code>Object</code>로 다뤘습니다. 꺼낼 때마다 캐스팅이 필요했고, <code>list.add(integer)</code> 후 <code>(String) list.get(0)</code>처럼 잘못 꺼내면
+      런타임에 ClassCastException이 터졌습니다. 제네릭의 본질은 <strong>"이 컬렉션은 어떤 타입을 담는다"는 약속을 시그니처에 박아 두고 컴파일러가 검사하게 하는 것</strong>입니다.
+    </p>
+    <p>
+      Java 제네릭의 가장 큰 특이점은 <strong>타입 소거(type erasure)</strong>입니다. 컴파일러는 타입 매개변수를 사용해 검사를 마친 뒤,
+      바이트코드에는 그 정보를 거의 남기지 않고 <code>Object</code>로 바꿔 둡니다. 호환성 — 즉 <em>제네릭이 추가된 Java 5 이전의 코드와 같은 바이트코드 위에서 동작</em>해야 한다는 제약 때문입니다.
+      이로 인해 <code>new T[]</code>가 안 되고, <code>list instanceof List&lt;String&gt;</code>도 안 되는 등의 한계가 생깁니다.
+    </p>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>컴파일 타임 타입 안전성</strong> — 잘못된 타입 추가를 컴파일러가 즉시 거부.</li>
+      <li><strong>캐스팅 제거</strong> — <code>(String) list.get(i)</code> 같은 boilerplate 사라짐.</li>
+      <li><strong>재사용성</strong> — 한 번 정의한 자료구조/알고리즘을 여러 타입에 그대로 사용.</li>
+      <li><strong>도구·문서 친화</strong> — IDE 자동 완성, 리팩토링, javadoc이 정확한 타입을 안다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 기본 형태 — 클래스/메서드 제네릭</h3>
+<pre><code>// 제네릭 클래스 — T는 타입 매개변수
+public class Box&lt;T&gt; {
+    private T value;
+    public void put(T v) { this.value = v; }
+    public T   get()     { return value; }
+}
+
+Box&lt;Integer&gt; b1 = new Box&lt;&gt;();   // T = Integer
+b1.put(42);
+int x = b1.get();                 // 캐스팅 불필요
+
+// 제네릭 메서드 — 클래스가 제네릭이 아니어도 메서드 단위로 도입 가능
+public static &lt;T&gt; T firstOrDefault(List&lt;T&gt; list, T fallback) {
+    return list.isEmpty() ? fallback : list.get(0);
+}
+String s = firstOrDefault(List.of("a", "b"), "");  // T = String 추론</code></pre>
+    <p>
+      관용적 타입 매개변수 이름 — <code>T</code>(Type), <code>E</code>(Element), <code>K</code>/<code>V</code>(Key/Value), <code>R</code>(Result), <code>N</code>(Number).
+    </p>
+
+    <h3>2) 타입 소거(Type Erasure) — 제네릭의 가장 중요한 사실</h3>
+    <p>
+      컴파일러가 제네릭으로 검사한 다음 바이트코드를 만들 때 타입 매개변수를 모두 지웁니다.
+    </p>
+    <div class="viz">
+      <svg width="780" height="170" viewBox="0 0 780 170" role="img" aria-label="type erasure">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <g font-size="12" text-anchor="middle">
+          <rect x="20" y="40" width="220" height="90" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="130" y="62" font-weight="bold" fill="var(--accent)">소스 코드</text>
+          <text x="130" y="86" font-size="11">List&lt;String&gt; list = new ArrayList&lt;&gt;();</text>
+          <text x="130" y="106" font-size="11">list.add("a");</text>
+          <text x="130" y="124" font-size="11">String s = list.get(0);</text>
+
+          <line x1="240" y1="85" x2="300" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr3)"/>
+          <text x="270" y="76" font-size="11" fill="var(--text-muted)">javac</text>
+          <text x="270" y="100" font-size="11" fill="var(--text-muted)">검사 + 소거</text>
+
+          <rect x="300" y="40" width="220" height="90" fill="var(--bg-card)" stroke="var(--warn)" rx="4"/>
+          <text x="410" y="62" font-weight="bold" fill="var(--warn)">바이트코드</text>
+          <text x="410" y="86" font-size="11">List list = new ArrayList();</text>
+          <text x="410" y="106" font-size="11">list.add("a");</text>
+          <text x="410" y="124" font-size="11">String s = (String) list.get(0);</text>
+
+          <rect x="540" y="40" width="220" height="90" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="650" y="62" font-weight="bold" fill="var(--accent)">런타임</text>
+          <text x="650" y="86" font-size="11">List&lt;String&gt;와 List&lt;Integer&gt;는</text>
+          <text x="650" y="106" font-size="11">같은 Class.</text>
+          <text x="650" y="124" font-size="11">→ 리플렉션으로 구분 불가</text>
+        </g>
+      </svg>
+      <span class="viz-caption">컴파일 타임에는 타입 안전, 런타임에는 raw List만 남는다 — 캐스팅은 컴파일러가 알아서 삽입.</span>
+    </div>
+
+    <p>이로 인해 다음과 같은 제약들이 생깁니다.</p>
+<pre><code>// ❌ T로 instanceof 못 함
+if (obj instanceof List&lt;String&gt;) { ... }   // 컴파일 에러
+
+// ❌ T로 배열 생성 못 함
+T[] arr = new T[10];                       // 컴파일 에러
+// 우회: Object[] 만들고 캐스팅 (경고 + 안전성 책임은 개발자)
+T[] arr = (T[]) new Object[10];
+
+// ❌ static 멤버에 클래스 타입 매개변수 사용 못 함
+class Box&lt;T&gt; {
+    static T defaultValue;                 // 컴파일 에러
+}
+
+// ❌ 같은 시그니처처럼 보여 오버로드 불가
+void m(List&lt;Integer&gt; xs) { }
+void m(List&lt;String&gt;  xs) { }              // erasure 후 같은 시그니처</code></pre>
+
+    <h3>3) Bounded Type Parameter — "T는 X의 하위여야 함"</h3>
+    <p>
+      <code>&lt;T extends Number&gt;</code>처럼 상한을 둘 수 있습니다. 인터페이스도 가능하고 여러 개도 가능합니다.
+    </p>
+<pre><code>public static &lt;T extends Number&gt; double sum(List&lt;T&gt; nums) {
+    double s = 0;
+    for (T n : nums) s += n.doubleValue();   // Number의 메서드 호출 가능
+    return s;
+}
+
+// 다중 bound — class 먼저, interface 나중
+&lt;T extends Number &amp; Comparable&lt;T&gt;&gt;
+T max(List&lt;T&gt; xs) { ... }</code></pre>
+
+    <h3>4) Wildcard — <code>?</code>, <code>? extends T</code>, <code>? super T</code></h3>
+    <p>
+      메서드 매개변수에 "어떤 타입 파라미터든 받을 수 있다"고 표현할 때 와일드카드를 씁니다. 핵심은 <strong>가변성(variance)</strong>입니다.
+    </p>
+    <table class="complexity">
+      <thead>
+        <tr><th>형태</th><th>의미</th><th>읽기</th><th>쓰기</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>List&lt;?&gt;</code></td><td>"무언가의 리스트" (unbounded)</td><td>Object만</td><td>null만</td></tr>
+        <tr><td><code>List&lt;? extends Number&gt;</code></td><td>Number의 어떤 하위 타입의 리스트</td><td>Number로 읽기 OK</td><td>거의 불가 (소비 못 함)</td></tr>
+        <tr><td><code>List&lt;? super Integer&gt;</code></td><td>Integer의 어떤 상위 타입의 리스트</td><td>Object만</td><td>Integer 쓰기 OK</td></tr>
+      </tbody>
+    </table>
+
+    <p>왜 그런지 — 가장 흔한 함정과 함께 보면:</p>
+<pre><code>List&lt;Integer&gt; ints = new ArrayList&lt;&gt;();
+List&lt;? extends Number&gt; nums = ints;     // OK — 하위 타입의 리스트로 받음
+
+Number n = nums.get(0);                  // 읽기 OK — Number 보장
+nums.add(1);                             // ❌ 컴파일 에러
+// 왜? nums가 List&lt;Double&gt;일 수도 있어 컴파일러는 안전을 보장 못 함
+
+List&lt;? super Integer&gt; sink = new ArrayList&lt;Number&gt;();
+sink.add(42);                            // ✅ 쓰기 OK — Integer 또는 그 하위만 들어가도 무조건 안전
+Object x = sink.get(0);                  // 읽으면 Object 정도만 보장</code></pre>
+
+    <h3>5) PECS — Producer Extends, Consumer Super</h3>
+    <div class="callout">
+      <p><strong>외울 한 줄</strong>: <em>"내가 데이터를 가져다 쓸 거면 <code>extends</code>, 데이터를 넣을 거면 <code>super</code>"</em>.</p>
+    </div>
+    <p>
+      Joshua Bloch의 <strong>PECS 원칙</strong>은 와일드카드를 "어느 쪽으로 데이터가 흐르는가"로 결정하라는 가이드입니다.
+      Java 표준 라이브러리의 <code>Collections.copy</code> 시그니처가 정확히 이 원칙을 따릅니다.
+    </p>
+<pre><code>// 표준 라이브러리의 PECS 적용
+public static &lt;T&gt; void copy(List&lt;? super T&gt; dest,        // T를 받아 넣을 곳 → super
+                            List&lt;? extends T&gt; src) {     // T를 꺼내 줄 곳 → extends
+    for (int i = 0; i &lt; src.size(); i++) {
+        dest.set(i, src.get(i));
+    }
+}
+
+// 호출 — 다양한 조합 허용
+List&lt;Number&gt;  dest = new ArrayList&lt;&gt;(...);
+List&lt;Integer&gt; src  = List.of(1, 2, 3);
+Collections.copy(dest, src);   // T = Number; src는 ? extends Number, dest는 ? super Number</code></pre>
+
+    <p>
+      Stream API의 <code>Function&lt;? super T, ? extends R&gt;</code>도 같은 원칙입니다 — T를 받아(consume = super) R을 만든다(produce = extends).
+    </p>
+
+    <h3>6) Raw Type — 절대 새로 쓰지 마라</h3>
+    <p>
+      <code>List</code>처럼 타입 인자를 안 적은 형태가 raw type입니다. Java 5에서 제네릭이 추가될 때 <em>이전 코드와의 호환을 위해</em>만 남겨 둔 것이라 새 코드에선 쓰면 안 됩니다.
+    </p>
+<pre><code>List rawList = new ArrayList();      // ⚠️ raw type 경고
+rawList.add("hello");
+rawList.add(42);                      // 어떤 타입이든 들어감 — 타입 안전성 사라짐
+
+// 라이브러리에서 raw List를 받을 때
+List&lt;String&gt; safe = (List&lt;String&gt;) rawList;   // 'unchecked' 경고
+String s = safe.get(0);                        // OK
+String t = safe.get(1);                        // ClassCastException at runtime!</code></pre>
+    <p>
+      <strong>raw type을 쓰면 그 영향이 전염</strong>됩니다 — raw List에서 꺼내 쓰는 다른 코드의 타입 검사도 약화돼서 컴파일러가 발견했을 버그를 놓치게 됩니다.
+      "어떤 타입이든 받겠다"가 의도라면 raw 대신 <code>List&lt;?&gt;</code>를 쓰세요. 와일드카드는 타입 안전성을 유지합니다.
+    </p>
+
+    <h3>7) 제네릭과 가변 인자(varargs)</h3>
+<pre><code>// "Heap pollution" 경고 — 제네릭 타입의 배열은 만들 수 없는데 varargs는 배열로 변환됨
+public static &lt;T&gt; List&lt;T&gt; asList(T... items) {
+    return Arrays.asList(items);
+}
+
+// Java 7+: 안전하다고 명시
+@SafeVarargs
+public static &lt;T&gt; List&lt;T&gt; asList(T... items) {
+    return Arrays.asList(items);
+}</code></pre>
+
+    <h3>8) 제네릭 타입과 상속·할당 — 불공변(invariant)</h3>
+    <p>
+      <code>List&lt;Integer&gt;</code>는 <code>List&lt;Number&gt;</code>의 하위 타입이 <strong>아닙니다</strong>. 직관과 다른 이 결정이 와일드카드의 존재 이유입니다.
+    </p>
+    <div class="viz">
+      <svg width="780" height="170" viewBox="0 0 780 170" role="img" aria-label="invariance">
+        <g font-size="12" text-anchor="middle">
+          <rect x="20"  y="20" width="240" height="130" fill="var(--bg-card)" stroke="var(--danger)" rx="4"/>
+          <text x="140" y="44" font-weight="bold" fill="var(--danger)">제네릭은 불공변</text>
+          <text x="140" y="68" font-size="11">List&lt;Integer&gt;는</text>
+          <text x="140" y="86" font-size="11">List&lt;Number&gt;의 하위 X</text>
+          <text x="140" y="116" font-size="11" fill="var(--text-muted)">"각 타입 파라미터는 정확히 일치"</text>
+
+          <rect x="280" y="20" width="240" height="130" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="400" y="44" font-weight="bold" fill="var(--accent)">왜 그래야만 했나</text>
+          <text x="400" y="68" font-size="11">List&lt;Integer&gt;를 List&lt;Number&gt;에</text>
+          <text x="400" y="86" font-size="11">대입 허용하면</text>
+          <text x="400" y="106" font-size="11" fill="var(--danger)">list.add(3.14)로 Double을</text>
+          <text x="400" y="124" font-size="11" fill="var(--danger)">Integer 리스트에 넣을 수 있게 됨</text>
+
+          <rect x="540" y="20" width="220" height="130" fill="var(--bg-card)" stroke="var(--success)" rx="4"/>
+          <text x="650" y="44" font-weight="bold" fill="var(--success)">해결책</text>
+          <text x="650" y="68" font-size="11">와일드카드</text>
+          <text x="650" y="88" font-size="11">List&lt;? extends Number&gt;</text>
+          <text x="650" y="116" font-size="11" fill="var(--text-muted)">읽기는 OK, 쓰기는 거의 불가</text>
+          <text x="650" y="132" font-size="11" fill="var(--text-muted)">→ 안전성 유지</text>
+        </g>
+      </svg>
+      <span class="viz-caption">참고: 배열은 공변(<code>Integer[]</code>은 <code>Number[]</code>) — 그래서 <code>Number[] arr = new Integer[1]; arr[0] = 1.0;</code>이 ArrayStoreException을 던진다.</span>
+    </div>
+
+    <h3>9) 제네릭과 리플렉션 — TypeToken 트릭</h3>
+    <p>
+      소거 때문에 <code>List&lt;String&gt;.class</code>는 안 됩니다. 그러나 클래스의 상속 관계에 박혀 있는 제네릭 정보는 리플렉션으로 살아 있습니다.
+      이 점을 이용한 것이 Jackson <code>TypeReference</code>·Spring <code>ParameterizedTypeReference</code>입니다.
+    </p>
+<pre><code>// Jackson — 익명 자식 클래스로 제네릭 정보 잡아두기
+List&lt;User&gt; users = mapper.readValue(json, new TypeReference&lt;List&lt;User&gt;&gt;() {});
+//                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// 익명 클래스가 List&lt;User&gt;를 superclass에 박아 두므로 reflection으로 추출 가능</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>런타임 비용 없음</strong> — 타입 소거 덕분에 제네릭 사용 자체의 런타임 오버헤드가 없다(컴파일 타임에 모두 처리).</li>
+      <li><strong>표현력 제한</strong> — <code>new T[]</code>·<code>T.class</code>·<code>instanceof T</code> 같은 자연스러운 연산이 막힘.</li>
+      <li><strong>호환성 vs 일관성</strong> — Java 5 이전 코드 호환을 위해 reified generics(C#처럼 런타임에 살아 있는 타입 정보)를 포기.</li>
+      <li><strong>API 가독성</strong> — 와일드카드와 PECS는 처음 보면 어려움. 그러나 잘 쓴 시그니처는 호출자에게 매우 친절함.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>컬렉션·Stream API</strong> — 모든 컨테이너의 기본 도구.</li>
+      <li><strong>Repository / DAO</strong> — Spring Data의 <code>JpaRepository&lt;T, ID&gt;</code>처럼 엔티티 타입을 매개로.</li>
+      <li><strong>유틸리티 메서드</strong> — <code>&lt;T&gt; Optional&lt;T&gt; find(...)</code>처럼 호출자가 타입을 결정.</li>
+      <li><strong>이벤트/메시지 핸들러</strong> — <code>EventHandler&lt;T extends Event&gt;</code>로 안전한 디스패치.</li>
+      <li><strong>JSON·HTTP 라이브러리</strong> — TypeReference 패턴으로 제네릭 deserialization.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">Java의 타입 소거(type erasure)란 무엇이고 왜 그렇게 됐나요?</div>
+      <div class="a">
+        컴파일 타임에 타입 매개변수로 안전성을 검사한 뒤, 바이트코드에서는 그 매개변수를 <code>Object</code>(또는 상한)로 치환해 정보를 지우는 방식입니다.
+        이유는 <strong>호환성</strong> — Java 5에서 제네릭이 추가될 때 그 이전 raw 코드와 같은 바이트코드 위에서 동작해야 했기 때문입니다.
+        부작용으로 <code>new T[]</code>·<code>T.class</code>·<code>instanceof T</code> 같은 연산이 불가능해졌고, <code>List&lt;String&gt;</code>과 <code>List&lt;Integer&gt;</code>가 런타임에 같은 <code>Class</code>가 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PECS가 무엇인가요?</div>
+      <div class="a">
+        Producer Extends, Consumer Super의 약자로, 와일드카드를 어떻게 쓸지 결정하는 원칙입니다.
+        제네릭 매개변수가 <em>데이터를 꺼내 주는 쪽(Producer)</em>이면 <code>? extends T</code>, <em>데이터를 받아 넣는 쪽(Consumer)</em>이면 <code>? super T</code>를 씁니다.
+        예를 들어 <code>Collections.copy(dest, src)</code>는 src에서 읽어 dest에 쓰므로 <code>List&lt;? extends T&gt; src, List&lt;? super T&gt; dest</code>가 정답입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q"><code>List&lt;Integer&gt;</code>가 <code>List&lt;Number&gt;</code>의 하위 타입이 아닌 이유는?</div>
+      <div class="a">
+        만약 하위 타입이라면 <code>List&lt;Number&gt; n = new ArrayList&lt;Integer&gt;();</code>가 가능해지고, 그 다음 <code>n.add(3.14)</code>가 호출되어 Integer 리스트에 Double이 들어가 ClassCastException이 생길 수 있습니다.
+        이를 막기 위해 제네릭은 <strong>불공변(invariant)</strong>으로 설계됐습니다. 다양한 하위 타입을 받고 싶을 때는 와일드카드(<code>List&lt;? extends Number&gt;</code>)를 쓰면 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">raw type을 쓰면 안 되는 이유는?</div>
+      <div class="a">
+        타입 안전성이 사라져 컴파일러가 잡을 수 있던 잘못된 타입 추가를 런타임까지 가져갑니다. 더 큰 문제는 raw type에서 꺼낸 값을 다른 코드에 넘기는 순간 그 코드의 타입 검사도 약해지는 <em>전염</em>이 일어난다는 점입니다.
+        "어떤 타입이든 받겠다"가 진짜 의도라면 raw 대신 <code>List&lt;?&gt;</code>를 쓰면 안전성을 유지할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">제네릭으로 배열을 만들 수 없는 이유는?</div>
+      <div class="a">
+        배열은 런타임에 자기 원소 타입을 알고 있어 ArrayStoreException으로 자기를 보호하는데, 제네릭은 소거되어 런타임에 타입을 모릅니다. 따라서 <code>new T[10]</code>을 허용하면 그 배열이 자기 타입을 검증할 수 없게 되어 안전성이 깨집니다.
+        실무에서는 <code>(T[]) new Object[n]</code>로 우회하고 unchecked 경고를 책임지거나, 배열 대신 <code>ArrayList&lt;T&gt;</code>를 쓰는 것이 안전합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q"><code>List&lt;?&gt;</code>와 <code>List&lt;Object&gt;</code>의 차이는?</div>
+      <div class="a">
+        <code>List&lt;Object&gt;</code>는 "Object 리스트만" 받습니다 — <code>List&lt;String&gt;</code>은 받을 수 없습니다(불공변).
+        <code>List&lt;?&gt;</code>는 "원소 타입을 모르는 어떤 리스트든" 받지만, 안전을 위해 null 외에는 add할 수 없습니다.
+        즉 <code>?</code>는 "읽기 전용 리뷰", <code>Object</code>는 "Object를 담는 컨테이너"라는 다른 의도를 표현합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">제네릭 메서드와 제네릭 클래스의 차이는?</div>
+      <div class="a">
+        제네릭 클래스는 클래스 레벨에 타입 매개변수가 있어 인스턴스마다 결정됩니다(<code>new Box&lt;Integer&gt;()</code>). 제네릭 메서드는 호출마다 컴파일러가 추론하거나 명시한 타입으로 결정됩니다.
+        클래스가 비제네릭이라도 메서드는 제네릭일 수 있고, 그 반대도 가능합니다. 또 static 메서드는 클래스의 타입 매개변수를 쓸 수 없으므로 자기 타입 매개변수를 따로 선언해야 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Jackson에서 <code>List&lt;User&gt;</code>를 어떻게 역직렬화하나요?</div>
+      <div class="a">
+        <code>List&lt;User&gt;.class</code>는 소거 때문에 안 되므로, <code>TypeReference</code>의 익명 자식 클래스를 만들어 그 superclass에 제네릭 정보를 박아 둡니다.
+        Jackson은 그 클래스의 <code>getGenericSuperclass()</code>로 정보를 추출합니다. 이 패턴은 Spring의 <code>ParameterizedTypeReference</code>, Google Guice의 TypeLiteral 등에서도 동일하게 쓰입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="collections.html">컬렉션 프레임워크</a></li>
+      <li><a href="lambda-stream.html">람다와 Stream API</a></li>
+      <li><a href="oop-syntax.html">객체지향과 Java 문법</a></li>
+      <li><a href="index.html">Java 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="collections.html">
+        <span class="label">이전</span>
+        ← 컬렉션 프레임워크
+      </a>
+      <a href="index.html">📂 Java로</a>
+      <a class="next" href="lambda-stream.html">
+        <span class="label">다음</span>
+        람다와 Stream API →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
