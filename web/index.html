@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <span>Web</span>
+    </nav>
+
+    <h1>🌐 Web (기술 트랙)</h1>
+    <p class="lead">
+      Web은 단일 기술이 아니라 <strong>네트워크·문서 구조·스타일·언어·런타임</strong>이 협업하는 거대한 플랫폼입니다.
+      여기서는 면접·실무에서 매번 나오는 핵심 — 동작 큰 그림, HTML/CSS/JS의 기본 모델, DOM·이벤트·렌더링 파이프라인, HTTP API와 보안 — 을
+      "왜 그렇게 동작하는가"와 "어디서 실수하는가" 중심으로 정리합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>📚 학습 가이드 — 큰 그림 → 도구 → 런타임 → 보안</strong></p>
+      <p>
+        먼저 <em>Web 동작 큰 그림</em>으로 전체 흐름(주소 입력 → 렌더링)을 잡고, HTML / CSS / JavaScript의 모델을 차례로 본 뒤,
+        DOM·렌더링 파이프라인 같은 런타임 동작과 HTTP API·보안 주제로 넘어가세요.
+      </p>
+    </div>
+
+    <h2 style="margin-top:32px; padding-bottom:6px; border-bottom:2px solid var(--accent);">
+      🧩 핵심 개념
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      웹 개발자가 "이건 한 번은 끝까지 읽고 가야 한다"고 말하는 우선순위 주제들.
+    </p>
+
+    <section class="concept-section">
+      <h3>큰 그림</h3>
+      <p>주소 한 줄이 화면이 되기까지 무슨 일이 일어나는가.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="how-web-works.html">Web 동작 큰 그림 — DNS·TCP·TLS·HTTP·HTML·CSS·JS</a>
+          <span class="summary">URL 입력부터 첫 픽셀까지의 전체 흐름과 각 단계의 책임.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>3대 언어</h3>
+      <p>웹의 표현·스타일·동작을 책임지는 세 언어의 기본 모델.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="html-basics.html">HTML 핵심 — 시맨틱·form·접근성·SEO</a>
+          <span class="summary">의미 있는 마크업, 폼 처리, 접근성(a11y)의 기본기.</span>
+        </li>
+        <li>
+          <a href="css-basics.html">CSS 핵심 — 박스 모델·cascade·flex·grid</a>
+          <span class="summary">스타일이 어떻게 결정되고 어떻게 배치되는가.</span>
+        </li>
+        <li>
+          <a href="javascript-basics.html">JavaScript 핵심 — 실행 컨텍스트·closure·prototype</a>
+          <span class="summary">호이스팅, 스코프 체인, this, 모듈 시스템.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>브라우저 런타임</h3>
+      <p>JS·HTML·CSS가 만나 화면이 만들어지는 메커니즘.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="dom-events.html">DOM과 이벤트 — 트리·버블링·delegation</a>
+          <span class="summary">DOM API의 비용, 이벤트 흐름과 위임 패턴.</span>
+        </li>
+        <li>
+          <a href="rendering-pipeline.html">브라우저 렌더링 파이프라인 — Layout·Paint·Composite</a>
+          <span class="summary">CSSOM/Render Tree 생성과 reflow·repaint 비용.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>네트워크와 보안</h3>
+      <p>서버와 통신하고, 사용자를 안전하게 지키기.</p>
+      <ul class="concept-list">
+        <li>
+          <a href="http-web-api.html">HTTP와 Web API — fetch·REST·CORS·스토리지</a>
+          <span class="summary">XHR에서 fetch까지, 쿠키 vs localStorage, JSON과 REST.</span>
+        </li>
+        <li>
+          <a href="web-security.html">웹 보안 기본 — XSS·CSRF·CSP·SameSite</a>
+          <span class="summary">가장 자주 나는 공격과 표준화된 방어 기제.</span>
+        </li>
+      </ul>
+    </section>
+
+    <h2 style="margin-top:48px; padding-bottom:6px; border-bottom:2px solid var(--text-muted);">
+      🔬 심화 / 상세
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      핵심을 한 번 본 뒤 더 깊이 파고들 만한 주제들. (작성 예정)
+    </p>
+
+    <section class="concept-section">
+      <h3>JS 런타임 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>JavaScript 이벤트 루프 심층 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">call stack, task queue, microtask, rendering frame, async/await.</span>
+        </li>
+        <li class="todo">
+          <a>TypeScript 입문 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">structural typing, union/intersection, generic, type narrowing.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>스토리지 / 통신</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>브라우저 저장소 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">Cookie / localStorage / sessionStorage / IndexedDB / Cache Storage.</span>
+        </li>
+        <li class="todo">
+          <a>WebSocket / SSE / WebRTC <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">실시간 통신 선택 기준.</span>
+        </li>
+        <li class="todo">
+          <a>OAuth / OIDC 웹 로그인 흐름 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">Authorization Code + PKCE, token storage 위험.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>성능과 아키텍처</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>웹 성능 최적화 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">Core Web Vitals, LCP/INP/CLS, lazy loading, code splitting.</span>
+        </li>
+        <li class="todo">
+          <a>Service Worker / PWA <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">offline cache, push notification, background sync.</span>
+        </li>
+        <li class="todo">
+          <a>프론트엔드 아키텍처 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">SPA / MPA / SSR / SSG / ISR, hydration, island architecture.</span>
+        </li>
+      </ul>
+    </section>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <span></span>
+      <a href="../index.html">🏠 홈으로</a>
+      <span></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

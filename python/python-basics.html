@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Python 언어 기본 · Python · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">Python</a><span class="sep">›</span><span>Python 언어 기본</span></nav>
+    <h1>Python 언어 기본</h1>
+    <div class="definition"><strong>Python</strong>은 인터프리터 기반의 고수준 동적 언어입니다. 소스 코드는 CPython 기준으로 <strong>bytecode</strong>로 컴파일된 뒤 Python Virtual Machine에서 실행되고, 타입은 변수명이 아니라 <strong>객체</strong>에 붙습니다. 기준 버전은 <strong>Python 3.12</strong>입니다.</div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>Python은 "읽기 쉬운 코드"와 "빠른 개발"을 목표로 설계된 언어입니다. 들여쓰기로 블록을 표현하고, 변수 선언 없이 이름에 객체를 바인딩하며, 대부분의 값이 객체입니다. 그래서 문법은 단순하지만, 이름 바인딩·객체 참조·모듈 로딩 같은 실행 모델을 이해하지 못하면 예상치 못한 버그를 만나기 쉽습니다.</p>
+    <p>가장 널리 쓰이는 구현은 CPython입니다. 우리가 터미널에서 <code>python</code>을 실행할 때 보통 CPython 인터프리터가 소스 코드를 파싱하고, bytecode로 컴파일하고, 가상 머신 루프에서 명령을 실행합니다.</p>
+
+    <div class="callout"><p><strong>비유 — Python 파일은 레시피, 인터프리터는 요리사</strong></p><p><code>.py</code> 파일은 요리 순서가 적힌 레시피입니다. CPython은 그 레시피를 바로 읽는 게 아니라 먼저 요리사가 보기 쉬운 중간 지시서(bytecode)로 바꾼 뒤 한 줄씩 실행합니다.</p></div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>동작 예측</strong> — 변수와 객체의 관계를 알아야 얕은 복사·mutable 기본값 같은 함정을 피한다.</li>
+      <li><strong>모듈 구조 설계</strong> — import가 실행이라는 사실을 알아야 순환 import와 초기화 부작용을 피한다.</li>
+      <li><strong>성능 감각</strong> — bytecode와 인터프리터 실행 모델을 알아야 왜 순수 Python 루프가 느린지 이해한다.</li>
+      <li><strong>환경 문제 해결</strong> — 어떤 Python 실행 파일과 어떤 패키지 경로를 쓰는지 알아야 배포 문제를 줄인다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+    <h3>1) 실행 흐름 — source → AST → bytecode → PVM</h3>
+    <div class="viz"><svg width="760" height="190" viewBox="0 0 760 190" role="img" aria-label="Python execution pipeline"><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><g font-size="12" text-anchor="middle"><rect x="30" y="65" width="120" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="90" y="88">.py 소스</text><text x="90" y="106" fill="var(--text-muted)">텍스트</text><rect x="190" y="65" width="120" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="250" y="88">Parser</text><text x="250" y="106" fill="var(--text-muted)">AST</text><rect x="350" y="65" width="120" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="410" y="88">Compiler</text><text x="410" y="106" fill="var(--text-muted)">bytecode</text><rect x="510" y="65" width="120" height="55" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="570" y="88" font-weight="bold">PVM</text><text x="570" y="106" fill="var(--text-muted)">실행</text><rect x="655" y="65" width="80" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="695" y="96">결과</text></g><line x1="150" y1="92" x2="190" y2="92" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr)"/><line x1="310" y1="92" x2="350" y2="92" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr)"/><line x1="470" y1="92" x2="510" y2="92" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr)"/><line x1="630" y1="92" x2="655" y2="92" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr)"/><text x="380" y="155" text-anchor="middle" font-size="12" fill="var(--text-muted)">CPython은 자주 import되는 모듈의 bytecode를 __pycache__/*.pyc로 캐시한다.</text></svg><span class="viz-caption">Python은 소스를 매번 문자 그대로 실행하지 않고, bytecode라는 중간 표현으로 컴파일한 뒤 실행한다.</span></div>
+
+    <h3>2) 동적 타이핑 — 타입은 이름이 아니라 객체에 붙는다</h3>
+    <p>Python의 변수는 상자가 아니라 <strong>이름표</strong>에 가깝습니다. 이름은 객체를 가리키고, 객체가 타입과 값을 가집니다.</p>
+    <div class="viz"><svg width="680" height="210" viewBox="0 0 680 210" role="img" aria-label="name binding"><defs><marker id="ptr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><rect x="70" y="60" width="110" height="45" fill="var(--bg-card)" stroke="var(--accent)"/><text x="125" y="88" text-anchor="middle">name: x</text><rect x="330" y="45" width="190" height="75" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="425" y="75" text-anchor="middle">int 객체</text><text x="425" y="98" text-anchor="middle" fill="var(--text-muted)">type=int, value=10</text><line x1="180" y1="82" x2="330" y2="82" stroke="var(--accent)" stroke-width="2" marker-end="url(#ptr)"/><text x="340" y="165" text-anchor="middle" font-size="12" fill="var(--text-muted)">x = "hello"를 하면 x 이름표가 str 객체를 새로 가리킨다. int 객체가 str로 변하는 게 아니다.</text></svg><span class="viz-caption">동적 타이핑은 이름이 여러 타입의 객체를 가리킬 수 있다는 뜻이다.</span></div>
+<pre><code>x = 10          # x → int 객체
+x = "hello"     # x → str 객체로 재바인딩
+print(type(x))  # &lt;class 'str'&gt;</code></pre>
+
+    <h3>3) 들여쓰기와 블록</h3>
+    <p>Python은 중괄호 대신 들여쓰기로 블록을 구분합니다. 같은 블록의 들여쓰기 폭은 일관되어야 합니다. PEP 8은 공백 4칸을 권장합니다.</p>
+<pre><code>if score &gt;= 80:
+    print("pass")
+    print("good")
+else:
+    print("retry")</code></pre>
+
+    <h3>4) 모듈과 패키지</h3>
+    <p>모듈은 하나의 <code>.py</code> 파일이고, 패키지는 모듈을 담는 디렉터리입니다. import는 단순 선언이 아니라 해당 모듈의 최상위 코드를 실행합니다. 그래서 최상위에 무거운 작업이나 외부 호출을 두면 import만 해도 부작용이 생깁니다.</p>
+<pre><code># good.py
+def main():
+    print("run as script")
+
+if __name__ == "__main__":
+    main()  # import될 때는 실행되지 않음</code></pre>
+
+    <h3>5) Python답게 쓰는 기본 관용구</h3>
+    <ul>
+      <li><strong>Truthiness</strong> — 빈 리스트/문자열/딕셔너리, 0, None은 False처럼 평가됩니다.</li>
+      <li><strong>EAFP</strong> — "허락보다 용서가 쉽다". 검사보다 시도 후 예외 처리(<code>try</code>)를 선호할 때가 많습니다.</li>
+      <li><strong>Duck typing</strong> — 타입 이름보다 필요한 메서드를 갖췄는지가 중요합니다.</li>
+      <li><strong>PEP 8</strong> — 이름·공백·import 순서를 맞춰 협업 비용을 줄입니다.</li>
+    </ul>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity"><thead><tr><th>특징</th><th>장점</th><th>비용/주의점</th><th>왜 그런가?</th></tr></thead><tbody><tr><td>동적 타이핑</td><td>빠른 개발</td><td>런타임 오류 가능</td><td>타입 검사가 실행 중 발생</td></tr><tr><td>인터프리터 실행</td><td>즉시 실행·REPL</td><td>순수 루프 느림</td><td>bytecode dispatch 비용</td></tr><tr><td>객체 모델</td><td>일관된 추상화</td><td>작은 값도 객체 오버헤드</td><td>타입/참조 카운트 메타데이터</td></tr><tr><td>import 실행</td><td>모듈 초기화 단순</td><td>순환 import·부작용</td><td>최상위 코드가 실행됨</td></tr></tbody></table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul><li><strong>백엔드</strong> — Django/FastAPI/Flask로 API 서버 작성.</li><li><strong>자동화</strong> — 파일 처리, 크롤링, 배치 스크립트.</li><li><strong>데이터/AI</strong> — numpy/pandas/PyTorch 생태계.</li><li><strong>인프라 도구</strong> — CLI, 테스트 스크립트, 운영 자동화.</li></ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+    <div class="qa"><div class="q">Python은 인터프리터 언어인데 컴파일을 하나요?</div><div class="a">합니다. CPython은 소스 코드를 AST와 bytecode로 컴파일한 뒤 Python Virtual Machine이 bytecode를 실행합니다. 다만 C/Java처럼 별도 바이너리를 만들어 배포하는 정적 컴파일 방식이 아니라 실행 시점에 내부 중간 표현으로 컴파일하는 방식입니다.</div></div>
+    <div class="qa"><div class="q">동적 타이핑이란 무엇인가요?</div><div class="a">변수명에 고정 타입이 붙는 것이 아니라, 이름이 가리키는 객체가 타입을 갖는 방식입니다. 같은 이름이 실행 중 int 객체를 가리켰다가 str 객체를 가리킬 수 있습니다. 유연하지만 타입 오류가 런타임에 드러날 수 있습니다.</div></div>
+    <div class="qa"><div class="q">import할 때 무슨 일이 일어나나요?</div><div class="a">모듈을 찾고, 필요하면 bytecode로 컴파일하고, 모듈 객체를 만든 뒤 최상위 코드를 실행합니다. 이후 sys.modules에 캐시되어 같은 모듈을 다시 import하면 보통 재실행하지 않습니다.</div></div>
+    <div class="qa"><div class="q"><code>if __name__ == "__main__"</code>은 왜 쓰나요?</div><div class="a">파일이 직접 실행될 때만 특정 코드를 실행하고, 다른 모듈에서 import될 때는 실행되지 않게 하기 위해 씁니다. import 부작용을 줄이고 테스트 가능한 구조를 만드는 기본 관용구입니다.</div></div>
+    <div class="qa"><div class="q">Python이 느린 이유는 무엇인가요?</div><div class="a">CPython은 bytecode를 인터프리터 루프에서 실행하고, 대부분 값이 객체라 동적 타입 확인과 참조 관리 비용이 있습니다. 순수 Python 루프는 느리지만, numpy처럼 C로 구현된 벡터화 연산이나 I/O-bound 작업에서는 충분히 빠릅니다.</div></div>
+    <div class="qa"><div class="q">Duck typing이란?</div><div class="a">"오리처럼 걷고 꽥꽥거리면 오리로 본다"는 말처럼, 객체의 실제 클래스보다 필요한 메서드나 프로토콜을 만족하는지가 중요하다는 사고방식입니다. 예를 들어 파일처럼 <code>read()</code>가 있으면 실제 파일 객체가 아니어도 파일처럼 다룰 수 있습니다.</div></div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips"><li><a href="data-types.html">자료형과 컬렉션</a></li><li><a href="functions-scope.html">함수와 스코프</a></li><li><a href="venv-packaging.html">가상환경과 패키징</a></li><li><a href="index.html">Python 목록</a></li></ul>
+    <nav class="footer-nav" aria-label="페이지 이동"><span></span><a href="index.html">📂 Python으로</a><a class="next" href="data-types.html"><span class="label">다음</span>자료형과 컬렉션 →</a></nav>
+  </main>
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

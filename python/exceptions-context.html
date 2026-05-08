@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>예외와 컨텍스트 매니저 · Python · CS 학습 노트</title><link rel="stylesheet" href="../assets/css/common.css" /><link rel="stylesheet" href="../assets/css/concept.css" /></head>
+<body><header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+<main>
+<nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">Python</a><span class="sep">›</span><span>예외와 컨텍스트 매니저</span></nav>
+<h1>예외와 컨텍스트 매니저</h1>
+<div class="definition"><strong>Python 예외</strong>는 정상 흐름으로 처리할 수 없는 상황을 호출자에게 전파하는 객체 기반 메커니즘입니다. <strong>컨텍스트 매니저</strong>는 <code>with</code> 문으로 자원 획득과 해제를 안전하게 묶는 프로토콜이며, <code>__enter__</code>와 <code>__exit__</code>로 동작합니다.</div>
+
+<h2>구체적인 개념 설명</h2>
+<p>Python은 오류 상황에서 특수 반환값보다 예외를 적극적으로 사용합니다. 파일이 없거나, 키가 없거나, 타입이 맞지 않으면 예외 객체가 생성되고 호출 스택을 거슬러 올라가며 처리자를 찾습니다. 처리자가 없으면 프로그램은 traceback을 출력하고 종료합니다.</p>
+<p>자원 관리는 예외와 떼어놓을 수 없습니다. 파일을 열고 작업하다가 중간에 예외가 나도 파일은 닫혀야 합니다. <code>with</code> 문은 이런 정리 작업을 자동화해, 성공/실패와 관계없이 <code>__exit__</code>가 호출되도록 보장합니다.</p>
+<div class="callout"><p><strong>비유 — 비상벨과 퇴실 점검</strong></p><p>예외는 건물 안에서 문제가 생겼을 때 울리는 비상벨입니다. 컨텍스트 매니저는 비상벨이 울려도 문 잠그기·전기 끄기 같은 퇴실 점검을 반드시 하게 만드는 체크리스트입니다.</p></div>
+
+<h2>왜 필요한가?</h2>
+<ul><li><strong>오류 흐름 분리</strong> — 정상 로직과 실패 처리를 분리해 읽기 쉽게 만든다.</li><li><strong>자원 누수 방지</strong> — 파일, 소켓, 락, DB 커넥션을 반드시 해제.</li><li><strong>원인 추적</strong> — traceback으로 실패 위치와 호출 경로를 확인.</li><li><strong>도메인 오류 표현</strong> — custom exception으로 비즈니스 실패를 명확히 표현.</li></ul>
+
+<h2>어떻게 동작하는가?</h2>
+<h3>1) 예외 전파와 traceback</h3>
+<div class="viz"><svg width="720" height="240" viewBox="0 0 720 240" role="img" aria-label="exception propagation"><defs><marker id="ex" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">예외는 호출 스택을 거슬러 올라가며 handler를 찾는다</text><g font-size="12" text-anchor="middle"><rect x="80" y="60" width="130" height="45" fill="var(--bg-card)" stroke="var(--accent)"/><text x="145" y="88">main()</text><rect x="280" y="60" width="130" height="45" fill="var(--bg-card)" stroke="var(--accent)"/><text x="345" y="88">load()</text><rect x="480" y="60" width="130" height="45" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="545" y="88">open()</text><text x="545" y="128" fill="#e74c3c">FileNotFoundError</text></g><line x1="210" y1="82" x2="280" y2="82" stroke="var(--accent)" stroke-width="2" marker-end="url(#ex)"/><line x1="410" y1="82" x2="480" y2="82" stroke="var(--accent)" stroke-width="2" marker-end="url(#ex)"/><path d="M545 145 C470 185,260 185,145 145" fill="none" stroke="#e74c3c" stroke-width="2" marker-end="url(#ex)"/><text x="360" y="215" text-anchor="middle" fill="var(--text-muted)" font-size="12">except가 없으면 더 위로 전파되고, 끝까지 없으면 traceback 출력 후 종료된다.</text></svg><span class="viz-caption">예외는 발생 지점에서 멈추지 않고 처리자를 찾을 때까지 호출자를 향해 올라간다.</span></div>
+
+<h3>2) try / except / else / finally</h3>
+<pre><code>try:
+    value = int(text)
+except ValueError as e:
+    print("숫자가 아닙니다", e)
+else:
+    print("변환 성공", value)   # 예외가 없을 때만
+finally:
+    print("항상 실행")          # 성공/실패와 무관</code></pre>
+<ul><li><strong>except</strong> — 특정 예외를 잡아 처리.</li><li><strong>else</strong> — try 블록에서 예외가 없을 때만 실행.</li><li><strong>finally</strong> — 예외 여부와 관계없이 정리 작업 수행.</li></ul>
+
+<h3>3) 예외 계층과 잡는 범위</h3>
+<p>대부분의 애플리케이션 예외는 <code>Exception</code> 아래에 있습니다. <code>BaseException</code>에는 <code>KeyboardInterrupt</code>, <code>SystemExit</code> 같은 종료 신호도 있으므로 일반 코드에서 무작정 잡으면 안 됩니다.</p>
+<div class="viz"><svg width="680" height="230" viewBox="0 0 680 230" role="img" aria-label="exception hierarchy"><text x="340" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">Python 예외 계층 일부</text><g font-size="12" text-anchor="middle"><rect x="270" y="45" width="140" height="35" fill="var(--bg-card)" stroke="var(--accent)"/><text x="340" y="68">BaseException</text><rect x="80" y="115" width="140" height="35" fill="var(--bg-card)" stroke="var(--accent)"/><text x="150" y="138">KeyboardInterrupt</text><rect x="270" y="115" width="140" height="35" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="340" y="138">Exception</text><rect x="460" y="115" width="140" height="35" fill="var(--bg-card)" stroke="var(--accent)"/><text x="530" y="138">SystemExit</text><rect x="170" y="180" width="110" height="35" fill="var(--bg-card)" stroke="var(--accent)"/><text x="225" y="203">ValueError</text><rect x="300" y="180" width="110" height="35" fill="var(--bg-card)" stroke="var(--accent)"/><text x="355" y="203">KeyError</text><rect x="430" y="180" width="110" height="35" fill="var(--bg-card)" stroke="var(--accent)"/><text x="485" y="203">OSError</text></g></svg><span class="viz-caption">일반적으로는 구체 예외를 먼저 잡고, 넓은 Exception은 경계 계층에서만 잡는다.</span></div>
+
+<h3>4) custom exception</h3>
+<pre><code>class InsufficientBalanceError(Exception):
+    pass
+
+class Account:
+    def withdraw(self, amount):
+        if amount > self.balance:
+            raise InsufficientBalanceError("잔액 부족")
+        self.balance -= amount</code></pre>
+<p>도메인 예외를 만들면 호출자가 실패 원인을 명확히 구분할 수 있습니다. 단, 너무 많은 예외 클래스를 만들면 오히려 복잡해집니다.</p>
+
+<h3>5) with와 context manager protocol</h3>
+<div class="viz"><svg width="720" height="210" viewBox="0 0 720 210" role="img" aria-label="context manager"><defs><marker id="ctx" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">with 실행 흐름</text><g font-size="12" text-anchor="middle"><rect x="80" y="80" width="140" height="50" fill="var(--bg-card)" stroke="var(--accent)"/><text x="150" y="110">__enter__()</text><rect x="290" y="80" width="140" height="50" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="360" y="110">본문 실행</text><rect x="500" y="80" width="140" height="50" fill="var(--bg-card)" stroke="var(--accent)"/><text x="570" y="110">__exit__()</text></g><line x1="220" y1="105" x2="290" y2="105" stroke="var(--accent)" stroke-width="2" marker-end="url(#ctx)"/><line x1="430" y1="105" x2="500" y2="105" stroke="var(--accent)" stroke-width="2" marker-end="url(#ctx)"/><text x="360" y="175" text-anchor="middle" fill="var(--text-muted)" font-size="12">본문에서 예외가 나도 __exit__(exc_type, exc, tb)는 호출된다.</text></svg><span class="viz-caption">컨텍스트 매니저는 예외가 있어도 정리 코드를 보장하는 구조다.</span></div>
+<pre><code>with open("data.txt", encoding="utf-8") as f:
+    text = f.read()
+# 여기서 자동 close()</code></pre>
+
+<h3>6) 직접 만드는 컨텍스트 매니저</h3>
+<pre><code>from contextlib import contextmanager
+
+@contextmanager
+def timer(name):
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"{name}: {elapsed:.3f}s")
+
+with timer("job"):
+    run_job()</code></pre>
+
+<h2>시간/공간 복잡도 또는 trade-off</h2>
+<table class="complexity"><thead><tr><th>기능</th><th>장점</th><th>주의점</th><th>원칙</th></tr></thead><tbody><tr><td>예외</td><td>오류 흐름 분리</td><td>정상 제어 흐름 남용 금지</td><td>예외적인 상황에 사용</td></tr><tr><td>넓은 except</td><td>경계에서 안정성</td><td>버그 은폐</td><td>구체 예외 우선</td></tr><tr><td>finally</td><td>정리 보장</td><td>return 남용 시 흐름 혼란</td><td>정리만 수행</td></tr><tr><td>with</td><td>자원 누수 방지</td><td>프로토콜 이해 필요</td><td>자원 획득/해제에 적극 사용</td></tr></tbody></table>
+
+<h2>실무에서 어디에 쓰이는가?</h2>
+<ul><li><strong>파일/소켓/DB 커넥션</strong> — with로 안전하게 열고 닫기.</li><li><strong>트랜잭션</strong> — 성공 시 commit, 예외 시 rollback.</li><li><strong>도메인 오류</strong> — 결제 실패, 권한 없음, 재고 부족 등 custom exception.</li><li><strong>CLI/웹 경계</strong> — 최상위에서 예외를 잡아 사용자 친화 메시지로 변환.</li></ul>
+
+<h2>면접에 나올 질문과 답변</h2>
+<div class="qa"><div class="q"><code>except Exception</code>은 안전한가요?</div><div class="a">경계 계층에서는 유용하지만 내부 로직에서 남용하면 버그를 숨깁니다. 구체 예외를 먼저 잡고, 로깅 후 재발생하거나 명확한 오류로 변환하는 것이 좋습니다. <code>BaseException</code>은 KeyboardInterrupt/SystemExit까지 잡으므로 일반적으로 피합니다.</div></div>
+<div class="qa"><div class="q"><code>finally</code>는 언제 실행되나요?</div><div class="a">try 블록이 성공하든 예외가 나든, except에서 처리하든 아니든 항상 실행됩니다. 그래서 파일 닫기, 락 해제 같은 정리 작업에 적합합니다. 다만 with 문이 더 간결하고 안전합니다.</div></div>
+<div class="qa"><div class="q">컨텍스트 매니저는 어떻게 동작하나요?</div><div class="a"><code>with</code>에 진입할 때 <code>__enter__</code>가 호출되고, 본문이 끝나면 성공/예외 여부와 관계없이 <code>__exit__(exc_type, exc, tb)</code>가 호출됩니다. <code>__exit__</code>가 True를 반환하면 예외를 삼킬 수 있지만 남용하면 디버깅이 어려워집니다.</div></div>
+<div class="qa"><div class="q">custom exception은 언제 만드나요?</div><div class="a">호출자가 실패 원인을 구분해 다르게 처리해야 할 때 만듭니다. 예를 들어 재고 부족과 결제 실패는 HTTP 응답이나 재시도 정책이 다를 수 있으므로 별도 도메인 예외가 유용합니다.</div></div>
+<div class="qa"><div class="q">EAFP와 LBYL의 차이는?</div><div class="a">EAFP는 먼저 실행하고 실패하면 예외로 처리하는 방식이고, LBYL은 실행 전에 조건을 검사하는 방식입니다. Python은 EAFP 관용구가 많지만, 예외가 너무 자주 발생하는 정상 흐름이면 조건 검사가 더 명확할 수 있습니다.</div></div>
+<div class="qa"><div class="q">traceback을 읽는 요령은?</div><div class="a">아래쪽이 실제 예외 발생 지점이고 위쪽은 호출 경로입니다. 예외 타입과 메시지를 먼저 보고, 마지막 프레임의 파일/라인을 확인한 뒤 그 위 호출자들이 어떤 인자를 넘겼는지 거슬러 올라가면 됩니다.</div></div>
+
+<h2>관련 개념</h2><ul class="related-chips"><li><a href="oop-python.html">객체지향 Python</a></li><li><a href="stdlib-files.html">파일 / 표준 라이브러리</a></li><li><a href="functions-scope.html">함수와 스코프</a></li><li><a href="index.html">Python 목록</a></li></ul>
+<nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="oop-python.html"><span class="label">이전</span>← 객체지향 Python</a><a href="index.html">📂 Python으로</a><a class="next" href="iterators-generators.html"><span class="label">다음</span>이터레이터 / 제너레이터 →</a></nav>
+</main><script src="../assets/js/common.js"></script></body></html>

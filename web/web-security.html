@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>웹 보안 기본 · Web · CS 학습 노트</title><link rel="stylesheet" href="../assets/css/common.css" /><link rel="stylesheet" href="../assets/css/concept.css" /></head>
+<body><header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+<main>
+<nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">Web</a><span class="sep">›</span><span>웹 보안 기본</span></nav>
+<h1>웹 보안 기본 — XSS·CSRF·CSP·SameSite</h1>
+<div class="definition"><strong>웹 보안</strong>은 브라우저가 신뢰할 수 없는 입력과 외부 사이트를 다루는 환경에서 사용자와 서비스를 보호하는 기술입니다. 핵심 위협은 <strong>XSS</strong>, <strong>CSRF</strong>, 잘못된 <strong>CORS</strong>, 민감한 토큰 저장이며, 방어는 출력 인코딩·CSP·SameSite/HttpOnly/Secure 쿠키·CSRF 토큰으로 시작합니다.</div>
+
+<h2>구체적인 개념 설명</h2>
+<p>웹은 기본적으로 열린 플랫폼입니다. 사용자는 임의의 사이트를 방문하고, 브라우저는 여러 Origin의 리소스를 동시에 로드하며, JS는 강력한 DOM/네트워크 API를 가집니다. 이 유연성이 공격 표면이 됩니다.</p>
+<p>웹 보안의 핵심은 "누가 이 코드를 실행하게 했는가", "이 요청은 사용자의 의도인가", "이 응답을 JS가 읽어도 되는가", "이 토큰은 탈취되어도 안전한가"를 계속 묻는 것입니다.</p>
+<div class="callout"><p><strong>비유 — 출입증과 대리 서명</strong></p><p>XSS는 공격자가 내 사무실 안에 몰래 들어와 내 컴퓨터로 명령을 실행하는 것이고, CSRF는 내가 로그인된 상태를 악용해 공격자가 서류를 대신 제출하게 만드는 것입니다. 둘은 모두 사용자 권한을 악용하지만 경로가 다릅니다.</p></div>
+
+<h2>왜 필요한가?</h2>
+<ul><li><strong>사용자 보호</strong> — 세션 탈취, 개인정보 유출, 악성 요청 방지.</li><li><strong>서비스 보호</strong> — 계정 takeover, 결제/설정 변경, 데이터 변조 방지.</li><li><strong>브라우저 정책 이해</strong> — SOP/CORS/쿠키 속성을 잘못 이해하면 취약점이 생긴다.</li><li><strong>기본값 강화</strong> — 보안은 나중에 붙이는 기능이 아니라 초기 설계다.</li></ul>
+
+<h2>어떻게 동작하는가?</h2>
+<h3>1) XSS(Cross-Site Scripting)</h3>
+<p>XSS는 공격자가 삽입한 스크립트가 피해자의 브라우저에서 서비스의 Origin 권한으로 실행되는 취약점입니다. DOM을 읽고, 사용자를 대신해 요청을 보내고, localStorage의 토큰을 훔칠 수 있습니다.</p>
+<div class="viz"><svg width="740" height="250" viewBox="0 0 740 250" role="img" aria-label="XSS flow"><defs><marker id="xss" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="370" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">XSS: 공격자 입력이 스크립트로 실행</text><g font-size="12" text-anchor="middle"><rect x="45" y="80" width="150" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="120" y="105">공격자</text><text x="120" y="125" fill="var(--text-muted)">&lt;script&gt; 삽입</text><rect x="295" y="80" width="150" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="370" y="105">서버/DB</text><text x="370" y="125" fill="var(--text-muted)">저장/반사</text><rect x="545" y="80" width="150" height="60" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="620" y="105">피해자 브라우저</text><text x="620" y="125" fill="var(--text-muted)">Origin 권한 실행</text></g><line x1="195" y1="110" x2="295" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#xss)"/><line x1="445" y1="110" x2="545" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#xss)"/><text x="370" y="200" text-anchor="middle" fill="var(--text-muted)" font-size="12">방어: 출력 인코딩, sanitize, CSP, HttpOnly 쿠키, innerHTML 사용 자제</text></svg><span class="viz-caption">XSS는 입력 검증만으로 부족하고, 출력 위치에 맞는 인코딩이 핵심이다.</span></div>
+<pre><code>// 위험: 사용자 입력을 HTML로 해석
+container.innerHTML = userComment;
+
+// 안전: 텍스트로 삽입
+container.textContent = userComment;</code></pre>
+<ul><li><strong>Stored XSS</strong> — DB에 저장된 악성 스크립트가 여러 사용자에게 실행.</li><li><strong>Reflected XSS</strong> — URL/요청 값이 즉시 응답에 반사되어 실행.</li><li><strong>DOM XSS</strong> — 서버 없이 클라이언트 JS가 location/hash 값을 위험하게 DOM에 삽입.</li></ul>
+
+<h3>2) CSRF(Cross-Site Request Forgery)</h3>
+<p>CSRF는 사용자가 로그인된 사이트에 대해, 공격 사이트가 사용자의 브라우저를 시켜 원치 않는 요청을 보내게 하는 공격입니다. 쿠키는 요청에 자동으로 붙기 때문에 문제가 됩니다.</p>
+<div class="viz"><svg width="740" height="250" viewBox="0 0 740 250" role="img" aria-label="CSRF flow"><defs><marker id="csrf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="370" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">CSRF: 로그인 쿠키가 자동 첨부되는 점을 악용</text><g font-size="12" text-anchor="middle"><rect x="45" y="75" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="125" y="100">evil.com</text><text x="125" y="120" fill="var(--text-muted)">자동 form/img 요청</text><rect x="290" y="75" width="160" height="60" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="370" y="100">브라우저</text><text x="370" y="120" fill="var(--text-muted)">쿠키 자동 첨부</text><rect x="535" y="75" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="615" y="100">bank.com</text><text x="615" y="120" fill="var(--text-muted)">요청 처리?</text></g><line x1="205" y1="105" x2="290" y2="105" stroke="var(--accent)" stroke-width="2" marker-end="url(#csrf)"/><line x1="450" y1="105" x2="535" y2="105" stroke="var(--accent)" stroke-width="2" marker-end="url(#csrf)"/><text x="370" y="195" text-anchor="middle" fill="var(--text-muted)" font-size="12">방어: SameSite 쿠키, CSRF 토큰, Origin/Referer 검증, unsafe method 보호</text></svg><span class="viz-caption">CSRF는 JS가 응답을 읽는 문제가 아니라, 요청이 사용자 인증 상태로 보내지는 문제다.</span></div>
+
+<h3>3) 쿠키 보안 속성</h3>
+<table class="complexity"><thead><tr><th>속성</th><th>의미</th><th>방어 효과</th></tr></thead><tbody><tr><td>HttpOnly</td><td>JS에서 쿠키 접근 금지</td><td>XSS 토큰 탈취 완화</td></tr><tr><td>Secure</td><td>HTTPS에서만 전송</td><td>평문 탈취 방지</td></tr><tr><td>SameSite=Lax</td><td>대부분 cross-site 자동 전송 제한</td><td>CSRF 완화</td></tr><tr><td>SameSite=Strict</td><td>cross-site 전송 거의 차단</td><td>강한 CSRF 방어, UX 영향</td></tr><tr><td>SameSite=None</td><td>cross-site 허용, Secure 필수</td><td>서드파티/임베드 시 필요</td></tr></tbody></table>
+<pre><code>Set-Cookie: session=abc; HttpOnly; Secure; SameSite=Lax; Path=/</code></pre>
+
+<h3>4) CSP(Content Security Policy)</h3>
+<p>CSP는 브라우저에게 "어떤 스크립트/스타일/이미지 출처를 허용할지" 알려주는 정책입니다. XSS가 발생해도 임의 inline script 실행을 막는 보조 방어선이 됩니다.</p>
+<pre><code>Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'nonce-random123';
+  object-src 'none';
+  base-uri 'self';</code></pre>
+<p>CSP는 XSS를 고치는 대신이 아니라 피해를 줄이는 안전망입니다. 기본 방어는 여전히 출력 인코딩과 위험한 DOM API 회피입니다.</p>
+
+<h3>5) CORS 오해</h3>
+<p>CORS는 서버를 보호하는 인증/인가 기능이 아닙니다. 브라우저가 cross-origin 응답을 JS에게 보여줄지 정하는 정책입니다. 서버 API는 CORS와 별개로 인증과 권한 검사를 반드시 해야 합니다.</p>
+<div class="viz"><svg width="720" height="220" viewBox="0 0 720 220" role="img" aria-label="CORS not auth"><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">CORS는 인증이 아니다</text><g font-size="12" text-anchor="middle"><rect x="70" y="75" width="170" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="155" y="100">브라우저 JS</text><text x="155" y="120" fill="var(--text-muted)">CORS 적용</text><rect x="280" y="75" width="170" height="60" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="365" y="100">서버 API</text><text x="365" y="120" fill="var(--text-muted)">인증/인가 필요</text><rect x="490" y="75" width="170" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="575" y="100">curl / 서버</text><text x="575" y="120" fill="var(--text-muted)">CORS 적용 안 됨</text></g><text x="360" y="180" text-anchor="middle" fill="var(--text-muted)" font-size="12">CORS를 막아도 curl이나 서버-서버 요청은 막지 못한다. 권한 검사는 서버에서 해야 한다.</text></svg><span class="viz-caption">CORS는 브라우저 보안 정책이지 API 접근 제어의 대체물이 아니다.</span></div>
+
+<h3>6) 토큰 저장 위치</h3>
+<ul><li><strong>localStorage</strong> — 구현은 쉽지만 XSS에 탈취됩니다. 민감 토큰 저장은 피하는 것이 좋습니다.</li><li><strong>HttpOnly Cookie</strong> — JS가 읽을 수 없어 XSS 탈취에 강하지만 CSRF를 고려해야 합니다.</li><li><strong>메모리</strong> — 새로고침 시 사라지지만 노출면이 작습니다. SPA에서 access token을 짧게 유지할 때 사용.</li></ul>
+
+<h2>시간/공간 복잡도 또는 trade-off</h2>
+<table class="complexity"><thead><tr><th>방어</th><th>막는 것</th><th>한계</th><th>권장</th></tr></thead><tbody><tr><td>출력 인코딩</td><td>XSS 실행</td><td>컨텍스트별 규칙 필요</td><td>템플릿 기본 escape 사용</td></tr><tr><td>CSP</td><td>XSS 피해 축소</td><td>설정 복잡, 우회 가능</td><td>nonce 기반</td></tr><tr><td>HttpOnly</td><td>JS 쿠키 탈취</td><td>요청 자체는 가능</td><td>세션 쿠키에 필수</td></tr><tr><td>SameSite</td><td>CSRF 완화</td><td>구형/특수 브라우저 고려</td><td>Lax 기본</td></tr><tr><td>CSRF Token</td><td>의도 없는 요청</td><td>토큰 노출 시 무력화</td><td>상태 변경 요청에 사용</td></tr></tbody></table>
+
+<h2>실무에서 어디에 쓰이는가?</h2>
+<ul><li><strong>로그인 세션</strong> — HttpOnly + Secure + SameSite 쿠키.</li><li><strong>사용자 입력 출력</strong> — HTML escape, sanitize, markdown renderer 안전 설정.</li><li><strong>관리자 페이지</strong> — CSRF 토큰과 권한 검사 필수.</li><li><strong>프론트 배포</strong> — CSP, HSTS, X-Content-Type-Options 같은 보안 헤더.</li><li><strong>OAuth/OIDC</strong> — state/nonce/PKCE로 CSRF와 code injection 방어.</li></ul>
+
+<h2>면접에 나올 질문과 답변</h2>
+<div class="qa"><div class="q">XSS와 CSRF의 차이는?</div><div class="a">XSS는 공격자의 스크립트가 피해자 브라우저에서 서비스 Origin 권한으로 실행되는 공격입니다. CSRF는 공격 사이트가 피해자 브라우저의 로그인 쿠키를 이용해 사용자가 의도하지 않은 요청을 보내게 하는 공격입니다. XSS는 코드 실행, CSRF는 요청 위조가 핵심입니다.</div></div>
+<div class="qa"><div class="q">XSS 방어의 핵심은?</div><div class="a">출력 위치에 맞는 인코딩과 위험한 DOM API 회피입니다. 사용자 입력을 <code>innerHTML</code>로 넣지 말고 텍스트는 <code>textContent</code>로 넣어야 합니다. CSP와 HttpOnly 쿠키는 피해를 줄이는 보조 방어입니다.</div></div>
+<div class="qa"><div class="q">CSRF는 왜 쿠키 인증에서 문제가 되나요?</div><div class="a">브라우저는 요청 대상 도메인의 쿠키를 자동으로 붙입니다. 사용자가 bank.com에 로그인된 상태에서 evil.com을 방문하면 evil.com이 bank.com으로 form 요청을 보내도 쿠키가 자동 첨부될 수 있습니다. 그래서 SameSite와 CSRF 토큰이 필요합니다.</div></div>
+<div class="qa"><div class="q">HttpOnly 쿠키는 XSS를 완전히 막나요?</div><div class="a">아닙니다. HttpOnly는 JS가 쿠키 값을 읽지 못하게 해 토큰 탈취를 막지만, XSS 스크립트가 사용자를 대신해 같은 Origin으로 요청을 보내는 것까지 막지는 못합니다. XSS 자체는 출력 인코딩과 CSP로 줄여야 합니다.</div></div>
+<div class="qa"><div class="q">CORS를 막으면 API가 안전한가요?</div><div class="a">아닙니다. CORS는 브라우저 JS가 cross-origin 응답을 읽을 수 있는지 제한하는 정책입니다. curl, 서버-서버 요청, 모바일 앱에는 적용되지 않습니다. API 보안은 인증/인가/입력 검증을 서버에서 해야 합니다.</div></div>
+<div class="qa"><div class="q">localStorage에 JWT를 저장하면 왜 위험한가요?</div><div class="a">localStorage는 JS에서 접근 가능하므로 XSS가 발생하면 토큰을 그대로 읽어 외부로 보낼 수 있습니다. 인증 토큰은 가능하면 짧은 수명의 access token + HttpOnly refresh cookie 또는 서버 세션 방식으로 관리하는 것이 안전합니다.</div></div>
+
+<h2>관련 개념</h2><ul class="related-chips"><li><a href="http-web-api.html">HTTP와 Web API</a></li><li><a href="../network/cors.html">CORS</a></li><li><a href="../network/cookies-session-jwt.html">쿠키 / 세션 / JWT</a></li><li><a href="index.html">Web 목록</a></li></ul>
+<nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="http-web-api.html"><span class="label">이전</span>← HTTP와 Web API</a><a href="index.html">📂 Web으로</a><span></span></nav>
+</main><script src="../assets/js/common.js"></script></body></html>

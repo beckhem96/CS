@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>가상환경과 패키징 · Python · CS 학습 노트</title><link rel="stylesheet" href="../assets/css/common.css" /><link rel="stylesheet" href="../assets/css/concept.css" /></head>
+<body><header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+<main>
+<nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">Python</a><span class="sep">›</span><span>가상환경과 패키징</span></nav>
+<h1>가상환경과 패키징</h1>
+<div class="definition"><strong>가상환경</strong>은 프로젝트마다 독립된 Python 실행 환경과 패키지 설치 공간을 제공하는 도구입니다. <strong>패키징</strong>은 코드를 설치 가능한 배포 단위로 구성하는 방식이며, 현대 Python은 <code>pyproject.toml</code>을 중심으로 빌드 시스템과 의존성을 표현합니다.</div>
+
+<h2>구체적인 개념 설명</h2>
+<p>Python 프로젝트가 커지면 프로젝트마다 필요한 패키지 버전이 달라집니다. A 프로젝트는 Django 4, B 프로젝트는 Django 5를 요구할 수 있고, 전역 Python에 모두 설치하면 충돌이 납니다. 가상환경은 프로젝트별로 독립된 <code>site-packages</code>를 만들어 이런 충돌을 막습니다.</p>
+<p>패키징은 내 코드를 다른 프로젝트에서 설치하거나 배포할 수 있게 만드는 구조입니다. 예전에는 <code>setup.py</code> 중심이었지만, 현재는 PEP 517/518 이후 <code>pyproject.toml</code>이 표준 진입점입니다. uv, poetry, hatch 같은 도구는 이 흐름을 더 편하게 해줍니다.</p>
+<div class="callout"><p><strong>비유 — 프로젝트마다 별도 공구함</strong></p><p>전역 Python은 집 전체의 공용 공구함이고, 가상환경은 프로젝트마다 따로 둔 공구함입니다. 한 프로젝트가 특정 버전 드라이버를 써도 다른 프로젝트의 공구함에는 영향을 주지 않습니다.</p></div>
+
+<h2>왜 필요한가?</h2>
+<ul><li><strong>의존성 충돌 방지</strong> — 프로젝트별 패키지 버전을 분리.</li><li><strong>재현 가능한 환경</strong> — requirements/lock 파일로 같은 버전을 설치.</li><li><strong>배포 단위 구성</strong> — 패키지 metadata, entry point, build backend 명시.</li><li><strong>보안/운영</strong> — 의존성 목록을 추적하고 취약점 대응 가능.</li></ul>
+
+<h2>어떻게 동작하는가?</h2>
+<h3>1) venv 구조</h3>
+<div class="viz"><svg width="720" height="240" viewBox="0 0 720 240" role="img" aria-label="venv structure"><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">가상환경은 프로젝트 안에 독립된 실행 파일과 site-packages를 만든다</text><rect x="70" y="60" width="220" height="130" fill="var(--bg-card)" stroke="var(--accent)"/><text x="180" y="86" text-anchor="middle" font-weight="bold">project/</text><text x="180" y="112" text-anchor="middle">app.py</text><text x="180" y="136" text-anchor="middle">pyproject.toml</text><rect x="410" y="60" width="230" height="130" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="525" y="86" text-anchor="middle" font-weight="bold">.venv/</text><text x="525" y="112" text-anchor="middle">bin/python</text><text x="525" y="136" text-anchor="middle">site-packages/</text><text x="525" y="160" text-anchor="middle" fill="var(--text-muted)">requests, django...</text><text x="360" y="220" text-anchor="middle" font-size="12" fill="var(--text-muted)">가상환경을 활성화하면 python/pip 명령이 .venv 안의 실행 파일을 가리킨다.</text></svg><span class="viz-caption">venv는 완전한 VM이 아니라 Python 실행 경로와 패키지 설치 위치를 분리하는 가벼운 환경이다.</span></div>
+<pre><code>python -m venv .venv
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
+python -m pip install requests
+python -m pip freeze > requirements.txt</code></pre>
+
+<h3>2) pip와 requirements.txt</h3>
+<p><code>pip</code>는 PyPI에서 패키지를 설치하는 기본 도구입니다. <code>requirements.txt</code>는 설치할 패키지 목록을 기록합니다.</p>
+<pre><code># requirements.txt
+requests==2.32.3
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# 설치
+python -m pip install -r requirements.txt</code></pre>
+<p>실무에서는 직접 <code>pip</code>보다 <code>python -m pip</code> 형태를 권장합니다. 현재 선택된 Python 인터프리터와 pip가 같은 환경인지 명확하기 때문입니다.</p>
+
+<h3>3) pyproject.toml</h3>
+<pre><code>[project]
+name = "my-app"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "requests>=2.32",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"</code></pre>
+<p><code>pyproject.toml</code>은 프로젝트 metadata와 빌드 시스템을 선언합니다. 도구마다 추가 섹션을 넣을 수 있어 ruff, black, pytest 설정도 한 파일에 모을 수 있습니다.</p>
+
+<h3>4) wheel과 source distribution</h3>
+<div class="viz"><svg width="720" height="210" viewBox="0 0 720 210" role="img" aria-label="python packaging artifacts"><defs><marker id="pkg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">패키징 산출물</text><g font-size="12" text-anchor="middle"><rect x="70" y="75" width="150" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="145" y="98">source code</text><text x="145" y="116" fill="var(--text-muted)">.py, metadata</text><rect x="300" y="55" width="150" height="55" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="375" y="78">sdist</text><text x="375" y="96" fill="var(--text-muted)">.tar.gz</text><rect x="300" y="135" width="150" height="55" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="375" y="158">wheel</text><text x="375" y="176" fill="var(--text-muted)">.whl</text><rect x="540" y="95" width="120" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="600" y="128">pip install</text></g><line x1="220" y1="102" x2="300" y2="82" stroke="var(--accent)" stroke-width="2" marker-end="url(#pkg)"/><line x1="220" y1="102" x2="300" y2="162" stroke="var(--accent)" stroke-width="2" marker-end="url(#pkg)"/><line x1="450" y1="82" x2="540" y2="115" stroke="var(--accent)" stroke-width="2" marker-end="url(#pkg)"/><line x1="450" y1="162" x2="540" y2="130" stroke="var(--accent)" stroke-width="2" marker-end="url(#pkg)"/></svg><span class="viz-caption">wheel은 설치용 빌드 산출물이라 sdist보다 설치가 빠르고 재현성이 좋다.</span></div>
+
+<h3>5) uv / poetry 개요</h3>
+<ul><li><strong>uv</strong> — Rust로 작성된 빠른 패키지/환경 관리 도구. pip, venv, pip-tools 역할을 빠르게 대체.</li><li><strong>poetry</strong> — 의존성 선언, lock, build/publish를 한 도구에서 관리.</li><li><strong>pip-tools</strong> — <code>requirements.in</code>에서 pinning된 <code>requirements.txt</code> 생성.</li></ul>
+<p>어떤 도구를 쓰든 핵심은 <strong>의존성 선언 파일</strong>과 <strong>lock/pin 파일</strong>을 구분하고, CI/배포에서 같은 버전을 설치하게 만드는 것입니다.</p>
+
+<h3>6) 패키지 구조</h3>
+<pre><code>my-project/
+  pyproject.toml
+  src/
+    my_app/
+      __init__.py
+      main.py
+  tests/
+    test_main.py</code></pre>
+<p><code>src/</code> layout은 테스트가 로컬 소스 디렉터리를 우연히 import하는 문제를 줄이고, 설치된 패키지 기준으로 검증하게 만들어 배포 문제를 일찍 잡습니다.</p>
+
+<h2>시간/공간 복잡도 또는 trade-off</h2>
+<table class="complexity"><thead><tr><th>도구</th><th>장점</th><th>단점/주의</th><th>적합 상황</th></tr></thead><tbody><tr><td>venv + pip</td><td>표준, 단순</td><td>lock 관리 약함</td><td>작은 프로젝트</td></tr><tr><td>requirements.txt</td><td>배포 재현 쉬움</td><td>직접 관리 번거로움</td><td>앱 배포</td></tr><tr><td>pyproject.toml</td><td>표준 metadata</td><td>도구별 설정 차이</td><td>라이브러리/앱 공통</td></tr><tr><td>poetry</td><td>통합 관리</td><td>도구 의존</td><td>팀 프로젝트</td></tr><tr><td>uv</td><td>매우 빠름</td><td>생태계 변화 중</td><td>새 프로젝트, CI 최적화</td></tr></tbody></table>
+
+<h2>실무에서 어디에 쓰이는가?</h2>
+<ul><li><strong>로컬 개발</strong> — 프로젝트별 .venv로 의존성 분리.</li><li><strong>CI</strong> — lock/pin 파일로 동일 버전 설치.</li><li><strong>라이브러리 배포</strong> — pyproject metadata + wheel 빌드.</li><li><strong>Docker 이미지</strong> — requirements/lock 기반으로 재현 가능한 설치 계층 생성.</li></ul>
+
+<h2>면접에 나올 질문과 답변</h2>
+<div class="qa"><div class="q">가상환경은 VM인가요?</div><div class="a">아닙니다. OS 가상화가 아니라 Python 실행 파일 경로와 패키지 설치 위치를 분리하는 가벼운 환경입니다. 프로젝트마다 독립된 site-packages를 갖게 해 의존성 충돌을 막습니다.</div></div>
+<div class="qa"><div class="q">왜 <code>python -m pip</code>를 권장하나요?</div><div class="a">현재 실행 중인 Python 인터프리터에 연결된 pip를 확실히 사용하기 위해서입니다. 시스템에 Python이 여러 개 있으면 <code>pip</code> 명령이 다른 Python 환경을 가리킬 수 있습니다.</div></div>
+<div class="qa"><div class="q">requirements.txt와 pyproject.toml의 차이는?</div><div class="a">requirements.txt는 주로 설치할 패키지와 버전을 나열하는 파일이고, pyproject.toml은 프로젝트 metadata, 빌드 시스템, 의존성, 도구 설정을 담는 표준 파일입니다. 앱 배포에서는 pinning된 requirements/lock도 여전히 중요합니다.</div></div>
+<div class="qa"><div class="q">wheel이란 무엇인가요?</div><div class="a">Python의 설치용 빌드 배포 형식(.whl)입니다. 소스에서 매번 빌드하지 않고 바로 설치할 수 있어 빠르고, 네이티브 확장이 있는 패키지에서는 플랫폼별 wheel이 설치 편의성을 크게 높입니다.</div></div>
+<div class="qa"><div class="q">lock 파일이 왜 필요한가요?</div><div class="a">의존성 범위만 적으면 시간이 지나 새 버전이 설치되어 동작이 달라질 수 있습니다. lock 파일은 하위 의존성까지 정확한 버전을 고정해 로컬, CI, 운영에서 같은 환경을 재현하게 합니다.</div></div>
+<div class="qa"><div class="q">src layout은 왜 쓰나요?</div><div class="a">프로젝트 루트에 패키지를 바로 두면 테스트가 설치된 패키지가 아니라 로컬 소스 디렉터리를 우연히 import할 수 있습니다. src layout은 설치 과정을 거친 패키지 기준으로 테스트하게 해 배포 문제를 더 빨리 발견합니다.</div></div>
+
+<h2>관련 개념</h2><ul class="related-chips"><li><a href="python-basics.html">Python 언어 기본</a></li><li><a href="stdlib-files.html">파일 / 표준 라이브러리</a></li><li><a href="exceptions-context.html">예외와 컨텍스트 매니저</a></li><li><a href="index.html">Python 목록</a></li></ul>
+<nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="stdlib-files.html"><span class="label">이전</span>← 파일 / 표준 라이브러리</a><a href="index.html">📂 Python으로</a><span></span></nav>
+</main><script src="../assets/js/common.js"></script></body></html>

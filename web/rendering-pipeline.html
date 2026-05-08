@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>브라우저 렌더링 파이프라인 · Web · CS 학습 노트</title><link rel="stylesheet" href="../assets/css/common.css" /><link rel="stylesheet" href="../assets/css/concept.css" /></head>
+<body><header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+<main>
+<nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">Web</a><span class="sep">›</span><span>렌더링 파이프라인</span></nav>
+<h1>브라우저 렌더링 파이프라인</h1>
+<div class="definition"><strong>브라우저 렌더링 파이프라인</strong>은 HTML/CSS/JS를 실제 픽셀로 바꾸는 과정입니다. 큰 흐름은 <strong>HTML 파싱 → DOM/CSSOM → Render Tree → Layout → Paint → Composite</strong>이며, 성능 최적화의 핵심은 이 단계 중 무엇을 다시 하게 만드는지 이해하는 것입니다.</div>
+
+<h2>구체적인 개념 설명</h2>
+<p>브라우저는 HTML 파일을 받자마자 위에서 아래로 파싱하며 DOM을 만들고, CSS를 파싱해 CSSOM을 만듭니다. DOM과 CSSOM을 합쳐 실제 화면에 그릴 노드만 모은 Render Tree를 만들고, 각 박스의 위치와 크기를 계산한 뒤(Layout), 픽셀로 칠하고(Paint), 레이어를 GPU가 합성합니다(Composite).</p>
+<p>웹 성능 문제는 대개 이 파이프라인을 너무 자주, 너무 크게 다시 실행시키는 데서 옵니다. 예를 들어 <code>width</code>를 바꾸면 layout부터 다시 필요하지만, <code>transform</code>은 합성 단계에서 처리될 수 있어 더 저렴합니다.</p>
+<div class="callout"><p><strong>비유 — 신문 제작</strong></p><p>기사를 모으고(DOM), 스타일 가이드를 적용하고(CSSOM), 실제 지면에 들어갈 요소만 고르고(Render Tree), 지면 배치를 계산하고(Layout), 잉크를 칠하고(Paint), 여러 판을 합치는 것(Composite)이 렌더링 파이프라인입니다.</p></div>
+
+<h2>왜 필요한가?</h2>
+<ul><li><strong>성능 튜닝</strong> — reflow/repaint 원인을 알아야 빠른 UI를 만든다.</li><li><strong>렌더링 버그 해결</strong> — display/visibility/position/z-index 문제를 파이프라인 관점으로 해석.</li><li><strong>JS 최적화</strong> — DOM 읽기/쓰기를 섞으면 layout thrashing이 생긴다.</li><li><strong>Core Web Vitals 이해</strong> — LCP/INP/CLS는 렌더링 흐름과 직접 연결된다.</li></ul>
+
+<h2>어떻게 동작하는가?</h2>
+<h3>1) 전체 파이프라인</h3>
+<div class="viz"><svg width="760" height="210" viewBox="0 0 760 210" role="img" aria-label="rendering pipeline"><defs><marker id="rp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="380" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">HTML/CSS/JS → 픽셀</text><g font-size="12" text-anchor="middle"><rect x="25" y="70" width="100" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="75" y="94">HTML</text><text x="75" y="112" fill="var(--text-muted)">parse</text><rect x="145" y="70" width="100" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="195" y="103">DOM</text><rect x="265" y="70" width="100" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="315" y="103">CSSOM</text><rect x="385" y="70" width="105" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="437" y="94">Render</text><text x="437" y="112">Tree</text><rect x="510" y="70" width="80" height="55" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="550" y="103">Layout</text><rect x="610" y="70" width="70" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="645" y="103">Paint</text><rect x="695" y="70" width="60" height="55" fill="var(--bg-card)" stroke="var(--accent)"/><text x="725" y="103">Comp.</text></g><line x1="125" y1="97" x2="145" y2="97" stroke="var(--accent)" stroke-width="2" marker-end="url(#rp)"/><line x1="245" y1="97" x2="265" y2="97" stroke="var(--accent)" stroke-width="2" marker-end="url(#rp)"/><line x1="365" y1="97" x2="385" y2="97" stroke="var(--accent)" stroke-width="2" marker-end="url(#rp)"/><line x1="490" y1="97" x2="510" y2="97" stroke="var(--accent)" stroke-width="2" marker-end="url(#rp)"/><line x1="590" y1="97" x2="610" y2="97" stroke="var(--accent)" stroke-width="2" marker-end="url(#rp)"/><line x1="680" y1="97" x2="695" y2="97" stroke="var(--accent)" stroke-width="2" marker-end="url(#rp)"/><text x="380" y="165" text-anchor="middle" fill="var(--text-muted)" font-size="12">변경 속성에 따라 뒤쪽 일부만 다시 할 수도 있고, layout부터 다시 할 수도 있다.</text></svg><span class="viz-caption">렌더링 최적화는 어느 단계를 다시 실행시키는지 줄이는 일이다.</span></div>
+
+<h3>2) DOM과 CSSOM</h3>
+<p>DOM은 문서 구조, CSSOM은 스타일 규칙 트리입니다. CSS는 render-blocking 자원입니다. CSSOM이 완성되어야 정확한 스타일을 계산할 수 있으므로, 큰 CSS는 첫 렌더링을 늦출 수 있습니다.</p>
+<pre><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;style.css&quot;&gt;
+&lt;script src=&quot;app.js&quot; defer&gt;&lt;/script&gt;</code></pre>
+<p>일반 script는 파서를 막을 수 있으므로, 초기 렌더링에 필요 없는 JS는 <code>defer</code>나 <code>type="module"</code>을 고려합니다.</p>
+
+<h3>3) Render Tree</h3>
+<p>Render Tree는 DOM과 CSSOM을 결합해 실제로 그릴 노드만 포함합니다. <code>display: none</code> 요소는 Render Tree에 들어가지 않지만, <code>visibility: hidden</code>은 공간은 차지하므로 들어갑니다.</p>
+
+<h3>4) Layout(Reflow)</h3>
+<p>Layout은 각 박스의 위치와 크기를 계산합니다. viewport 크기, 폰트, 콘텐츠, display/position/width/height 변화가 영향을 줍니다. Layout은 트리의 다른 부분까지 영향을 줄 수 있어 비쌉니다.</p>
+<div class="viz"><svg width="720" height="260" viewBox="0 0 720 260" role="img" aria-label="layout paint composite cost"><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">CSS 속성 변경별 비용</text><g font-size="12" text-anchor="middle"><rect x="55" y="70" width="180" height="80" fill="var(--bg-card)" stroke="var(--accent)"/><text x="145" y="98" font-weight="bold">width / height</text><text x="145" y="122" fill="var(--text-muted)">Layout → Paint → Composite</text><rect x="270" y="70" width="180" height="80" fill="var(--bg-card)" stroke="var(--accent)"/><text x="360" y="98" font-weight="bold">color / shadow</text><text x="360" y="122" fill="var(--text-muted)">Paint → Composite</text><rect x="485" y="70" width="180" height="80" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="575" y="98" font-weight="bold">transform / opacity</text><text x="575" y="122" fill="var(--text-muted)">Composite 중심</text></g><text x="360" y="205" text-anchor="middle" fill="var(--text-muted)" font-size="12">가능하면 애니메이션은 transform/opacity로 처리해 layout과 paint를 피한다.</text></svg><span class="viz-caption">모든 CSS 변경 비용이 같지 않다. 레이아웃을 바꾸는 속성이 가장 비싸다.</span></div>
+
+<h3>5) Paint와 Composite</h3>
+<p>Paint는 텍스트, 배경, border, shadow 등을 픽셀로 그리는 단계입니다. Composite는 여러 레이어를 합쳐 최종 화면을 만듭니다. GPU가 처리할 수 있는 레이어는 합성이 빠르지만, 레이어를 너무 많이 만들면 메모리 비용이 커집니다.</p>
+
+<h3>6) Layout Thrashing</h3>
+<p>레이아웃 읽기와 쓰기를 반복하면 브라우저가 최신 값을 계산하기 위해 layout을 동기적으로 강제 실행합니다.</p>
+<pre><code>// 나쁜 예: 반복마다 layout 강제 가능
+for (const box of boxes) {
+  box.style.width = "200px";
+  console.log(box.offsetWidth);
+}
+
+// 좋은 예: 읽기와 쓰기 분리
+const widths = boxes.map(box => box.offsetWidth);
+boxes.forEach(box => { box.style.width = "200px"; });</code></pre>
+
+<h3>7) requestAnimationFrame</h3>
+<p><code>requestAnimationFrame</code>은 브라우저의 다음 렌더링 프레임 직전에 콜백을 실행합니다. 애니메이션과 DOM 쓰기를 프레임에 맞추면 불필요한 중간 렌더링을 줄일 수 있습니다.</p>
+<pre><code>function move() {
+  box.style.transform = `translateX(${x}px)`;
+  x += 2;
+  requestAnimationFrame(move);
+}
+requestAnimationFrame(move);</code></pre>
+
+<h2>시간/공간 복잡도 또는 trade-off</h2>
+<table class="complexity"><thead><tr><th>변경</th><th>주요 비용</th><th>예시</th><th>최적화</th></tr></thead><tbody><tr><td>DOM 구조 변경</td><td>Layout + Paint</td><td>append/remove node</td><td>batch, fragment</td></tr><tr><td>박스 크기 변경</td><td>Layout</td><td>width, height, font-size</td><td>변경 범위 축소</td></tr><tr><td>색/그림자</td><td>Paint</td><td>color, background</td><td>빈도 줄이기</td></tr><tr><td>transform/opacity</td><td>Composite</td><td>translate, fade</td><td>애니메이션에 적합</td></tr><tr><td>레이어 증가</td><td>GPU 메모리</td><td>will-change 남발</td><td>필요할 때만</td></tr></tbody></table>
+
+<h2>실무에서 어디에 쓰이는가?</h2>
+<ul><li><strong>애니메이션 최적화</strong> — top/left 대신 transform 사용.</li><li><strong>스크롤 성능</strong> — passive listener, DOM 조작 최소화.</li><li><strong>대형 목록</strong> — virtual scrolling으로 DOM 노드 수 제한.</li><li><strong>초기 로딩</strong> — critical CSS, defer script, lazy loading.</li></ul>
+
+<h2>면접에 나올 질문과 답변</h2>
+<div class="qa"><div class="q">브라우저 렌더링 파이프라인을 설명해 주세요.</div><div class="a">HTML을 파싱해 DOM을 만들고, CSS를 파싱해 CSSOM을 만든 뒤 둘을 결합해 Render Tree를 만듭니다. 이후 각 요소의 위치와 크기를 계산하는 Layout, 픽셀을 그리는 Paint, 레이어를 합치는 Composite 단계를 거쳐 화면에 표시됩니다.</div></div>
+<div class="qa"><div class="q">Reflow와 Repaint의 차이는?</div><div class="a">Reflow는 layout 재계산으로 요소의 위치와 크기를 다시 계산하는 과정이고, Repaint는 위치/크기는 그대로인데 색·배경·그림자 같은 픽셀을 다시 칠하는 과정입니다. Reflow는 보통 Repaint를 동반하고 비용이 더 큽니다.</div></div>
+<div class="qa"><div class="q"><code>display:none</code>과 <code>visibility:hidden</code>의 렌더링 차이는?</div><div class="a"><code>display:none</code>은 Render Tree에서 제외되어 공간을 차지하지 않습니다. <code>visibility:hidden</code>은 보이지 않을 뿐 layout 공간은 차지하므로 Render Tree에 남습니다.</div></div>
+<div class="qa"><div class="q">왜 transform 애니메이션이 top/left보다 좋나요?</div><div class="a">top/left는 layout을 다시 계산하게 만들 수 있지만, transform은 별도 레이어에서 composite 단계만으로 처리될 수 있습니다. 그래서 프레임 드랍이 적고 GPU 가속을 활용하기 쉽습니다.</div></div>
+<div class="qa"><div class="q">Layout thrashing이란?</div><div class="a">DOM 쓰기와 레이아웃 읽기를 반복해 브라우저가 최신 레이아웃 값을 얻기 위해 layout을 동기적으로 여러 번 강제 실행하는 현상입니다. 읽기와 쓰기를 분리하고 batch 처리하면 줄일 수 있습니다.</div></div>
+<div class="qa"><div class="q">CSS가 render-blocking인 이유는?</div><div class="a">브라우저가 정확한 스타일을 알아야 Render Tree와 layout을 만들 수 있기 때문입니다. CSSOM이 완성되지 않으면 잘못된 화면을 그릴 수 있어 CSS 로딩은 초기 렌더링을 막을 수 있습니다.</div></div>
+
+<h2>관련 개념</h2><ul class="related-chips"><li><a href="dom-events.html">DOM과 이벤트</a></li><li><a href="css-basics.html">CSS 핵심</a></li><li><a href="javascript-basics.html">JavaScript 핵심</a></li><li><a href="index.html">Web 목록</a></li></ul>
+<nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="dom-events.html"><span class="label">이전</span>← DOM과 이벤트</a><a href="index.html">📂 Web으로</a><a class="next" href="http-web-api.html"><span class="label">다음</span>HTTP와 Web API →</a></nav>
+</main><script src="../assets/js/common.js"></script></body></html>

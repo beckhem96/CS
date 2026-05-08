@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HTML 핵심 · Web · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">Web</a>
+      <span class="sep">›</span>
+      <span>HTML 핵심</span>
+    </nav>
+
+    <h1>HTML 핵심 — 시맨틱·form·접근성·SEO</h1>
+
+    <div class="definition">
+      <strong>HTML(HyperText Markup Language)</strong>은 웹 페이지의 <em>문서 구조</em>를 표현하는 언어입니다.
+      "<em>이건 제목, 이건 본문, 이건 네비게이션</em>"이라는 의미를 태그로 적으면, 브라우저·검색엔진·스크린리더가 그 구조를 이해해 각자에게 맞게 사용합니다.
+      "그냥 div로 감싸도 보이긴 하잖아?"가 아니라 — 시맨틱 마크업은 <strong>접근성(a11y)·SEO·유지보수</strong>에 직접적으로 영향을 주는 설계 결정입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      HTML 문서는 <strong>중첩된 요소(element)의 트리</strong>입니다. 각 요소는 시작 태그·내용·끝 태그로 이뤄지고, 속성(attribute)으로 메타정보를 더합니다.
+      이 트리가 곧 브라우저의 <a href="dom-events.html">DOM</a>이 되고, CSS·JS가 그것을 바탕으로 동작합니다.
+    </p>
+    <p>
+      현대 HTML(HTML5+)의 가장 중요한 변화는 <strong>시맨틱 요소</strong>의 도입입니다 — <code>div</code>·<code>span</code>으로만 짜이던 페이지가
+      <code>header</code>·<code>nav</code>·<code>main</code>·<code>article</code>·<code>section</code>·<code>aside</code>·<code>footer</code> 같은 의미 있는 요소로 표현되어,
+      문서가 자기 구조를 스스로 설명할 수 있게 됐습니다.
+    </p>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>접근성</strong> — 스크린리더는 시맨틱 요소를 통해 사용자에게 페이지 구조를 안내한다.</li>
+      <li><strong>SEO</strong> — 검색 엔진은 <code>h1</code>·<code>article</code>·<code>nav</code>의 의미를 활용해 페이지를 이해한다.</li>
+      <li><strong>유지보수</strong> — 의미가 드러나는 마크업은 다른 개발자(나 자신 포함)가 빠르게 이해할 수 있다.</li>
+      <li><strong>도구 친화</strong> — 브라우저 reader mode, 자동 outline, 모바일 reader가 모두 시맨틱 정보를 활용.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) HTML 문서의 골격</h3>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="ko"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+  &lt;title&gt;페이지 제목&lt;/title&gt;
+  &lt;meta name="description" content="이 페이지의 한 문장 요약"&gt;
+  &lt;link rel="canonical" href="https://example.com/page"&gt;
+  &lt;link rel="stylesheet" href="style.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;header&gt;...&lt;/header&gt;
+  &lt;main&gt;...&lt;/main&gt;
+  &lt;footer&gt;...&lt;/footer&gt;
+  &lt;script src="app.js" defer&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    <ul>
+      <li><code>&lt;!DOCTYPE html&gt;</code> — HTML5 표준 모드 활성화. 빠지면 quirks mode로 떨어져 옛 IE 호환 동작이 켜진다.</li>
+      <li><code>lang="ko"</code> — 스크린리더의 발음·검색엔진의 언어 판정에 사용.</li>
+      <li><code>charset="UTF-8"</code> — 한글 깨짐 방지의 첫 줄. <strong>head 안에서 가능한 한 일찍.</strong></li>
+      <li><code>viewport</code> — 모바일에서 가로 너비를 디바이스에 맞춤. 빠지면 데스크톱 폭으로 렌더 후 축소.</li>
+    </ul>
+
+    <h3>2) 시맨틱 요소 — 페이지의 지도</h3>
+    <div class="viz">
+      <svg width="780" height="320" viewBox="0 0 780 320" role="img" aria-label="semantic layout">
+        <g font-size="12" text-anchor="middle">
+          <rect x="20" y="20" width="740" height="60" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="390" y="42" font-weight="bold" fill="var(--accent)">&lt;header&gt;</text>
+          <text x="390" y="62" font-size="11" fill="var(--text-muted)">로고 + &lt;nav&gt;</text>
+
+          <rect x="20" y="90" width="540" height="180" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="290" y="112" font-weight="bold" fill="var(--accent)">&lt;main&gt;</text>
+          <rect x="40" y="124" width="500" height="60" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="290" y="148" font-weight="bold">&lt;article&gt;</text>
+          <text x="290" y="168" font-size="11" fill="var(--text-muted)">자체 완결 콘텐츠 (블로그 글, 뉴스 항목)</text>
+
+          <rect x="40" y="194" width="240" height="60" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="160" y="218">&lt;section&gt;</text>
+          <text x="160" y="236" font-size="11" fill="var(--text-muted)">제목이 있는 묶음</text>
+
+          <rect x="300" y="194" width="240" height="60" fill="var(--bg-elev)" stroke="var(--accent)" rx="3"/>
+          <text x="420" y="218">&lt;section&gt;</text>
+          <text x="420" y="236" font-size="11" fill="var(--text-muted)">"같은 주제의 한 덩어리"</text>
+
+          <rect x="580" y="90" width="180" height="180" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="670" y="112" font-weight="bold" fill="var(--accent)">&lt;aside&gt;</text>
+          <text x="670" y="148" font-size="11" fill="var(--text-muted)">본문과 간접 연관</text>
+          <text x="670" y="166" font-size="11" fill="var(--text-muted)">사이드바, 광고</text>
+
+          <rect x="20" y="280" width="740" height="30" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="390" y="300" font-weight="bold" fill="var(--accent)">&lt;footer&gt;</text>
+        </g>
+      </svg>
+      <span class="viz-caption">div의 바다보다 의미 있는 지도가 검색엔진·스크린리더·동료 개발자 모두에게 도움이 된다.</span>
+    </div>
+
+    <table class="complexity">
+      <thead>
+        <tr><th>요소</th><th>의미</th><th>전형적 사용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>&lt;header&gt;</code></td><td>섹션의 머리말</td><td>로고, 검색, 1차 네비게이션</td></tr>
+        <tr><td><code>&lt;nav&gt;</code></td><td>주요 링크 모음</td><td>전역 네비게이션, 목차</td></tr>
+        <tr><td><code>&lt;main&gt;</code></td><td>페이지의 주요 콘텐츠 (한 페이지에 1개)</td><td>본문 영역 전체</td></tr>
+        <tr><td><code>&lt;article&gt;</code></td><td>자체 완결되는 콘텐츠 단위</td><td>블로그 글, 뉴스 항목, 댓글 1개</td></tr>
+        <tr><td><code>&lt;section&gt;</code></td><td>주제별 묶음 (보통 제목과 함께)</td><td>"FAQ", "관련 상품"</td></tr>
+        <tr><td><code>&lt;aside&gt;</code></td><td>본문과 간접 관련</td><td>사이드바, 광고, 인용 정보</td></tr>
+        <tr><td><code>&lt;footer&gt;</code></td><td>섹션의 마무리</td><td>저작권, 보조 링크</td></tr>
+        <tr><td><code>&lt;figure&gt;</code> + <code>&lt;figcaption&gt;</code></td><td>본문에서 참조되는 그림/표</td><td>이미지 + 캡션</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3) 제목 위계와 outline</h3>
+    <p>
+      <code>h1</code>~<code>h6</code>은 단순한 폰트 크기가 아니라 <strong>문서의 목차 트리</strong>입니다. 한 페이지에 보통 <code>h1</code>은 하나, 그 아래 <code>h2</code>·<code>h3</code>가 위계적으로 들어옵니다.
+      스크린리더 사용자는 헤딩만 점프하면서 페이지를 탐색하기 때문에 위계가 망가지면 페이지를 이해할 수 없게 됩니다.
+    </p>
+<pre><code>&lt;!-- ❌ 시각적 크기만 보고 잘못 사용 --&gt;
+&lt;h2&gt;페이지 제목&lt;/h2&gt;
+&lt;h4&gt;섹션 제목&lt;/h4&gt;       &lt;!-- h3를 건너뜀 --&gt;
+
+&lt;!-- ✅ 위계가 명확 --&gt;
+&lt;h1&gt;페이지 제목&lt;/h1&gt;
+  &lt;h2&gt;섹션 1&lt;/h2&gt;
+    &lt;h3&gt;세부 1-1&lt;/h3&gt;
+  &lt;h2&gt;섹션 2&lt;/h2&gt;</code></pre>
+
+    <h3>4) form — 사용자 입력의 표준</h3>
+    <p>
+      Form은 단순한 입력 모음이 아니라 <strong>웹 표준이 보장하는 동작 묶음</strong>입니다 — Enter 키 제출, 자동 검증, 자동 완성, 모바일 키보드 변경, 접근성 라벨링이 거의 무료로 따라옵니다.
+    </p>
+<pre><code>&lt;form action="/login" method="post"&gt;
+  &lt;label for="email"&gt;이메일&lt;/label&gt;
+  &lt;input id="email" name="email" type="email" required autocomplete="email"&gt;
+
+  &lt;label for="pw"&gt;비밀번호&lt;/label&gt;
+  &lt;input id="pw" name="password" type="password" required minlength="8"
+         autocomplete="current-password"&gt;
+
+  &lt;button type="submit"&gt;로그인&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+    <ul>
+      <li><strong><code>label</code>의 for가 input의 id와 일치</strong>해야 라벨 클릭으로 포커스가 이동하고, 스크린리더가 라벨을 읽어 준다.</li>
+      <li><code>type</code>이 의미를 만든다 — <code>email</code>·<code>tel</code>·<code>url</code>·<code>number</code>·<code>date</code>는 모바일 키보드와 검증을 다르게 한다.</li>
+      <li><code>autocomplete</code>는 무시하지 말 것 — 비밀번호 매니저·1Password가 이 속성을 보고 동작한다.</li>
+      <li><code>required</code>·<code>minlength</code>·<code>pattern</code>으로 클라이언트 검증. 단, <strong>서버 검증은 따로</strong> 해야 한다.</li>
+      <li>한 form 안에서 <code>button</code>의 기본 <code>type</code>은 <code>submit</code>이다 — 버튼이 의도치 않게 폼을 제출하지 않으려면 <code>type="button"</code> 명시.</li>
+    </ul>
+
+    <h3>5) 버튼 vs 링크 — 가장 자주 틀리는 한 줄</h3>
+    <p>
+      <strong>주소가 바뀌면 <code>&lt;a href&gt;</code>, 동작을 트리거하면 <code>&lt;button&gt;</code></strong>입니다. 둘은 외형이 비슷해도 키보드·접근성에서 완전히 다릅니다.
+    </p>
+<pre><code>&lt;!-- ❌ 안티패턴 --&gt;
+&lt;div onclick="navigate()"&gt;상세 보기&lt;/div&gt;     &lt;!-- 키보드로 못 누름, 스크린리더가 읽지 않음 --&gt;
+&lt;a href="#" onclick="doStuff()"&gt;삭제&lt;/a&gt;     &lt;!-- 링크인 척하지만 동작만, 새 탭 열기·미들 클릭이 깨짐 --&gt;
+
+&lt;!-- ✅ 의도에 맞게 --&gt;
+&lt;a href="/items/42"&gt;상세 보기&lt;/a&gt;
+&lt;button type="button" onclick="doStuff()"&gt;삭제&lt;/button&gt;</code></pre>
+
+    <h3>6) 이미지와 미디어</h3>
+<pre><code>&lt;!-- alt는 "이미지가 못 뜰 때 보이는 글"이 아니라 "스크린리더가 읽는 글" --&gt;
+&lt;img src="cat.jpg" alt="갈색 줄무늬 고양이가 창틀에 앉아 있다"
+     width="600" height="400" loading="lazy"&gt;
+
+&lt;!-- 장식용 이미지는 alt를 빈 문자열로 — "장식이라 안 읽어도 된다" --&gt;
+&lt;img src="divider.svg" alt=""&gt;
+
+&lt;!-- 반응형 이미지: 화면 크기에 따라 다른 파일 제공 --&gt;
+&lt;img src="hero.jpg"
+     srcset="hero-400.jpg 400w, hero-800.jpg 800w, hero-1600.jpg 1600w"
+     sizes="(max-width: 600px) 100vw, 800px"&gt;
+
+&lt;video controls preload="metadata" poster="thumb.jpg"&gt;
+  &lt;source src="clip.webm" type="video/webm"&gt;
+  &lt;source src="clip.mp4"  type="video/mp4"&gt;
+  자막: &lt;track kind="captions" src="ko.vtt" srclang="ko" label="한국어"&gt;
+&lt;/video&gt;</code></pre>
+
+    <p>
+      <code>width</code>·<code>height</code>를 적어 두면 브라우저가 이미지를 받기 전에 자리를 미리 잡아 둬서 <strong>CLS(Cumulative Layout Shift)</strong>를 막을 수 있습니다.
+      <code>loading="lazy"</code>는 viewport 밖 이미지를 지연 로딩해 첫 페이지 로드를 빠르게 합니다.
+    </p>
+
+    <h3>7) 접근성(a11y)의 기본기</h3>
+    <ul>
+      <li><strong>의미 있는 요소를 먼저</strong> — <code>div onclick</code> 대신 <code>button</code>. 시맨틱이 가장 큰 a11y 도구.</li>
+      <li><strong>이미지에 alt</strong> — 의미 있는 이미지엔 설명, 장식엔 빈 문자열.</li>
+      <li><strong>label 연결</strong> — 모든 입력 요소는 라벨이 있어야 한다.</li>
+      <li><strong>색상 대비</strong> — WCAG AA 기준 최소 4.5:1 (작은 텍스트).</li>
+      <li><strong>키보드 탐색</strong> — Tab으로 모든 인터랙션에 도달 가능, 포커스 표시 유지.</li>
+      <li><strong>ARIA는 보조 도구</strong> — 시맨틱 HTML로 안 되는 경우에만 ARIA. "<em>잘못된 ARIA가 ARIA 없는 것보다 나쁘다</em>".</li>
+    </ul>
+
+<pre><code>&lt;!-- 시맨틱이 우선, ARIA는 보충 --&gt;
+&lt;nav aria-label="주요 메뉴"&gt;...&lt;/nav&gt;       &lt;!-- 페이지에 nav가 여러 개일 때 구분 --&gt;
+&lt;button aria-expanded="false" aria-controls="menu"&gt;메뉴 열기&lt;/button&gt;
+&lt;ul id="menu" hidden&gt;...&lt;/ul&gt;
+
+&lt;!-- skip link — Tab 첫 누름에서 본문으로 바로 점프 --&gt;
+&lt;a class="skip-link" href="#main"&gt;본문으로 건너뛰기&lt;/a&gt;</code></pre>
+
+    <h3>8) SEO 기본기</h3>
+<pre><code>&lt;head&gt;
+  &lt;title&gt;[페이지명] | 사이트명&lt;/title&gt;
+  &lt;meta name="description" content="60자 내외, 검색결과에 노출됨"&gt;
+  &lt;link rel="canonical" href="https://example.com/products/42"&gt;
+
+  &lt;!-- Open Graph: SNS 공유 미리보기 --&gt;
+  &lt;meta property="og:title"       content="..."&gt;
+  &lt;meta property="og:description" content="..."&gt;
+  &lt;meta property="og:image"       content="https://.../share.jpg"&gt;
+  &lt;meta property="og:type"        content="article"&gt;
+
+  &lt;!-- 구조화 데이터(JSON-LD) — 리치 결과에 사용 --&gt;
+  &lt;script type="application/ld+json"&gt;
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "...",
+    "author": {"@type": "Person", "name": "..."},
+    "datePublished": "2026-05-08"
+  }
+  &lt;/script&gt;
+&lt;/head&gt;</code></pre>
+
+    <ul>
+      <li><strong>title과 description</strong>은 검색결과 클릭률(CTR)에 직접 영향. 페이지마다 달라야 한다.</li>
+      <li><strong>canonical</strong>은 같은 콘텐츠가 여러 URL로 접근될 때 "이게 정본"이라고 알려준다 — 페이지네이션·필터 URL 중복 SEO 패널티 회피.</li>
+      <li><strong>구조화 데이터</strong>로 검색결과의 별점·이벤트·FAQ 같은 리치 결과를 받을 수 있다.</li>
+      <li>중요한 콘텐츠는 <strong>첫 HTML 응답에 포함</strong>되어야 검색 봇이 본다 — 클라이언트 사이드 렌더링(CSR)만 하는 SPA는 SSR/Prerender 고려.</li>
+    </ul>
+
+    <h3>9) HTML의 보이지 않는 동작 — 자동 보정</h3>
+    <p>
+      HTML 파서는 잘못된 마크업을 만나도 가능한 한 트리를 만들어 냅니다. 이 관대함이 웹의 호환성을 만들었지만, 때로 의도와 다른 결과를 낳습니다.
+    </p>
+<pre><code>&lt;!-- 작성한 코드 --&gt;
+&lt;p&gt;Hello&lt;div&gt;World&lt;/div&gt;&lt;/p&gt;
+
+&lt;!-- 브라우저가 만드는 DOM (p 안에 div 못 들어감 → p가 자동으로 닫힘) --&gt;
+&lt;p&gt;Hello&lt;/p&gt;
+&lt;div&gt;World&lt;/div&gt;
+&lt;p&gt;&lt;/p&gt;</code></pre>
+    <p>
+      이런 차이는 CSS·JS가 의도치 않게 동작하는 원인이 됩니다. 의심스러우면 DevTools Elements 탭에서 <em>실제 DOM</em>을 보세요.
+    </p>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>시맨틱 vs 단순함</strong> — div·span으로 "일단 빠르게"는 가능하지만 a11y·SEO 비용을 나중에 갚게 된다.</li>
+      <li><strong>ARIA의 역설</strong> — 잘못된 ARIA는 시맨틱 HTML보다 나쁘다. 가능하면 시맨틱 요소로 끝내고 ARIA는 보충.</li>
+      <li><strong>HTML 크기</strong> — 첫 HTML이 작을수록 TTFB·FCP가 빠르다. 그러나 SSR로 의미 있는 콘텐츠를 첫 응답에 담는 것이 SEO에 유리.</li>
+      <li><strong>인라인 vs 외부</strong> — critical CSS 인라인은 첫 페인트를 빠르게 하지만 캐시 활용도가 떨어짐.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>접근성 감사</strong> — Lighthouse·axe로 시맨틱·라벨·대비 검증.</li>
+      <li><strong>SEO</strong> — 메타 태그·구조화 데이터·정본 URL 관리. 콘텐츠 사이트의 트래픽 결정.</li>
+      <li><strong>이메일 HTML</strong> — 옛 HTML4 호환성을 요구하는 메일 클라이언트(Outlook 등) 때문에 별도 규칙.</li>
+      <li><strong>print 스타일</strong> — <code>@media print</code>와 시맨틱 마크업으로 인쇄 친화적인 페이지.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">시맨틱 HTML이 왜 중요한가요?</div>
+      <div class="a">
+        세 가지 이유입니다 — (1) <strong>접근성</strong>: 스크린리더가 시맨틱 요소를 통해 페이지 구조를 사용자에게 안내합니다.
+        (2) <strong>SEO</strong>: 검색 엔진은 <code>h1</code>·<code>article</code>·<code>nav</code>의 의미를 활용해 페이지를 이해하고 색인합니다.
+        (3) <strong>유지보수성</strong>: 의미가 드러나는 마크업은 동료(나 자신 포함)가 코드를 빠르게 이해할 수 있게 합니다. 시맨틱은 비용이 거의 없는 가장 큰 ROI 결정입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">div와 button의 차이는 단순히 외형 아닌가요?</div>
+      <div class="a">
+        외형은 같게 만들 수 있지만 동작이 완전히 다릅니다. button은 (1) Tab으로 포커스 가능, (2) Enter/Space로 활성화, (3) 스크린리더가 "버튼"으로 읽어 줌, (4) form 안에서 자동으로 submit이 됨.
+        div는 이 중 어느 것도 자동으로 안 됩니다. 그래서 클릭 핸들러를 단 div는 키보드 사용자와 보조기기 사용자에게 사실상 보이지 않는 컴포넌트가 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">label의 for와 input의 id는 왜 연결해야 하나요?</div>
+      <div class="a">
+        (1) 라벨 클릭 시 자동으로 입력 요소에 포커스가 갑니다(특히 모바일에서 작은 체크박스 누르기 편해짐).
+        (2) 스크린리더가 입력 요소에 포커스가 갈 때 라벨 텍스트를 읽어 줍니다.
+        (3) 비밀번호 매니저가 어떤 라벨이 어떤 input에 해당하는지 더 정확히 매칭합니다. 단, <code>&lt;label&gt;텍스트&lt;input&gt;&lt;/label&gt;</code>처럼 감싸는 형태도 같은 효과를 냅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">a 태그를 onclick과 함께 쓰면 안 되는 이유?</div>
+      <div class="a">
+        a는 "주소가 바뀐다"는 약속이라 사용자는 (1) 우클릭으로 새 탭, (2) 미들 클릭으로 새 탭, (3) 마우스오버로 URL 미리 보기를 기대합니다. <code>href="#"</code> + onclick 패턴은 이 모든 기대를 깨뜨립니다.
+        주소가 바뀌면 <code>&lt;a href="..."&gt;</code>, 동작만 한다면 <code>&lt;button&gt;</code>이 정답이며, 두 의도를 섞지 마세요.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">접근성을 위해 ARIA를 많이 붙이는 게 좋은가요?</div>
+      <div class="a">
+        그 반대입니다. <strong>"잘못된 ARIA가 ARIA 없는 것보다 나쁘다"</strong>가 W3C의 1번 규칙입니다. ARIA는 시맨틱 HTML로 표현 안 되는 경우(예: 커스텀 콤보박스) 보강 도구이지 1순위가 아닙니다.
+        button을 만들 거면 <code>div role="button"</code>이 아니라 그냥 <code>&lt;button&gt;</code>. ARIA는 정확히 알고 쓸 때만 가치가 있고, 잘못된 role/state는 보조기기를 혼란시킵니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">img의 alt에 무엇을 적어야 하나요?</div>
+      <div class="a">
+        그 이미지가 콘텐츠를 전달하면 <strong>이미지가 표현하는 의미</strong>를 적습니다("로그인 버튼이 있는 헤더 사진"이 아니라 "갈색 고양이가 창틀에 앉아 있다").
+        의미 없이 장식만이라면 <strong>빈 문자열</strong>(<code>alt=""</code>)을 명시 — 스크린리더가 건너뜁니다.
+        <code>alt</code> 속성을 아예 빼면 스크린리더가 파일명을 읽어 버려 끔찍해집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">SPA에서 SEO를 어떻게 챙기나요?</div>
+      <div class="a">
+        클라이언트 사이드 렌더링만 하는 SPA는 첫 HTML이 거의 비어 있어 검색 봇이 콘텐츠를 못 봅니다. 대응 옵션은 (1) <strong>SSR</strong>(Next.js·Nuxt) — 서버에서 첫 HTML을 만들어 응답,
+        (2) <strong>SSG</strong> — 빌드 타임에 정적 HTML 생성, (3) <strong>Prerender</strong> — 봇 요청만 헤드리스 브라우저로 미리 그려 응답.
+        그리고 모든 페이지에 고유한 <code>title</code>·<code>description</code>·<code>canonical</code>을 두는 것이 기본입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">canonical 태그는 왜 필요한가요?</div>
+      <div class="a">
+        같은 콘텐츠가 여러 URL로 접근 가능할 때(예: <code>?utm=...</code>, 페이지네이션, https vs http) 검색엔진이 중복으로 판단해 SEO 점수가 분산되거나 페널티가 생길 수 있습니다.
+        <code>&lt;link rel="canonical" href="..."&gt;</code>로 "이 콘텐츠의 정본은 여기"라고 명시하면 검색엔진이 색인 결과를 한쪽으로 모읍니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="css-basics.html">CSS 핵심</a></li>
+      <li><a href="dom-events.html">DOM과 이벤트</a></li>
+      <li><a href="rendering-pipeline.html">브라우저 렌더링 파이프라인</a></li>
+      <li><a href="how-web-works.html">Web 동작 큰 그림</a></li>
+      <li><a href="index.html">Web 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="how-web-works.html">
+        <span class="label">이전</span>
+        ← Web 동작 큰 그림
+      </a>
+      <a href="index.html">📂 Web으로</a>
+      <a class="next" href="css-basics.html">
+        <span class="label">다음</span>
+        CSS 핵심 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

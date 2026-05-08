@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CSS 핵심 · Web · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">Web</a>
+      <span class="sep">›</span>
+      <span>CSS 핵심</span>
+    </nav>
+
+    <h1>CSS 핵심 — 박스 모델·cascade·flex·grid</h1>
+
+    <div class="definition">
+      <strong>CSS(Cascading Style Sheets)</strong>는 HTML 요소가 화면에 어떻게 보일지 결정하는 선언적 스타일 언어입니다.
+      모든 요소를 <strong>박스</strong>로 보고 박스의 <em>크기·여백·테두리·내부 배치</em>를 다루며, 충돌하는 규칙은 <strong>specificity·source order·!important</strong> 규칙으로 정렬됩니다.
+      이 두 모델 — 박스 모델과 cascade — 만 정확히 알면 90%의 CSS 미스터리가 풀립니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      CSS의 핵심 어려움은 "<em>왜 이 스타일이 안 먹지?</em>"입니다. 이 질문은 거의 항상 두 곳에서 나옵니다 — (1) 박스 모델을 잘못 계산했거나, (2) 더 우선순위 높은 규칙이 먼저 이긴 경우입니다.
+      여기서는 그 두 모델을 깊이 다루고, 현대 레이아웃의 두 도구(<strong>Flexbox</strong>·<strong>Grid</strong>)와 반응형 디자인의 핵심을 정리합니다.
+    </p>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>구조와 표현 분리</strong> — HTML은 의미, CSS는 표현. 같은 마크업으로 다른 스타일·테마.</li>
+      <li><strong>선언적 모델</strong> — "어떻게"가 아니라 "어떻게 보여야 하는지"만 적으면 브라우저가 알아서 그린다.</li>
+      <li><strong>반응형</strong> — 미디어 쿼리·flex·grid로 같은 마크업이 모바일·데스크톱에 모두 맞춤.</li>
+      <li><strong>캐시 효율</strong> — 외부 파일로 분리되어 한 번 다운로드하면 여러 페이지가 공유.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 박스 모델 — 모든 요소는 4겹 박스다</h3>
+    <div class="viz">
+      <svg width="780" height="280" viewBox="0 0 780 280" role="img" aria-label="box model">
+        <g font-size="12" text-anchor="middle">
+          <rect x="60"  y="20" width="660" height="240" fill="rgba(255, 184, 107, 0.15)" stroke="var(--warn)" stroke-dasharray="4 4"/>
+          <text x="390" y="40" font-weight="bold" fill="var(--warn)">margin (요소 바깥의 여백)</text>
+
+          <rect x="120" y="60" width="540" height="180" fill="var(--bg-card)" stroke="var(--accent)"/>
+          <text x="390" y="78" font-weight="bold" fill="var(--accent)">border (테두리)</text>
+
+          <rect x="160" y="100" width="460" height="120" fill="rgba(126, 217, 143, 0.12)" stroke="var(--success)" stroke-dasharray="4 4"/>
+          <text x="390" y="118" font-weight="bold" fill="var(--success)">padding (내부 여백)</text>
+
+          <rect x="240" y="140" width="300" height="50" fill="var(--bg-elev)" stroke="var(--accent-dim)"/>
+          <text x="390" y="170" font-weight="bold" fill="var(--accent-dim)">content (실제 내용)</text>
+
+          <text x="390" y="220" font-size="11" fill="var(--text-muted)">영역 가로폭 = content + 2*padding + 2*border + 2*margin</text>
+          <text x="390" y="238" font-size="11" fill="var(--text-muted)">(box-sizing: content-box 기본 / border-box: padding·border가 width 안에 포함)</text>
+        </g>
+      </svg>
+      <span class="viz-caption">기본은 content-box지만 현대 코드 거의 100%는 <code>* { box-sizing: border-box; }</code>를 깐다.</span>
+    </div>
+
+<pre><code>/* 추천 — 모든 요소를 border-box로 */
+*, *::before, *::after { box-sizing: border-box; }
+
+.box {
+  width: 200px;     /* border-box: padding·border 포함한 200px */
+  padding: 16px;
+  border: 2px solid;
+  margin: 24px;
+}</code></pre>
+
+    <p>
+      <strong>margin collapsing</strong>은 가장 자주 당황하는 함정입니다 — 인접한 두 블록 요소의 위/아래 margin이 합쳐지지 않고 큰 쪽만 적용됩니다.
+      이를 막으려면 <code>display: flex/grid</code>를 쓰거나, 부모에 padding/border를 두거나, 자식 사이에 <code>::before</code>를 넣습니다.
+    </p>
+
+    <h3>2) Cascade·Specificity — 누가 이기는가</h3>
+    <p>
+      한 요소에 여러 규칙이 적용 가능하면 다음 우선순위로 결정됩니다.
+    </p>
+    <ol>
+      <li><strong>!important</strong> 선언 우선.</li>
+      <li><strong>출처</strong> — 사용자 지정 &gt; 작성자(웹사이트) &gt; 브라우저 기본.</li>
+      <li><strong>specificity(특이도)</strong> — 인라인 &gt; ID &gt; 클래스/속성/가상클래스 &gt; 요소/가상요소.</li>
+      <li>같다면 <strong>나중에 적힌 규칙</strong>이 이김(source order).</li>
+    </ol>
+
+    <table class="complexity">
+      <thead>
+        <tr><th>선택자</th><th>specificity (a, b, c, d)</th><th>예</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>인라인 <code>style=""</code></td><td>1, 0, 0, 0</td><td>최강 (단, !important에 짐)</td></tr>
+        <tr><td>ID</td><td>0, 1, 0, 0</td><td><code>#nav</code></td></tr>
+        <tr><td>클래스 / 속성 / 가상클래스</td><td>0, 0, 1, 0</td><td><code>.btn</code>, <code>[type="text"]</code>, <code>:hover</code></td></tr>
+        <tr><td>요소 / 가상요소</td><td>0, 0, 0, 1</td><td><code>p</code>, <code>::before</code></td></tr>
+        <tr><td><code>*</code>, 콤비네이터</td><td>0, 0, 0, 0</td><td>자식 선택자 <code>&gt;</code> 등</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>/* specificity 비교 */
+#main .btn          /* 0,1,1,0 */
+.btn.btn--primary   /* 0,0,2,0 */
+button.btn          /* 0,0,1,1 */
+button              /* 0,0,0,1 */</code></pre>
+
+    <div class="callout warn">
+      <p><strong>!important는 마지막 수단</strong></p>
+      <p>
+        자기 코드 안의 specificity 충돌을 !important로 풀면 결국 "<em>!important로만 이길 수 있는 코드</em>"가 누적됩니다.
+        외부 라이브러리의 인라인 스타일 같은 어쩔 수 없는 경우에만 쓰고, 자기 코드 안에서는 클래스 네이밍(BEM 같은)으로 specificity를 평탄화하세요.
+      </p>
+    </div>
+
+    <h3>3) 단위 — px / em / rem / % / vw·vh</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>단위</th><th>기준</th><th>전형적 사용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>px</code></td><td>절대(논리 픽셀)</td><td>border, 그림자 offset</td></tr>
+        <tr><td><code>em</code></td><td>부모의 font-size</td><td>내부 padding·margin (요소에 비례)</td></tr>
+        <tr><td><code>rem</code></td><td>html(root)의 font-size</td><td>일관성 있는 사이즈 시스템</td></tr>
+        <tr><td><code>%</code></td><td>특정 속성에 따라 다름 (보통 부모)</td><td>컨테이너에 비례한 폭</td></tr>
+        <tr><td><code>vw</code> / <code>vh</code></td><td>viewport 폭/높이의 1%</td><td>전체 화면 차지하는 hero 섹션</td></tr>
+        <tr><td><code>fr</code></td><td>grid의 잉여 분배 단위</td><td>grid 컬럼 비율</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>접근성 팁</strong>: 폰트 크기를 <code>rem</code>으로 두면 사용자가 브라우저 기본 폰트를 키울 때 페이지 전체가 비례적으로 커집니다. <code>px</code>로 박아 두면 그 사용자 설정이 무시됩니다.
+    </p>
+
+    <h3>4) display의 5형제와 인라인 vs 블록</h3>
+<pre><code>/* 옛 흐름 */
+display: block;        /* 한 줄 차지, 너비/높이 적용 가능 */
+display: inline;       /* 흐름에 맞춰, 너비/높이 무시 */
+display: inline-block; /* 인라인이지만 너비/높이 적용 */
+
+/* 현대 레이아웃 */
+display: flex;         /* 1차원 배치 */
+display: grid;         /* 2차원 배치 */</code></pre>
+
+    <h3>5) Flexbox — 한 방향 정렬의 표준</h3>
+    <p>"한 행 또는 한 열로 줄 세우고 사이 간격·정렬을 조절"하는 데 가장 효율적인 도구입니다.</p>
+    <div class="viz">
+      <svg width="780" height="200" viewBox="0 0 780 200" role="img" aria-label="flexbox axes">
+        <defs>
+          <marker id="farr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <g font-size="12">
+          <rect x="20" y="40" width="740" height="120" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+
+          <rect x="60"  y="80" width="60" height="40" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="90" y="105" text-anchor="middle">item</text>
+
+          <rect x="160" y="80" width="60" height="40" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="190" y="105" text-anchor="middle">item</text>
+
+          <rect x="260" y="80" width="60" height="40" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="290" y="105" text-anchor="middle">item</text>
+
+          <line x1="40" y1="170" x2="740" y2="170" stroke="var(--accent)" stroke-width="2" marker-end="url(#farr)"/>
+          <text x="390" y="190" text-anchor="middle" fill="var(--accent)">main axis (justify-content로 정렬)</text>
+
+          <line x1="730" y1="50" x2="730" y2="155" stroke="var(--accent)" stroke-width="2" marker-end="url(#farr)"/>
+          <text x="745" y="100" fill="var(--accent)" transform="rotate(90, 745, 100)">cross axis</text>
+
+          <text x="80" y="32" font-size="11" fill="var(--text-muted)">flex-direction: row (기본) | column | row-reverse</text>
+        </g>
+      </svg>
+      <span class="viz-caption">두 축이 있고, justify-* 는 main, align-* 는 cross. 한 번 외우면 평생 쓴다.</span>
+    </div>
+
+<pre><code>.container {
+  display: flex;
+  flex-direction: row;       /* row(기본) | column */
+  flex-wrap: nowrap;         /* nowrap(기본) | wrap */
+
+  justify-content: space-between;  /* main축 정렬 — flex-start, center, flex-end, space-around, space-evenly */
+  align-items: center;             /* cross축 정렬 */
+  gap: 16px;                       /* 아이템 사이 간격 */
+}
+
+.item {
+  flex: 1 1 200px;
+  /* flex-grow flex-shrink flex-basis 의 약자
+     - grow: 잉여 공간을 어떤 비율로 가져갈지
+     - shrink: 부족할 때 어떤 비율로 줄어들지
+     - basis: 시작 크기 */
+}</code></pre>
+
+    <p>
+      가장 자주 쓰는 두 패턴 — "수평 가운데 정렬"과 "spread"입니다.
+    </p>
+<pre><code>/* 1. 가로/세로 가운데 — flexbox의 가장 우아한 사용처 */
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 2. 왼쪽 로고, 오른쪽 메뉴 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}</code></pre>
+
+    <h3>6) Grid — 2차원 레이아웃</h3>
+    <p>행과 열을 동시에 다루므로 페이지 전체 골격이나 카드 그리드처럼 격자가 필요한 경우 압도적으로 깔끔합니다.</p>
+<pre><code>.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* "최소 220px, 가능하면 늘어나는 컬럼"을 화면이 허용하는 만큼 */
+  gap: 16px;
+}
+
+/* 명명된 영역으로 페이지 골격 */
+.layout {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar main"
+    "footer footer";
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 60px 1fr 40px;
+  min-height: 100vh;
+}
+.layout &gt; header  { grid-area: header; }
+.layout &gt; aside   { grid-area: sidebar; }
+.layout &gt; main    { grid-area: main; }
+.layout &gt; footer  { grid-area: footer; }</code></pre>
+
+    <table class="complexity">
+      <thead>
+        <tr><th></th><th>Flexbox</th><th>Grid</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>차원</td><td>1D (한 축)</td><td>2D (행 + 열)</td></tr>
+        <tr><td>전형 사례</td><td>네비, 버튼 그룹, 한 줄 정렬</td><td>페이지 골격, 카드 그리드, 폼 정렬</td></tr>
+        <tr><td>아이템 크기 결정자</td><td>아이템 자신 (콘텐츠 기반)</td><td>컨테이너의 grid-template</td></tr>
+        <tr><td>기준</td><td>flex-direction(row/column)</td><td>row + column 동시</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7) Position — 흐름에서 빼내는 5가지 방법</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>position</th><th>의미</th><th>기준</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>static</code></td><td>기본 — 일반 흐름</td><td>—</td></tr>
+        <tr><td><code>relative</code></td><td>흐름은 그대로, top/left로 미세 이동</td><td>자기 원래 위치</td></tr>
+        <tr><td><code>absolute</code></td><td>흐름에서 제거, 기준 잡고 떠 있음</td><td>가장 가까운 position 있는 조상</td></tr>
+        <tr><td><code>fixed</code></td><td>스크롤해도 그 자리</td><td>viewport</td></tr>
+        <tr><td><code>sticky</code></td><td>임계점까지 흐름, 그 다음부터 fixed처럼</td><td>스크롤 컨테이너</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>/* sticky 헤더 — 가장 흔한 활용 */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* z-index는 stacking context 안에서만 비교됨 */
+.parent { position: relative; z-index: 1; }
+.child  { position: absolute; z-index: 9999; }
+/* parent의 z-index 1이 더 높은 형제(z-index 2)보다 낮으면 child의 9999는 의미 없음 */</code></pre>
+
+    <h3>8) 반응형 — 미디어 쿼리와 모바일 우선</h3>
+<pre><code>/* 모바일 우선: 작은 화면이 기본, 큰 화면에서 레이아웃 변경 */
+.card { padding: 12px; }
+
+@media (min-width: 768px) {
+  .card { padding: 24px; display: flex; gap: 16px; }
+}
+
+@media (min-width: 1200px) {
+  .card { padding: 32px; }
+}
+
+/* prefers-reduced-motion — 애니메이션을 줄이는 사용자 존중 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition: none !important; }
+}
+
+/* prefers-color-scheme — 다크 모드 자동 감지 */
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1a1a1a; --text: #eee; }
+}</code></pre>
+
+    <h3>9) 변수(Custom Properties)와 테마</h3>
+<pre><code>:root {
+  --color-primary: #1a6dd1;
+  --space-md: 16px;
+  --radius: 8px;
+}
+
+[data-theme="dark"] {
+  --color-primary: #7cc4ff;
+}
+
+.btn {
+  background: var(--color-primary);
+  padding: var(--space-md);
+  border-radius: var(--radius);
+}</code></pre>
+    <p>
+      CSS 변수는 <strong>cascade를 따르고 런타임에 JS로 변경 가능</strong>하다는 점에서 SASS 변수와 다릅니다 — 다크 모드 토글을 한 줄로 만들 수 있습니다.
+    </p>
+
+    <h3>10) transform·opacity — composite-only 속성</h3>
+    <p>
+      대부분의 CSS 변경은 layout → paint → composite 순으로 다시 계산되지만, <code>transform</code>·<code>opacity</code>는 <strong>composite 단계에서만</strong> 처리됩니다.
+      그래서 60fps 애니메이션은 가능한 이 두 속성으로 만들어야 합니다.
+    </p>
+<pre><code>/* ❌ 매 프레임 layout 재계산 — 끊김 */
+.modal { left: 100vw; transition: left 0.3s; }
+.modal.open { left: 0; }
+
+/* ✅ composite만으로 처리 — 부드러움 */
+.modal { transform: translateX(100vw); transition: transform 0.3s; }
+.modal.open { transform: translateX(0); }</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>specificity 전쟁</strong> — 자식이 부모를 못 이기는 경우가 잦음. BEM·CSS Modules·utility-first(Tailwind)는 이 문제를 specificity 평탄화로 푼다.</li>
+      <li><strong>!important</strong> — 단기 해결, 장기 부채.</li>
+      <li><strong>Flexbox vs Grid</strong> — 1D는 flex, 2D는 grid. 두 개를 섞으면 종종 문제 해결이 쉬워진다.</li>
+      <li><strong>레이아웃 비용</strong> — 특히 큰 트리에서의 reflow가 비싸다. transform/opacity 우선.</li>
+      <li><strong>CSS 크기 vs 캐시</strong> — 큰 번들은 첫 페인트를 늦추지만 한 번 캐시되면 다음 페이지가 빠르다.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>디자인 시스템</strong> — CSS 변수 + utility 또는 컴포넌트 클래스로 일관성 유지.</li>
+      <li><strong>반응형 페이지</strong> — 모바일 우선 + 미디어 쿼리.</li>
+      <li><strong>다크 모드</strong> — CSS 변수 + <code>[data-theme]</code> 토글.</li>
+      <li><strong>애니메이션</strong> — transform/opacity 기반 transition.</li>
+      <li><strong>print 스타일</strong> — <code>@media print</code>로 인쇄 친화적인 레이아웃.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">box-sizing: content-box와 border-box의 차이는?</div>
+      <div class="a">
+        <code>content-box</code>(기본)는 <code>width</code>가 콘텐츠 영역만의 크기이고 padding과 border는 외부에 추가로 더해집니다 — 그래서 박스의 실제 폭이 width와 다릅니다.
+        <code>border-box</code>는 padding과 border가 width 안에 포함되어 박스의 실제 폭이 정확히 width와 같습니다. 후자가 직관적이라 현대 코드는 거의 항상 <code>* { box-sizing: border-box; }</code>를 깔고 시작합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">specificity가 같은 두 규칙은 어떻게 결정되나요?</div>
+      <div class="a">
+        <strong>나중에 적힌 규칙(source order)</strong>이 이깁니다. 그래서 같은 클래스에 대한 override를 하려면 늦은 위치에 두거나, 또는 더 높은 specificity로 작성해야 합니다.
+        Cascade 순위는 (1) <code>!important</code>, (2) 출처(사용자 &gt; 작성자 &gt; UA), (3) specificity, (4) source order의 4단계입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Flexbox와 Grid 중 어느 것을 쓸지 어떻게 결정하나요?</div>
+      <div class="a">
+        한 축으로만 정렬한다면 Flexbox(네비게이션 바, 버튼 그룹), 행과 열이 동시에 의미가 있으면 Grid(페이지 골격, 카드 그리드)입니다. 한 페이지 안에서 둘을 함께 쓰는 게 자연스럽습니다 — 큰 골격은 Grid, 그 안의 한 영역은 Flex.
+        억지로 Flex만으로 2차원을 만들려 하면 nested flex가 끝없이 늘어나는 안티패턴이 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">position: absolute의 기준은 무엇인가요?</div>
+      <div class="a">
+        <strong>가장 가까운 "position이 static이 아닌" 조상</strong>입니다. 그런 조상이 없으면 viewport(정확히는 initial containing block)가 기준이 됩니다.
+        그래서 자식을 absolute로 띄울 때는 보통 부모에 <code>position: relative</code>를 두고 좌표를 잡습니다. 이를 모르면 자식이 의도와 다른 곳(루트 viewport)에 가서 당황하게 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">왜 transform·opacity로 애니메이션을 만들라고 하나요?</div>
+      <div class="a">
+        대부분의 CSS 변경은 layout → paint → composite 단계를 모두 거치지만, transform과 opacity는 <strong>composite 단계에서만 처리</strong>됩니다.
+        layout과 paint를 건너뛰므로 GPU 가속이 가능하고 60fps 유지가 쉽습니다. 그래서 모달 슬라이드, 호버 효과 같은 애니메이션은 <code>left/top</code>이 아니라 <code>transform: translate</code>로 만드는 것이 표준입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">rem과 em의 차이는?</div>
+      <div class="a">
+        <code>em</code>은 <strong>부모 요소</strong>의 font-size에 비례하므로 깊게 중첩되면 의도치 않게 누적됩니다(예: 1.2em이 3단계 중첩되면 1.728em).
+        <code>rem</code>은 <strong>루트(html)</strong>의 font-size에 비례하므로 어디서 쓰든 같은 의미입니다. 폰트·간격 시스템엔 보통 rem, 요소 내부 padding·margin엔 em이 자주 쓰입니다.
+        그리고 rem을 쓰면 사용자가 브라우저 기본 폰트를 키울 때 페이지 전체가 비례적으로 커져 접근성이 좋아집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">z-index가 큰데도 위에 안 올라오는 경우는?</div>
+      <div class="a">
+        z-index는 같은 <strong>stacking context</strong> 안에서만 비교됩니다. 부모가 stacking context를 만들었고 그 부모의 z-index가 형제보다 낮으면, 자식의 z-index가 9999여도 결과적으로 형제 stack의 아래에 깔립니다.
+        새 stacking context는 <code>position</code>+<code>z-index</code>, <code>opacity &lt; 1</code>, <code>transform</code>, <code>filter</code> 등이 만듭니다. 디버깅 시 부모 체인을 따라 stacking context가 어디 만들어졌는지 보는 것이 핵심입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">CSS 변수와 SCSS 변수의 차이는?</div>
+      <div class="a">
+        SCSS 변수는 <strong>컴파일 타임</strong>에 치환되어 사라집니다 — 런타임에 바꿀 수 없고, 미디어 쿼리·셀렉터에 따라 다른 값을 가질 수 없습니다.
+        CSS 변수(custom properties)는 <strong>런타임 cascade</strong>를 따르므로 셀렉터마다 다른 값으로 오버라이드되고, JS로 <code>element.style.setProperty</code>로 바꿀 수 있습니다.
+        그래서 다크 모드, 테마 토글, 사용자 커스터마이징은 CSS 변수가 압도적으로 적합합니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="html-basics.html">HTML 핵심</a></li>
+      <li><a href="rendering-pipeline.html">브라우저 렌더링 파이프라인</a></li>
+      <li><a href="dom-events.html">DOM과 이벤트</a></li>
+      <li><a href="how-web-works.html">Web 동작 큰 그림</a></li>
+      <li><a href="index.html">Web 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="html-basics.html">
+        <span class="label">이전</span>
+        ← HTML 핵심
+      </a>
+      <a href="index.html">📂 Web으로</a>
+      <a class="next" href="javascript-basics.html">
+        <span class="label">다음</span>
+        JavaScript 핵심 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

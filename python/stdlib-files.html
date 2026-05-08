@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>파일 / 표준 라이브러리 · Python · CS 학습 노트</title><link rel="stylesheet" href="../assets/css/common.css" /><link rel="stylesheet" href="../assets/css/concept.css" /></head>
+<body><header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+<main>
+<nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">Python</a><span class="sep">›</span><span>파일 / 표준 라이브러리</span></nav>
+<h1>파일 / 표준 라이브러리</h1>
+<div class="definition"><strong>Python 표준 라이브러리</strong>는 별도 설치 없이 바로 쓰는 기본 도구 모음입니다. 실무에서 자주 쓰는 핵심은 <strong>pathlib, json, datetime, collections, itertools</strong>이며, 파일 처리는 <code>with</code>와 encoding을 명시하는 습관이 중요합니다.</div>
+
+<h2>구체적인 개념 설명</h2>
+<p>Python의 강점 중 하나는 "batteries included" — 배터리가 포함되어 있다는 철학입니다. 파일 경로, JSON, 날짜/시간, 고급 컬렉션, 반복 도구 대부분을 표준 라이브러리만으로 해결할 수 있습니다. 작은 자동화 스크립트나 백엔드 유틸리티는 외부 패키지 없이도 충분히 깔끔하게 작성할 수 있습니다.</p>
+<p>파일 I/O에서 가장 흔한 실수는 경로를 문자열로 이어 붙이고, 인코딩을 생략하고, 파일을 닫지 않는 것입니다. <code>pathlib.Path</code>, <code>with open(..., encoding="utf-8")</code>를 기본으로 사용하면 이런 문제를 크게 줄일 수 있습니다.</p>
+<div class="callout"><p><strong>비유 — 기본 공구함</strong></p><p>표준 라이브러리는 Python이 기본으로 주는 공구함입니다. 나사를 조이려고 매번 전동 공구를 새로 살 필요가 없듯, 간단한 파일·JSON·시간 처리는 외부 패키지 없이 표준 도구부터 쓰는 게 좋습니다.</p></div>
+
+<h2>왜 필요한가?</h2>
+<ul><li><strong>의존성 감소</strong> — 표준 라이브러리를 쓰면 설치·보안·호환성 부담이 줄어든다.</li><li><strong>이식성</strong> — pathlib은 OS별 경로 구분자 차이를 흡수한다.</li><li><strong>안전한 I/O</strong> — with로 파일 핸들을 자동 해제한다.</li><li><strong>생산성</strong> — collections/itertools로 흔한 패턴을 짧고 빠르게 표현.</li></ul>
+
+<h2>어떻게 동작하는가?</h2>
+<h3>1) pathlib — 경로를 객체로 다루기</h3>
+<pre><code>from pathlib import Path
+
+root = Path("logs")
+for file in root.glob("*.log"):
+    text = file.read_text(encoding="utf-8")
+    print(file.name, len(text))
+
+out = Path("out") / "result.json"
+out.parent.mkdir(parents=True, exist_ok=True)
+out.write_text('{"ok": true}', encoding="utf-8")</code></pre>
+<div class="viz"><svg width="720" height="210" viewBox="0 0 720 210" role="img" aria-label="pathlib path composition"><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">pathlib: 문자열 연결 대신 경로 객체 조합</text><g font-size="12" text-anchor="middle"><rect x="80" y="75" width="130" height="50" fill="var(--bg-card)" stroke="var(--accent)"/><text x="145" y="105">Path("out")</text><text x="250" y="105" font-size="24" fill="var(--accent)">/</text><rect x="290" y="75" width="140" height="50" fill="var(--bg-card)" stroke="var(--accent)"/><text x="360" y="105">"result.json"</text><text x="470" y="105" font-size="24" fill="var(--accent)">→</text><rect x="515" y="75" width="140" height="50" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="585" y="105">out/result.json</text></g><text x="360" y="170" text-anchor="middle" fill="var(--text-muted)" font-size="12">OS별 separator를 직접 신경 쓰지 않고 경로를 조합한다.</text></svg><span class="viz-caption">Path 객체는 읽기/쓰기/검색/부모 디렉터리 생성까지 경로 관련 작업을 한곳에 모은다.</span></div>
+
+<h3>2) 안전한 파일 처리</h3>
+<pre><code>with open("data.txt", "r", encoding="utf-8") as f:
+    for line in f:
+        process(line.rstrip("\n"))
+# 예외가 나도 자동 close</code></pre>
+<p>텍스트 파일은 encoding을 명시하세요. 운영체제 기본 인코딩에 의존하면 개발 환경에서는 되지만 서버에서 깨지는 일이 생깁니다.</p>
+
+<h3>3) json — 직렬화와 역직렬화</h3>
+<pre><code>import json
+
+payload = {"name": "Kim", "age": 20}
+text = json.dumps(payload, ensure_ascii=False, indent=2)
+obj = json.loads(text)
+
+with open("user.json", "w", encoding="utf-8") as f:
+    json.dump(payload, f, ensure_ascii=False)</code></pre>
+<ul><li><strong>dumps/loads</strong> — 문자열 ↔ Python 객체.</li><li><strong>dump/load</strong> — 파일 객체 ↔ Python 객체.</li><li><strong>주의</strong> — datetime, Decimal 같은 객체는 기본 직렬화가 안 되므로 custom encoder가 필요합니다.</li></ul>
+
+<h3>4) datetime — naive vs aware</h3>
+<p>날짜/시간에서 가장 중요한 구분은 timezone이 없는 naive datetime과 timezone이 있는 aware datetime입니다. 서버·DB·API 경계에서는 timezone을 명확히 해야 합니다.</p>
+<pre><code>from datetime import datetime, timezone
+
+now = datetime.now(timezone.utc)          # aware datetime
+print(now.isoformat())                    # 2026-05-08T...
+parsed = datetime.fromisoformat(now.isoformat())</code></pre>
+
+<h3>5) collections</h3>
+<pre><code>from collections import Counter, defaultdict, deque
+
+cnt = Counter("banana")                 # {'a': 3, 'n': 2, 'b': 1}
+groups = defaultdict(list)
+for user in users:
+    groups[user.team].append(user)
+
+q = deque([1, 2, 3])
+q.appendleft(0)
+q.pop()</code></pre>
+<div class="viz"><svg width="720" height="230" viewBox="0 0 720 230" role="img" aria-label="collections tools"><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">collections: 자주 쓰는 자료구조를 표준으로 제공</text><g font-size="12" text-anchor="middle"><rect x="60" y="70" width="160" height="80" fill="var(--bg-card)" stroke="var(--accent)"/><text x="140" y="100" font-weight="bold">Counter</text><text x="140" y="125" fill="var(--text-muted)">빈도 계산</text><rect x="280" y="70" width="160" height="80" fill="var(--bg-card)" stroke="var(--accent)"/><text x="360" y="100" font-weight="bold">defaultdict</text><text x="360" y="125" fill="var(--text-muted)">기본값 자동 생성</text><rect x="500" y="70" width="160" height="80" fill="var(--bg-card)" stroke="var(--accent)"/><text x="580" y="100" font-weight="bold">deque</text><text x="580" y="125" fill="var(--text-muted)">양끝 O(1)</text></g><text x="360" y="190" text-anchor="middle" fill="var(--text-muted)" font-size="12">직접 dict/list로 구현하기보다 의도를 드러내는 표준 도구를 쓰는 편이 좋다.</text></svg><span class="viz-caption">Counter/defaultdict/deque는 실무 코드의 의도를 짧게 드러낸다.</span></div>
+
+<h3>6) itertools — lazy 반복 도구</h3>
+<pre><code>from itertools import chain, islice, groupby
+
+for x in chain([1, 2], [3, 4]):
+    print(x)
+
+first_10 = list(islice((x*x for x in range(1_000_000)), 10))
+
+# groupby는 인접한 같은 키끼리 묶으므로 보통 정렬 후 사용
+rows.sort(key=lambda r: r.category)
+for category, group in groupby(rows, key=lambda r: r.category):
+    print(category, list(group))</code></pre>
+
+<h2>시간/공간 복잡도 또는 trade-off</h2>
+<table class="complexity"><thead><tr><th>도구</th><th>장점</th><th>주의점</th><th>대표 실수</th></tr></thead><tbody><tr><td>pathlib</td><td>경로 조합 안전</td><td>외부 라이브러리가 str만 받을 수 있음</td><td>문자열 + '/' 연결</td></tr><tr><td>json</td><td>표준 직렬화</td><td>datetime/Decimal 기본 미지원</td><td>ensure_ascii 기본으로 한글 escape</td></tr><tr><td>datetime</td><td>시간 표현</td><td>timezone 함정</td><td>naive/aware 혼용</td></tr><tr><td>Counter</td><td>빈도 계산 간결</td><td>복잡한 집계는 pandas/SQL</td><td>dict로 수동 카운트</td></tr><tr><td>itertools</td><td>lazy·메모리 효율</td><td>iterator 소진</td><td>groupby 전 정렬 누락</td></tr></tbody></table>
+
+<h2>실무에서 어디에 쓰이는가?</h2>
+<ul><li><strong>배치 스크립트</strong> — pathlib + json + datetime으로 파일 처리 자동화.</li><li><strong>로그 처리</strong> — 파일 iterator, Counter, itertools 조합.</li><li><strong>API 응답</strong> — JSON 직렬화/역직렬화.</li><li><strong>큐/슬라이딩 윈도우</strong> — deque로 양끝 삽입/삭제.</li></ul>
+
+<h2>면접에 나올 질문과 답변</h2>
+<div class="qa"><div class="q">파일을 열 때 왜 with를 쓰나요?</div><div class="a">예외가 발생해도 파일이 자동으로 닫히도록 보장하기 위해서입니다. <code>with</code>는 컨텍스트 매니저의 <code>__exit__</code>를 호출해 자원을 정리합니다.</div></div>
+<div class="qa"><div class="q">pathlib의 장점은?</div><div class="a">경로를 문자열이 아니라 객체로 다뤄 OS별 separator 차이를 줄이고, 읽기/쓰기/glob/부모 디렉터리 생성 같은 작업을 일관된 API로 제공합니다. 코드 의도도 문자열 조작보다 명확합니다.</div></div>
+<div class="qa"><div class="q">json.dumps와 json.dump의 차이는?</div><div class="a"><code>dumps</code>는 Python 객체를 JSON 문자열로 만들고, <code>dump</code>는 파일 객체에 바로 씁니다. 반대로 <code>loads</code>는 문자열에서 읽고, <code>load</code>는 파일 객체에서 읽습니다.</div></div>
+<div class="qa"><div class="q">datetime의 naive와 aware 차이는?</div><div class="a">naive datetime은 timezone 정보가 없고, aware datetime은 timezone 정보를 포함합니다. 서버와 API 경계에서는 UTC aware datetime을 사용하는 것이 안전합니다. 둘을 섞어 비교하면 오류가 나거나 의미가 불명확해집니다.</div></div>
+<div class="qa"><div class="q">defaultdict는 언제 쓰나요?</div><div class="a">키가 없을 때 기본값을 자동으로 만들고 싶을 때 씁니다. 예를 들어 그룹핑할 때 <code>defaultdict(list)</code>를 쓰면 매번 <code>if key not in dict</code>를 쓰지 않아도 됩니다.</div></div>
+<div class="qa"><div class="q">itertools.groupby의 함정은?</div><div class="a">전체에서 같은 키를 모으는 게 아니라 인접한 같은 키를 묶습니다. 그래서 일반적으로 groupby 전에 같은 key로 정렬해야 기대한 결과가 나옵니다.</div></div>
+
+<h2>관련 개념</h2><ul class="related-chips"><li><a href="iterators-generators.html">이터레이터 / 제너레이터</a></li><li><a href="exceptions-context.html">예외와 컨텍스트 매니저</a></li><li><a href="venv-packaging.html">가상환경과 패키징</a></li><li><a href="index.html">Python 목록</a></li></ul>
+<nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="iterators-generators.html"><span class="label">이전</span>← 이터레이터 / 제너레이터</a><a href="index.html">📂 Python으로</a><a class="next" href="venv-packaging.html"><span class="label">다음</span>가상환경과 패키징 →</a></nav>
+</main><script src="../assets/js/common.js"></script></body></html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JavaScript 핵심 · Web · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">Web</a>
+      <span class="sep">›</span>
+      <span>JavaScript 핵심</span>
+    </nav>
+
+    <h1>JavaScript 핵심 — 실행 컨텍스트·closure·prototype·module</h1>
+
+    <div class="definition">
+      <strong>JavaScript</strong>는 동적 타입의 single-threaded 언어로, <strong>실행 컨텍스트(Execution Context)</strong>라는 단위로 코드가 실행됩니다.
+      각 컨텍스트는 변수 스코프·this 바인딩·렉시컬 환경을 갖고, 이들이 모여 <em>스코프 체인</em>과 <em>클로저</em>를 만듭니다.
+      또 객체 시스템은 클래스가 아닌 <strong>프로토타입 체인</strong> 위에 세워져 있어, 다른 OOP 언어와 멘탈 모델이 다릅니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      JS의 어려움은 <strong>"같아 보이는 것이 다르게 동작"</strong>하는 데 있습니다 — <code>var</code>·<code>let</code>·<code>const</code>의 호이스팅 차이, 화살표 함수와 일반 함수의 <code>this</code> 차이,
+      클래스 문법 뒤에 숨은 프로토타입 모델, 동기 코드처럼 보이는 비동기 흐름 등. 이 페이지는 그 모델을 정확히 잡습니다.
+    </p>
+    <p>
+      <strong>이벤트 루프와 비동기 처리(Promise·async/await)</strong>는 분량이 커서 별도 심화 페이지로 분리합니다 — 여기서는 동기 흐름의 골격에 집중합니다.
+    </p>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>웹의 동작 언어</strong> — 브라우저에서 실행되는 사실상 유일한 언어.</li>
+      <li><strong>풀스택 가능</strong> — Node.js로 서버, Electron으로 데스크톱, React Native로 모바일까지.</li>
+      <li><strong>유연성</strong> — 함수형·OOP·이벤트 기반을 모두 표현할 수 있다.</li>
+      <li><strong>거대한 생태계</strong> — npm 200만+ 패키지, 도구·프레임워크의 폭이 가장 넓다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 변수 선언 — var / let / const</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th></th><th>var</th><th>let</th><th>const</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>스코프</td><td>함수 스코프</td><td>블록 스코프</td><td>블록 스코프</td></tr>
+        <tr><td>호이스팅</td><td>선언 + undefined 초기화</td><td>선언만 (TDZ)</td><td>선언만 (TDZ)</td></tr>
+        <tr><td>재선언</td><td>가능</td><td>불가</td><td>불가</td></tr>
+        <tr><td>재할당</td><td>가능</td><td>가능</td><td>불가 (객체 내부는 변경 가능)</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>// var — 함수 스코프
+function fn() {
+  if (true) {
+    var x = 1;
+  }
+  console.log(x);   // 1 — if 밖에서도 보임 (함수 스코프)
+}
+
+// let / const — 블록 스코프
+function fn() {
+  if (true) {
+    let y = 1;
+  }
+  console.log(y);   // ❌ ReferenceError
+}
+
+// TDZ — 선언 전엔 접근 불가
+console.log(z);     // ❌ ReferenceError (TDZ)
+let z = 10;
+
+// const는 "변수의 재할당 금지"이지 "객체 불변"이 아니다
+const obj = { a: 1 };
+obj.a = 2;          // ✅ 객체 내부는 변경 가능
+obj = {};           // ❌ 변수 재할당 금지</code></pre>
+
+    <p>
+      <strong>현대 코드는 거의 항상 const, 재할당이 필요할 때만 let, var는 사용 안 함</strong>이 표준입니다.
+    </p>
+
+    <h3>2) 호이스팅(Hoisting)과 TDZ</h3>
+    <p>
+      JS 엔진은 코드를 실행하기 전에 <strong>선언을 먼저 끌어올려</strong> 등록합니다(컴파일 단계). var는 등록과 동시에 <code>undefined</code>로 초기화되지만, let/const는 선언만 들어가고 초기화는 코드가 실제로 그 줄에 도달할 때 일어납니다.
+      그 사이의 구간이 <strong>Temporal Dead Zone(TDZ)</strong>입니다.
+    </p>
+<pre><code>console.log(a);   // undefined (var는 호이스팅 + 초기화)
+var a = 10;
+
+console.log(b);   // ❌ ReferenceError — 선언은 호이스팅 됐지만 초기화 전 (TDZ)
+let b = 10;
+
+// 함수 선언은 통째로 호이스팅
+hi();             // ✅ "hi"
+function hi() { console.log("hi"); }
+
+// 함수 표현식은 var의 규칙을 따름
+hello();          // ❌ TypeError: hello is not a function
+var hello = function() {};</code></pre>
+
+    <h3>3) 실행 컨텍스트와 스코프 체인</h3>
+    <div class="viz">
+      <svg width="780" height="280" viewBox="0 0 780 280" role="img" aria-label="execution context stack">
+        <g font-size="12" text-anchor="middle">
+          <rect x="40" y="20" width="320" height="240" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="200" y="42" font-weight="bold" fill="var(--accent)">Call Stack (실행 컨텍스트 스택)</text>
+
+          <rect x="60" y="220" width="280" height="30" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="200" y="240">Global Execution Context</text>
+
+          <rect x="60" y="184" width="280" height="30" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="200" y="204">outer() 컨텍스트</text>
+
+          <rect x="60" y="148" width="280" height="30" fill="var(--bg-elev)" stroke="var(--warn)"/>
+          <text x="200" y="168" fill="var(--warn)">현재 실행 중: inner()</text>
+
+          <rect x="400" y="20" width="340" height="240" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="570" y="42" font-weight="bold" fill="var(--accent)">현재 컨텍스트의 내부</text>
+
+          <rect x="420" y="60" width="300" height="50" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="570" y="80">Lexical Environment</text>
+          <text x="570" y="98" font-size="11" fill="var(--text-muted)">자기 변수 + 부모 환경 참조</text>
+
+          <rect x="420" y="120" width="300" height="50" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="570" y="140">Variable Environment</text>
+          <text x="570" y="158" font-size="11" fill="var(--text-muted)">var로 선언된 변수</text>
+
+          <rect x="420" y="180" width="300" height="50" fill="var(--bg-elev)" stroke="var(--accent)"/>
+          <text x="570" y="200">this 바인딩</text>
+          <text x="570" y="218" font-size="11" fill="var(--text-muted)">호출 방식에 따라 결정</text>
+        </g>
+      </svg>
+      <span class="viz-caption">스코프 체인 = 현재 컨텍스트 → outer → global. 변수 검색이 이 사슬을 따라 올라간다.</span>
+    </div>
+
+<pre><code>const g = "global";
+
+function outer() {
+  const o = "outer";
+
+  function inner() {
+    const i = "inner";
+    console.log(i, o, g);   // inner outer global — 스코프 체인 따라 검색
+  }
+
+  inner();
+}
+outer();</code></pre>
+
+    <h3>4) Closure — 함수가 자기 환경을 기억한다</h3>
+    <p>
+      함수가 만들어진 시점의 <strong>외부 변수에 대한 참조</strong>를 그대로 들고 다니는 것을 클로저라고 합니다. JS의 가장 강력하고 자주 쓰이는 메커니즘입니다.
+    </p>
+<pre><code>function counter() {
+  let count = 0;            // outer의 지역 변수
+  return {
+    inc:   () =&gt; ++count,
+    get:   () =&gt; count,
+    reset: () =&gt; { count = 0; },
+  };
+}
+
+const c = counter();
+c.inc(); c.inc();
+console.log(c.get());      // 2
+
+// counter() 호출은 끝났지만 count는 GC되지 않는다 — 반환된 함수들이 참조하므로</code></pre>
+
+    <p>대표 활용:</p>
+    <ul>
+      <li><strong>private 상태 캡슐화</strong> — 위 예제처럼 외부에서 직접 못 만지는 상태.</li>
+      <li><strong>한 번만 실행</strong> — <code>once(fn)</code> 패턴으로 첫 호출 결과를 캐시.</li>
+      <li><strong>이벤트 핸들러</strong> — 핸들러가 그 시점의 컨텍스트를 그대로 들고 다님.</li>
+      <li><strong>메모이제이션</strong> — 결과 캐시를 클로저 안에 보관.</li>
+    </ul>
+
+    <div class="callout warn">
+      <p><strong>고전 함정 — for 루프와 var 클로저</strong></p>
+<pre><code>// ❌ var는 함수 스코프 — 모든 콜백이 같은 i를 참조
+for (var i = 0; i &lt; 3; i++) {
+  setTimeout(() =&gt; console.log(i), 0);
+}
+// 출력: 3, 3, 3
+
+// ✅ let은 매 반복마다 새 바인딩 — 의도대로 동작
+for (let i = 0; i &lt; 3; i++) {
+  setTimeout(() =&gt; console.log(i), 0);
+}
+// 출력: 0, 1, 2</code></pre>
+    </div>
+
+    <h3>5) this의 4가지 호출 패턴</h3>
+    <p>
+      JS에서 <code>this</code>는 함수가 <strong>어떻게 호출되는가</strong>에 따라 결정됩니다 — 정의된 곳이 아닙니다(화살표 함수 제외).
+    </p>
+    <table class="complexity">
+      <thead>
+        <tr><th>호출 방식</th><th>this</th><th>예</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>일반 함수 호출</td><td>strict면 undefined / 아니면 globalThis</td><td><code>fn()</code></td></tr>
+        <tr><td>메서드 호출</td><td>점 앞의 객체</td><td><code>obj.fn()</code></td></tr>
+        <tr><td>new 호출</td><td>새로 만든 인스턴스</td><td><code>new Foo()</code></td></tr>
+        <tr><td>call/apply/bind</td><td>명시한 객체</td><td><code>fn.call(obj)</code></td></tr>
+      </tbody>
+    </table>
+
+<pre><code>const obj = {
+  name: "Alice",
+  hi() { console.log(this.name); },
+};
+
+obj.hi();           // "Alice" — 메서드 호출
+const f = obj.hi;
+f();                // undefined — 점 앞이 사라지면 일반 호출
+
+// 화살표 함수는 자기 this가 없고 outer의 this를 그대로 씀
+const obj2 = {
+  name: "Bob",
+  hi: () =&gt; console.log(this.name),   // outer = 모듈/전역 — undefined
+};
+
+// 콜백 안 this 문제의 가장 흔한 해결책 = 화살표 함수
+class Counter {
+  constructor() { this.count = 0; }
+  start() {
+    setInterval(() =&gt; this.count++, 1000);    // ✅ 화살표가 outer this를 캡처
+  }
+}</code></pre>
+
+    <h3>6) 프로토타입 체인 — JS의 OOP</h3>
+    <p>
+      JS 객체는 다른 객체에 대한 숨은 링크(<code>[[Prototype]]</code>)를 갖습니다. 자기에게 없는 속성을 찾으면 그 링크를 따라 부모 객체에서 찾고, 또 없으면 그 부모의 링크를 따라가는 식으로 <strong>체인을 따라 올라가며 검색</strong>합니다.
+    </p>
+    <div class="viz">
+      <svg width="780" height="220" viewBox="0 0 780 220" role="img" aria-label="prototype chain">
+        <defs>
+          <marker id="parr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <g font-size="12" text-anchor="middle">
+          <rect x="20"  y="80" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="100" y="104" font-weight="bold">dog 인스턴스</text>
+          <text x="100" y="124" font-size="11" fill="var(--text-muted)">{ name: "..." }</text>
+
+          <line x1="180" y1="110" x2="220" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#parr2)"/>
+          <text x="200" y="100" font-size="11" fill="var(--text-muted)">__proto__</text>
+
+          <rect x="220" y="80" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="300" y="104" font-weight="bold">Dog.prototype</text>
+          <text x="300" y="124" font-size="11" fill="var(--text-muted)">{ bark() {...} }</text>
+
+          <line x1="380" y1="110" x2="420" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#parr2)"/>
+
+          <rect x="420" y="80" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="500" y="104" font-weight="bold">Animal.prototype</text>
+          <text x="500" y="124" font-size="11" fill="var(--text-muted)">{ eat() {...} }</text>
+
+          <line x1="580" y1="110" x2="620" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#parr2)"/>
+
+          <rect x="620" y="80" width="160" height="60" fill="var(--bg-card)" stroke="var(--accent)" rx="4"/>
+          <text x="700" y="104" font-weight="bold">Object.prototype</text>
+          <text x="700" y="124" font-size="11" fill="var(--text-muted)">{ toString...,</text>
+          <text x="700" y="138" font-size="11" fill="var(--text-muted)">__proto__: null }</text>
+        </g>
+      </svg>
+      <span class="viz-caption">속성 검색이 체인을 따라 올라간다. 끝(Object.prototype)의 __proto__는 null.</span>
+    </div>
+
+<pre><code>// class 문법은 프로토타입 체인의 syntactic sugar
+class Animal {
+  constructor(name) { this.name = name; }
+  eat() { console.log(`${this.name} eats`); }
+}
+class Dog extends Animal {
+  bark() { console.log("멍멍"); }
+}
+
+const d = new Dog("Rex");
+d.eat();           // Animal.prototype.eat
+d.bark();          // Dog.prototype.bark
+d.toString();      // Object.prototype.toString
+
+// 실제로 일어나는 일
+Object.getPrototypeOf(d) === Dog.prototype;          // true
+Object.getPrototypeOf(Dog.prototype) === Animal.prototype;  // true
+Object.getPrototypeOf(Animal.prototype) === Object.prototype; // true</code></pre>
+
+    <h3>7) 일급 함수와 함수형 패턴</h3>
+    <p>JS에서 함수는 값입니다 — 변수에 담고, 인자로 넘기고, 리턴할 수 있습니다.</p>
+<pre><code>const greet = (name) =&gt; `Hello, ${name}`;
+const greeters = [greet, (n) =&gt; `안녕, ${n}`];
+
+// 고차 함수
+const map = (arr, fn) =&gt; { const out = []; for (const x of arr) out.push(fn(x)); return out; };
+
+// Array의 메서드 체인
+const result = users
+  .filter(u =&gt; u.age &gt;= 18)
+  .map(u =&gt; u.name)
+  .sort();</code></pre>
+
+    <h3>8) 비교 — == vs ===</h3>
+    <ul>
+      <li><code>===</code> (strict equality) — 타입과 값이 모두 같아야 true.</li>
+      <li><code>==</code> (loose equality) — 타입이 다르면 강제 변환 후 비교 — 직관과 어긋나는 경우가 많음.</li>
+    </ul>
+<pre><code>0 == "0"          // true   (문자열을 숫자로 변환)
+0 == ""           // true
+null == undefined // true   (예외적인 동치 — 자주 활용됨)
+null == 0         // false
+NaN === NaN       // false  ← 둘 다! NaN 검사는 Number.isNaN()
+
+// 권장: 항상 === 사용. 단, "null/undefined" 동시 검사에 == null은 자주 쓰임
+if (value == null) { ... }   // null 또는 undefined</code></pre>
+
+    <h3>9) 에러 처리 — try/catch와 throw</h3>
+<pre><code>try {
+  const data = JSON.parse(input);
+  use(data);
+} catch (e) {
+  // e는 Error 인스턴스 (또는 throw된 무엇이든)
+  console.error(e.message, e.stack);
+  if (e instanceof SyntaxError) { /* 잘못된 JSON */ }
+  throw e;                         // 재던지기
+}
+
+// 커스텀 에러
+class ValidationError extends Error {
+  constructor(field, value) {
+    super(`잘못된 ${field}: ${value}`);
+    this.name = "ValidationError";
+    this.field = field;
+  }
+}</code></pre>
+
+    <h3>10) Module — ES Modules</h3>
+    <p>
+      옛 JS는 전역 네임스페이스 하나에 모든 코드가 모여 충돌이 일상이었습니다. <strong>ES Modules(ESM)</strong>가 표준으로 자리 잡으면서 파일 단위 스코프 + 명시적 import/export가 가능해졌습니다.
+    </p>
+<pre><code>// math.js — 내보내기
+export function add(a, b) { return a + b; }
+export const PI = 3.14;
+export default function multiply(a, b) { return a * b; }   // 파일당 하나
+
+// app.js — 가져오기
+import multiply, { add, PI } from "./math.js";
+import * as math from "./math.js";   // 네임스페이스 import
+import { add as plus } from "./math.js"; // 별칭
+
+// 동적 import — 비동기, 런타임 분기
+const m = await import("./heavy.js");
+
+// 브라우저에서 ESM 활성화
+&lt;script type="module" src="app.js"&gt;&lt;/script&gt;</code></pre>
+
+    <p>
+      ESM의 핵심 특성 — (1) 파일이 자기 모듈 스코프, (2) <code>import</code>는 호이스팅(맨 앞에 적힌 효과), (3) 자동으로 strict mode, (4) <code>this</code>가 undefined.
+    </p>
+
+    <h3>11) 비동기 한 줄 — Promise·async/await</h3>
+    <p>
+      자세한 내용은 <em>JavaScript 이벤트 루프 심층</em> 페이지로 분리하지만, 표면적인 형태는 다음과 같습니다.
+    </p>
+<pre><code>// Promise — 미래의 값
+fetch("/api/users")
+  .then(r =&gt; r.json())
+  .then(users =&gt; render(users))
+  .catch(err =&gt; show(err));
+
+// async/await — 동기처럼 보이는 비동기
+async function load() {
+  try {
+    const r = await fetch("/api/users");
+    const users = await r.json();
+    render(users);
+  } catch (err) {
+    show(err);
+  }
+}
+
+// 병렬 — Promise.all
+const [a, b] = await Promise.all([fetchA(), fetchB()]);</code></pre>
+
+    <h3>12) strict mode — 모든 모듈에서 자동</h3>
+    <p>
+      <code>"use strict"</code>는 옛 JS의 너그러운 동작을 엄격하게 만듭니다. 선언 안 한 변수에 대입하면 에러, 중복 매개변수 금지, this의 implicit global 금지 등.
+      ES Modules는 자동으로 strict mode이므로 신경 쓸 일이 거의 없지만, script로 로드하는 옛날 코드에서는 파일 맨 앞에 명시해야 합니다.
+    </p>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>유연성 vs 안전성</strong> — 동적 타입은 빠른 작성과 유연한 표현을 주지만 런타임 오류 가능성도 크다. 큰 코드베이스에는 TypeScript가 거의 필수.</li>
+      <li><strong>this의 함정</strong> — 화살표 함수와 일반 함수의 this 차이를 모르면 콜백에서 미스터리 발생.</li>
+      <li><strong>클로저와 메모리</strong> — 클로저가 외부 변수를 잡고 있으면 GC 안 됨. 큰 객체를 캡처한 핸들러를 등록 후 해제하지 않으면 누수.</li>
+      <li><strong>== vs ===</strong> — == 는 거의 항상 함정.</li>
+      <li><strong>프로토타입 vs 클래스</strong> — class는 sugar지만 가독성·도구 친화 때문에 거의 항상 class 선호.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>프론트엔드</strong> — React/Vue/Svelte의 컴포넌트, 상태 관리, 라우팅.</li>
+      <li><strong>Node.js 서버</strong> — Express/Fastify/Nest, 비동기 IO 모델로 동시 요청 처리.</li>
+      <li><strong>빌드 도구</strong> — webpack/vite/rollup/esbuild이 모두 JS.</li>
+      <li><strong>스크립트와 DSL</strong> — 사이트 분석 스크립트, 설정 파일(.eslintrc.js 등).</li>
+      <li><strong>크로스플랫폼</strong> — Electron(데스크톱), React Native(모바일).</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">var, let, const의 차이는?</div>
+      <div class="a">
+        스코프와 호이스팅이 다릅니다. var는 <strong>함수 스코프</strong>이고 호이스팅 시 undefined로 초기화되어 선언 전 접근해도 에러가 안 나지만, let/const는 <strong>블록 스코프</strong>이고 선언만 호이스팅 되어 그 사이 구간(TDZ)에서는 ReferenceError가 납니다.
+        const는 재할당이 금지될 뿐 객체 내부는 변경 가능합니다. 현대 코드는 거의 항상 const를 쓰고, 재할당이 필요할 때만 let, var는 사용하지 않습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">클로저(closure)란 무엇이고 어디서 쓰나요?</div>
+      <div class="a">
+        함수가 자기 외부 환경의 변수에 대한 참조를 들고 다니는 것입니다. 함수가 정의된 시점의 스코프를 그대로 캡처하므로, 외부 함수가 종료된 뒤에도 그 변수가 살아 있습니다.
+        실무에서는 (1) private 상태 캡슐화(getter/setter만 노출), (2) 메모이제이션 캐시, (3) 이벤트 핸들러가 그 시점의 컨텍스트를 기억, (4) <code>once</code>·<code>throttle</code>·<code>debounce</code> 같은 유틸리티에 핵심적으로 사용됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">화살표 함수의 this는 일반 함수와 어떻게 다른가요?</div>
+      <div class="a">
+        일반 함수는 <strong>호출 방식에 따라 this가 결정</strong>됩니다(메서드 호출이면 점 앞 객체, new 호출이면 새 인스턴스 등).
+        화살표 함수는 <strong>자기 this가 없고 외부 스코프의 this를 그대로 사용</strong>합니다. 그래서 콜백 안에서 외부 인스턴스의 메서드를 호출할 때 <code>this</code> 문제를 화살표 함수로 우아하게 해결할 수 있습니다.
+        대신 <code>new</code>로 호출할 수 없고 객체 메서드로 정의하면 외부 this를 잘못 가져올 수 있어 주의가 필요합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">호이스팅을 설명해 주세요.</div>
+      <div class="a">
+        JS 엔진이 코드를 실행하기 전에 <strong>변수와 함수 선언을 스코프 최상단으로 끌어올리는 것처럼 보이게</strong> 동작하는 메커니즘입니다.
+        실제로는 컴파일 단계에서 식별자를 등록해 두는 것이며, var는 <code>undefined</code>로 초기화되고 let/const는 초기화 없이 등록만 됩니다(TDZ). 함수 선언(<code>function fn(){}</code>)은 통째로 호이스팅 되지만, 함수 표현식(<code>const fn = function(){}</code>)은 변수 호이스팅 규칙을 따릅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">프로토타입 체인이란 무엇인가요?</div>
+      <div class="a">
+        JS의 모든 객체는 다른 객체를 가리키는 숨은 링크(<code>[[Prototype]]</code>)를 갖습니다. 자기에게 없는 속성을 찾으면 이 링크를 따라 부모 객체에서 찾고, 또 없으면 부모의 부모에서 찾는 식으로 끝(<code>Object.prototype</code> → null)까지 올라갑니다.
+        ES6의 class 문법은 이 프로토타입 모델 위에 붙은 syntactic sugar입니다 — <code>class Dog extends Animal</code>은 내부적으로 Dog.prototype의 [[Prototype]]을 Animal.prototype에 연결합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">== 대신 ===를 쓰라고 하는 이유는?</div>
+      <div class="a">
+        ==는 타입이 다르면 강제 변환 후 비교하기 때문에 직관과 어긋나는 결과가 자주 나옵니다. 예: <code>0 == ""</code>이 true, <code>[] == false</code>가 true.
+        ===는 타입까지 같아야 true라 예측 가능합니다. 예외는 <code>== null</code> 패턴으로, null과 undefined를 한 번에 검사하는 데 종종 쓰입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ES Modules와 CommonJS의 차이는?</div>
+      <div class="a">
+        ESM은 (1) <code>import</code>/<code>export</code>가 정적이라 빌드 도구가 tree shaking을 할 수 있고, (2) 호이스팅 되어 파일 어디에 적든 맨 앞에 적힌 효과, (3) 자동 strict mode, (4) 비동기 로딩(<code>import()</code>) 지원.
+        CommonJS(<code>require/module.exports</code>)는 동기 + 동적이라 전통적인 Node.js에 적합하지만 트리 셰이킹이 어렵습니다. 현대 라이브러리는 ESM을 1차로 제공하고 CJS는 호환용으로 제공합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">JS는 single-threaded인데 비동기는 어떻게 가능한가요?</div>
+      <div class="a">
+        JS 엔진(call stack) 자체는 단일 스레드지만, 브라우저나 Node.js의 <strong>호스트 환경</strong>이 별도 스레드로 IO·타이머·네트워크를 처리합니다.
+        그 작업이 끝나면 결과가 콜백·Promise resolve로 task queue 또는 microtask queue에 쌓이고, call stack이 비는 순간 이벤트 루프가 그 큐에서 작업을 꺼내 실행합니다.
+        그래서 JS 코드는 단일 스레드여도 IO를 기다리지 않고 다른 일을 할 수 있습니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="dom-events.html">DOM과 이벤트</a></li>
+      <li><a href="http-web-api.html">HTTP와 Web API — fetch</a></li>
+      <li><a href="../java/oop-syntax.html">Java OOP 문법(비교)</a></li>
+      <li><a href="how-web-works.html">Web 동작 큰 그림</a></li>
+      <li><a href="index.html">Web 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="css-basics.html">
+        <span class="label">이전</span>
+        ← CSS 핵심
+      </a>
+      <a href="index.html">📂 Web으로</a>
+      <a class="next" href="dom-events.html">
+        <span class="label">다음</span>
+        DOM과 이벤트 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

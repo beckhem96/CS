@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>함수와 스코프 · Python · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header"><div class="site-header-inner"><div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div><nav class="site-nav"><button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button></nav></div></header>
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치"><a href="../index.html">홈</a><span class="sep">›</span><a href="index.html">Python</a><span class="sep">›</span><span>함수와 스코프</span></nav>
+    <h1>함수와 스코프</h1>
+    <div class="definition"><strong>Python 함수</strong>는 값처럼 변수에 담고 인자로 넘기고 반환할 수 있는 <strong>first-class object</strong>입니다. 이름 탐색은 <strong>LEGB(Local → Enclosing → Global → Built-in)</strong> 규칙을 따르고, 함수는 자신이 만들어진 환경을 기억하는 <strong>클로저(closure)</strong>를 만들 수 있습니다.</div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>Python에서 함수는 단순한 코드 블록이 아니라 객체입니다. 그래서 함수 이름은 함수 객체를 가리키는 이름일 뿐이고, 다른 변수에 대입하거나 리스트에 담거나 다른 함수의 결과로 반환할 수 있습니다. 이 특징은 데코레이터, 콜백, 고차 함수의 기반입니다.</p>
+    <p>스코프는 이름을 어디서 찾을지의 규칙입니다. Python은 중괄호 블록이 아니라 함수·클래스·모듈 단위로 스코프를 만듭니다. 특히 for/if 블록은 새 스코프를 만들지 않는다는 점이 JavaScript의 let/const와 다릅니다.</p>
+
+    <div class="callout"><p><strong>비유 — 이름 찾기 순서</strong></p><p>함수 안에서 <code>x</code>를 찾을 때는 먼저 내 책상(Local)을 보고, 없으면 바깥 방(Enclosing), 없으면 사무실 게시판(Global), 그래도 없으면 공용 사전(Built-in)을 봅니다. 이 순서가 LEGB입니다.</p></div>
+
+    <h2>왜 필요한가?</h2>
+    <ul><li><strong>버그 예방</strong> — LEGB와 mutable default argument를 모르면 값이 예상과 다르게 공유된다.</li><li><strong>추상화</strong> — 함수를 값으로 다루면 전략·콜백·데코레이터를 깔끔하게 표현할 수 있다.</li><li><strong>상태 캡슐화</strong> — 클로저로 작은 상태를 숨기고 함수 인터페이스만 노출할 수 있다.</li><li><strong>테스트 용이성</strong> — 의존 함수를 인자로 주입하면 mock 없이도 대체 가능하다.</li></ul>
+
+    <h2>어떻게 동작하는가?</h2>
+    <h3>1) 함수는 first-class object</h3>
+<pre><code>def greet(name):
+    return f"hello, {name}"
+
+f = greet              # 함수 객체를 다른 이름에 바인딩
+print(f("Kim"))
+
+def apply(fn, value):  # 함수를 인자로 받기
+    return fn(value)
+
+print(apply(str.upper, "python"))</code></pre>
+
+    <h3>2) LEGB 이름 탐색</h3>
+    <div class="viz"><svg width="720" height="230" viewBox="0 0 720 230" role="img" aria-label="LEGB scope chain"><defs><marker id="legb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">LEGB: 이름을 찾는 순서</text><g font-size="12" text-anchor="middle"><rect x="50" y="80" width="130" height="60" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="115" y="105" font-weight="bold">Local</text><text x="115" y="124" fill="var(--text-muted)">현재 함수</text><rect x="220" y="80" width="130" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="285" y="105" font-weight="bold">Enclosing</text><text x="285" y="124" fill="var(--text-muted)">바깥 함수</text><rect x="390" y="80" width="130" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="455" y="105" font-weight="bold">Global</text><text x="455" y="124" fill="var(--text-muted)">모듈</text><rect x="560" y="80" width="130" height="60" fill="var(--bg-card)" stroke="var(--accent)"/><text x="625" y="105" font-weight="bold">Built-in</text><text x="625" y="124" fill="var(--text-muted)">len, print...</text></g><line x1="180" y1="110" x2="220" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#legb)"/><line x1="350" y1="110" x2="390" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#legb)"/><line x1="520" y1="110" x2="560" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#legb)"/><text x="360" y="190" text-anchor="middle" fill="var(--text-muted)" font-size="12">읽을 때는 LEGB 순서로 찾고, 대입하면 기본적으로 Local 이름을 만든다.</text></svg><span class="viz-caption">이름 탐색과 이름 대입의 규칙은 다르다. 대입은 기본적으로 현재 Local에 새 이름을 만든다.</span></div>
+<pre><code>x = "global"
+
+def outer():
+    x = "enclosing"
+    def inner():
+        x = "local"
+        return x
+    return inner()
+
+print(outer())  # local</code></pre>
+
+    <h3>3) global과 nonlocal</h3>
+    <p>함수 안에서 바깥 이름에 대입하려면 <code>global</code> 또는 <code>nonlocal</code>을 명시해야 합니다. 그렇지 않으면 Python은 그 이름을 Local로 간주합니다.</p>
+<pre><code>def counter():
+    count = 0
+    def inc():
+        nonlocal count
+        count += 1
+        return count
+    return inc
+
+c = counter()
+print(c(), c())  # 1 2</code></pre>
+
+    <h3>4) 클로저(Closure)</h3>
+    <p>클로저는 함수가 만들어질 때의 바깥 스코프 변수를 기억하는 함수입니다. 위의 <code>inc</code>는 <code>counter</code> 호출이 끝난 뒤에도 <code>count</code>를 기억합니다.</p>
+    <div class="viz"><svg width="720" height="220" viewBox="0 0 720 220" role="img" aria-label="closure"><defs><marker id="cl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs><text x="360" y="24" text-anchor="middle" font-weight="bold" fill="var(--accent)">클로저: 함수 + 기억된 환경</text><rect x="90" y="70" width="190" height="80" fill="var(--bg-card)" stroke="var(--accent)"/><text x="185" y="102" text-anchor="middle">inc 함수 객체</text><text x="185" y="126" text-anchor="middle" fill="var(--text-muted)">code pointer</text><rect x="440" y="70" width="190" height="80" fill="var(--bg-elev)" stroke="var(--accent)" stroke-width="2"/><text x="535" y="102" text-anchor="middle">closure cell</text><text x="535" y="126" text-anchor="middle" fill="var(--text-muted)">count = 0,1,2...</text><line x1="280" y1="110" x2="440" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#cl)"/><text x="360" y="185" text-anchor="middle" font-size="12" fill="var(--text-muted)">outer 함수가 끝나도 cell 객체가 남아 inner 함수가 계속 접근할 수 있다.</text></svg><span class="viz-caption">클로저는 작은 상태를 함수 안에 숨기기에 좋지만, 과하면 클래스보다 흐름을 추적하기 어렵다.</span></div>
+
+    <h3>5) 기본 인자는 함수 정의 시점에 한 번 평가된다</h3>
+    <p>Python의 대표 함정입니다. 기본 인자로 mutable 객체를 쓰면 호출마다 새 리스트가 생기는 것이 아니라 같은 리스트를 공유합니다.</p>
+<pre><code># 나쁜 예
+def add_item(x, items=[]):
+    items.append(x)
+    return items
+
+print(add_item(1))  # [1]
+print(add_item(2))  # [1, 2]  ← 공유됨
+
+# 좋은 예
+def add_item(x, items=None):
+    if items is None:
+        items = []
+    items.append(x)
+    return items</code></pre>
+
+    <h3>6) 인자 전달 — call by object sharing</h3>
+    <p>Python은 흔히 "객체 참조 전달" 또는 call by object sharing이라고 설명합니다. 함수는 객체에 대한 참조를 받습니다. mutable 객체를 제자리 변경하면 호출자에게도 보이고, 이름을 재바인딩하면 호출자 이름은 바뀌지 않습니다.</p>
+<pre><code>def mutate(xs):
+    xs.append(3)     # 객체 제자리 변경
+
+def rebind(xs):
+    xs = [9, 9]      # 로컬 이름 재바인딩
+
+a = [1, 2]
+mutate(a)
+print(a)  # [1, 2, 3]
+rebind(a)
+print(a)  # [1, 2, 3]</code></pre>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <table class="complexity"><thead><tr><th>기능</th><th>장점</th><th>주의점</th><th>왜 그런가?</th></tr></thead><tbody><tr><td>first-class function</td><td>콜백/전략 표현 쉬움</td><td>흐름 추적 어려움</td><td>함수가 값으로 이동</td></tr><tr><td>클로저</td><td>상태 은닉</td><td>과하면 디버깅 어려움</td><td>환경 cell을 붙잡음</td></tr><tr><td>LEGB</td><td>단순한 이름 탐색</td><td>대입 시 UnboundLocalError</td><td>대입은 local 선언으로 해석</td></tr><tr><td>기본 인자</td><td>정의 시 계산 재사용</td><td>mutable 공유 버그</td><td>정의 시점 1회 평가</td></tr></tbody></table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul><li><strong>콜백</strong> — 정렬 key, 이벤트 핸들러, retry 정책.</li><li><strong>데코레이터</strong> — 로깅, 인증, 캐싱, 트랜잭션 같은 횡단 관심사.</li><li><strong>팩토리 함수</strong> — 설정을 캡처한 함수를 반환.</li><li><strong>테스트</strong> — 의존 함수를 인자로 주입해 쉽게 대체.</li></ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+    <div class="qa"><div class="q">LEGB 규칙이란?</div><div class="a">Python이 이름을 찾는 순서입니다. Local(현재 함수), Enclosing(바깥 함수), Global(모듈), Built-in(내장 이름) 순서로 탐색합니다. 읽을 때는 이 순서로 찾지만, 대입은 기본적으로 Local 이름을 새로 만듭니다.</div></div>
+    <div class="qa"><div class="q">클로저란 무엇인가요?</div><div class="a">함수가 자신이 정의된 바깥 스코프의 변수를 기억하는 구조입니다. 바깥 함수 실행이 끝나도 내부 함수가 그 변수를 계속 사용할 수 있습니다. 데코레이터와 함수 팩토리의 기반입니다.</div></div>
+    <div class="qa"><div class="q">mutable default argument 함정은 왜 생기나요?</div><div class="a">기본 인자는 함수가 호출될 때마다 평가되는 것이 아니라 함수 정의 시점에 한 번 평가됩니다. 그래서 <code>[]</code> 같은 mutable 객체를 기본값으로 두면 모든 호출이 같은 리스트를 공유합니다. 보통 <code>None</code>을 기본값으로 두고 함수 안에서 새로 만듭니다.</div></div>
+    <div class="qa"><div class="q"><code>global</code>과 <code>nonlocal</code>의 차이는?</div><div class="a"><code>global</code>은 모듈 전역 이름에 대입하겠다는 선언이고, <code>nonlocal</code>은 가장 가까운 바깥 함수 스코프의 이름에 대입하겠다는 선언입니다. 클래스/함수 밖의 모듈 변수에는 global, 클로저 상태 변경에는 nonlocal을 씁니다.</div></div>
+    <div class="qa"><div class="q">Python의 인자 전달 방식은?</div><div class="a">객체 공유(call by object sharing)로 설명하는 것이 정확합니다. 함수는 객체 참조를 받고, mutable 객체를 제자리 변경하면 호출자에게 보입니다. 하지만 파라미터 이름을 다른 객체로 재바인딩해도 호출자 이름은 바뀌지 않습니다.</div></div>
+    <div class="qa"><div class="q">함수가 first-class object라는 말은?</div><div class="a">함수를 값처럼 변수에 담고, 인자로 넘기고, 반환값으로 돌려줄 수 있다는 뜻입니다. 이 덕분에 고차 함수, 데코레이터, 콜백, 전략 주입 같은 패턴을 간결하게 표현할 수 있습니다.</div></div>
+
+    <h2>관련 개념</h2><ul class="related-chips"><li><a href="python-basics.html">Python 언어 기본</a></li><li><a href="data-types.html">자료형과 컬렉션</a></li><li><a href="iterators-generators.html">이터레이터 / 제너레이터</a></li><li><a href="index.html">Python 목록</a></li></ul>
+    <nav class="footer-nav" aria-label="페이지 이동"><a class="prev" href="data-types.html"><span class="label">이전</span>← 자료형과 컬렉션</a><a href="index.html">📂 Python으로</a><a class="next" href="oop-python.html"><span class="label">다음</span>객체지향 Python →</a></nav>
+  </main>
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
