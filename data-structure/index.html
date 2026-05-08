@@ -31,11 +31,23 @@
       여기서는 가장 자주 쓰이는 자료구조들을 <em>형태와 동작 방식</em>을 중심으로 정리합니다.
     </p>
 
-    <!-- =========================================
-         선형 구조
-    ========================================== -->
+    <div class="callout">
+      <p><strong>📚 학습 가이드 — 핵심 먼저, 그다음 심화</strong></p>
+      <p>
+        먼저 <em>핵심 개념</em>을 한 번 훑어 큰 그림을 만든 뒤, 깊이 알고 싶은 주제는 같은 카테고리의 <em>심화 / 상세</em>로 들어가세요.
+        예: 해시 테이블 → 일관 해싱 / B+Tree → 페이지 분할 심층.
+      </p>
+    </div>
+
+    <h2 style="margin-top:32px; padding-bottom:6px; border-bottom:2px solid var(--accent);">
+      🧩 핵심 개념
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      자료구조를 처음 배우거나 면접 직전에 한 번 훑기 좋은 우선순위 개념들.
+    </p>
+
     <section class="concept-section">
-      <h2>선형 구조</h2>
+      <h3>선형 구조</h3>
       <p>데이터가 <strong>일렬로 늘어선</strong> 형태. 순서가 있고, 한 방향(또는 양방향)으로 이동하면서 다룬다.</p>
       <ul class="concept-list">
         <li>
@@ -61,11 +73,8 @@
       </ul>
     </section>
 
-    <!-- =========================================
-         해시 기반
-    ========================================== -->
     <section class="concept-section">
-      <h2>해시 기반</h2>
+      <h3>해시 기반</h3>
       <p>키(key)를 <strong>해시 함수</strong>로 변환해 빠르게 위치를 찾는 구조. 평균 O(1) 조회가 강점.</p>
       <ul class="concept-list">
         <li>
@@ -75,11 +84,8 @@
       </ul>
     </section>
 
-    <!-- =========================================
-         비선형 구조 (트리)
-    ========================================== -->
     <section class="concept-section">
-      <h2>비선형 구조 — 트리</h2>
+      <h3>비선형 구조 — 트리</h3>
       <p>부모-자식 관계로 <strong>계층</strong>을 표현. 탐색·정렬·우선순위 처리 등 다양한 변형이 있다.</p>
       <ul class="concept-list">
         <li>
@@ -109,16 +115,60 @@
       </ul>
     </section>
 
-    <!-- =========================================
-         비선형 구조 (그래프)
-    ========================================== -->
     <section class="concept-section">
-      <h2>비선형 구조 — 그래프</h2>
+      <h3>비선형 구조 — 그래프</h3>
       <p>노드(정점)와 엣지(간선)로 <strong>관계</strong>를 표현. 지도, SNS 친구 관계, 의존성 관리 등에 등장.</p>
       <ul class="concept-list">
         <li>
           <a href="graph.html">그래프(Graph)</a>
           <span class="summary">정점과 간선의 집합. 인접 행렬 vs 인접 리스트의 trade-off가 핵심.</span>
+        </li>
+      </ul>
+    </section>
+
+    <h2 style="margin-top:48px; padding-bottom:6px; border-bottom:2px solid var(--text-muted);">
+      🔬 심화 / 상세
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      핵심 개념을 한 번 본 뒤, 면접에서 깊이 물어볼 만한 주제를 별도 페이지로 정리합니다. (작성 예정)
+    </p>
+
+    <section class="concept-section">
+      <h3>메모리·동시성 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>다차원 배열과 메모리 레이아웃 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">row-major vs column-major, cache locality 영향.</span>
+        </li>
+        <li class="todo">
+          <a>이중 / 원형 연결 리스트 단독 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">단방향과의 차이, LRU 캐시 등 활용 사례.</span>
+        </li>
+        <li class="todo">
+          <a>동시성 자료구조 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">ConcurrentHashMap 세그먼트, lock-free queue, CAS.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>해시·확률·인덱스 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>일관 해싱(Consistent Hashing) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">가상 노드, 분산 캐시·샤딩 적용.</span>
+        </li>
+        <li class="todo">
+          <a>스킵 리스트(Skip List) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">Redis sorted set 내부 구조.</span>
+        </li>
+        <li class="todo">
+          <a>블룸 필터(Bloom Filter) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">확률적 멤버십, Counting/Cuckoo 변형.</span>
+        </li>
+        <li class="todo">
+          <a>LSM-Tree <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">쓰기 최적화, SSTable, 컴팩션 (LevelDB/RocksDB).</span>
         </li>
       </ul>
     </section>

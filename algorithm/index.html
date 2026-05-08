@@ -31,11 +31,23 @@
       <em>왜 그렇게 동작하는지</em>와 <em>언제 어떤 걸 골라야 하는지</em>를 중심으로 정리합니다.
     </p>
 
-    <!-- =========================================
-         탐색
-    ========================================== -->
+    <div class="callout">
+      <p><strong>📚 학습 가이드 — 핵심 먼저, 그다음 심화</strong></p>
+      <p>
+        먼저 <em>핵심 개념</em>을 한 번 훑어 큰 그림을 만든 뒤, 깊이 알고 싶은 주제는 같은 카테고리의 <em>심화 / 상세</em>로 들어가세요.
+        예: 정렬 입문 → 퀵/병합/힙 정렬 단독 / DP → 세그먼트 트리.
+      </p>
+    </div>
+
+    <h2 style="margin-top:32px; padding-bottom:6px; border-bottom:2px solid var(--accent);">
+      🧩 핵심 개념
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      알고리즘을 처음 배우거나 코딩 테스트·면접 직전에 한 번 훑기 좋은 우선순위 개념들.
+    </p>
+
     <section class="concept-section">
-      <h2>탐색(Search)</h2>
+      <h3>탐색(Search)</h3>
       <p>"찾는다"는 가장 기본적인 작업. 데이터의 형태(정렬됨/그래프 등)에 따라 적절한 알고리즘이 달라진다.</p>
       <ul class="concept-list">
         <li>
@@ -49,11 +61,8 @@
       </ul>
     </section>
 
-    <!-- =========================================
-         정렬
-    ========================================== -->
     <section class="concept-section">
-      <h2>정렬(Sorting)</h2>
+      <h3>정렬(Sorting)</h3>
       <p>가장 자주 등장하는 도구. 안정성·in-place 여부·평균/최악 복잡도가 선택 기준이 된다.</p>
       <ul class="concept-list">
         <li>
@@ -63,11 +72,8 @@
       </ul>
     </section>
 
-    <!-- =========================================
-         그래프 알고리즘
-    ========================================== -->
     <section class="concept-section">
-      <h2>그래프 알고리즘</h2>
+      <h3>그래프 알고리즘</h3>
       <p>최단 경로, 신장 트리, 위상 정렬 등 그래프의 구조를 활용하는 문제들.</p>
       <ul class="concept-list">
         <li>
@@ -93,11 +99,8 @@
       </ul>
     </section>
 
-    <!-- =========================================
-         설계 기법
-    ========================================== -->
     <section class="concept-section">
-      <h2>설계 기법(Design Paradigm)</h2>
+      <h3>설계 기법(Design Paradigm)</h3>
       <p>특정 알고리즘이 아니라, 문제를 푸는 사고의 큰 틀.</p>
       <ul class="concept-list">
         <li>
@@ -115,6 +118,63 @@
         <li>
           <a href="backtracking.html">백트래킹(Backtracking)</a>
           <span class="summary">결정을 시도하다 막히면 되돌아가기. N-Queens, 부분집합, 순열 생성.</span>
+        </li>
+      </ul>
+    </section>
+
+    <h2 style="margin-top:48px; padding-bottom:6px; border-bottom:2px solid var(--text-muted);">
+      🔬 심화 / 상세
+    </h2>
+    <p style="color:var(--text-muted); font-size:14px;">
+      핵심 개념을 한 번 본 뒤, 면접에서 깊이 물어볼 만한 주제를 별도 페이지로 정리합니다. (작성 예정)
+    </p>
+
+    <section class="concept-section">
+      <h3>정렬 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>퀵 정렬 단독 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">피벗 선택, Lomuto/Hoare 파티션, 3-way partition, introsort.</span>
+        </li>
+        <li class="todo">
+          <a>병합 정렬 단독 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">외부 병합(디스크 정렬), TimSort 변형.</span>
+        </li>
+        <li class="todo">
+          <a>힙 정렬 단독 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">힙 구성 단계별 시각화.</span>
+        </li>
+        <li class="todo">
+          <a>비비교 정렬 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">계수 / 기수 / 버킷 정렬.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>그래프·자료구조 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>세그먼트 트리 / 펜윅 트리(BIT) <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">구간 합·최솟값 쿼리, lazy propagation.</span>
+        </li>
+        <li class="todo">
+          <a>네트워크 플로우 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">포드-풀커슨, 에드몬드-카프, 디닉.</span>
+        </li>
+        <li class="todo">
+          <a>LCA / 희소 테이블 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">트리에서 두 노드의 최소 공통 조상.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="concept-section">
+      <h3>문자열 심화</h3>
+      <ul class="concept-list">
+        <li class="todo">
+          <a>문자열 알고리즘 <span class="badge-todo">작성 예정</span></a>
+          <span class="summary">KMP, Rabin-Karp, Z 알고리즘, 접미사 배열.</span>
         </li>
       </ul>
     </section>

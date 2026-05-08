@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>디자인 패턴 입문 · 소프트웨어공학 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">소프트웨어공학</a>
+      <span class="sep">›</span>
+      <span>디자인 패턴 입문</span>
+    </nav>
+
+    <h1>디자인 패턴 입문(GoF 23)</h1>
+
+    <div class="definition">
+      <strong>디자인 패턴</strong>은 자주 등장하는 설계 문제에 대한 <strong>이름 붙은 해법 목록</strong>입니다.
+      GoF(Gang of Four)가 정리한 23개 패턴은 목적에 따라 <strong>생성(Creational) · 구조(Structural) · 행위(Behavioral)</strong> 세 묶음으로 나뉘며,
+      모두 OOP의 다형성·합성·인터페이스를 활용해 변화에 강한 코드를 만드는 도구입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      비슷한 설계 문제를 만나는 사람들이 비슷한 해법을 반복적으로 떠올리다 보니, "이 상황에는 보통 이렇게 푸는 것이 좋더라"가 패턴으로 굳어졌습니다.
+      패턴은 정답이 아니라 <strong>이름 붙은 어휘</strong>입니다 — 같은 어휘를 쓰면 팀이 더 빨리 같은 그림을 공유할 수 있습니다.
+    </p>
+    <p>
+      처음 패턴을 배울 때 흔한 함정은 "패턴을 적용하기 위한 코드"를 짜는 것입니다. 패턴은 문제가 보일 때 꺼내드는 도구이지,
+      모든 코드를 패턴 모양으로 다듬을 이유는 없습니다. 그래서 "어떤 변화가 자주 발생하는가"를 먼저 보고 그에 맞는 패턴을 고르는 순서가 옳습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>비유 — 요리 레시피북</strong></p>
+      <p>
+        "재료가 이렇게 있을 때 보통 이런 요리를 하더라"의 모음이 레시피북이라면, 디자인 패턴은 코드 설계의 레시피북입니다.
+        레시피를 안다고 모든 음식을 만들 필요는 없지만, 비슷한 상황을 만났을 때 처음부터 고민하지 않아도 되죠.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>공통 어휘</strong> — "Strategy로 빼자", "Decorator 한 겹 추가" 한 마디로 의도가 전달된다.</li>
+      <li><strong>검증된 구조</strong> — 비슷한 문제에서 반복적으로 잘 동작한 형태.</li>
+      <li><strong>SOLID 적용 도구</strong> — OCP·DIP를 코드에서 자연스럽게 만들도록 도와준다.</li>
+      <li><strong>리팩터링 목적지</strong> — 안티패턴을 가진 코드를 어디로 옮길지를 알려준다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 세 카테고리 한눈에</h3>
+    <div class="viz">
+      <svg width="700" height="220" viewBox="0 0 700 220" role="img" aria-label="GoF categories">
+        <g font-size="13">
+          <rect x="20"  y="20" width="200" height="180" fill="var(--bg-card)" stroke="var(--accent)"/>
+          <text x="120" y="44" text-anchor="middle" font-weight="bold" fill="var(--accent)">생성(Creational)</text>
+          <text x="40" y="78" font-size="12">· Singleton</text>
+          <text x="40" y="98" font-size="12">· Factory Method</text>
+          <text x="40" y="118" font-size="12">· Abstract Factory</text>
+          <text x="40" y="138" font-size="12">· Builder</text>
+          <text x="40" y="158" font-size="12">· Prototype</text>
+          <text x="120" y="190" text-anchor="middle" font-size="11" fill="var(--text-muted)">"어떻게 만들 것인가"</text>
+
+          <rect x="240" y="20" width="200" height="180" fill="var(--bg-card)" stroke="var(--accent)"/>
+          <text x="340" y="44" text-anchor="middle" font-weight="bold" fill="var(--accent)">구조(Structural)</text>
+          <text x="260" y="78" font-size="12">· Adapter</text>
+          <text x="260" y="98" font-size="12">· Decorator</text>
+          <text x="260" y="118" font-size="12">· Proxy</text>
+          <text x="260" y="138" font-size="12">· Facade</text>
+          <text x="260" y="158" font-size="12">· Composite · Bridge · Flyweight</text>
+          <text x="340" y="190" text-anchor="middle" font-size="11" fill="var(--text-muted)">"어떻게 합칠 것인가"</text>
+
+          <rect x="460" y="20" width="220" height="180" fill="var(--bg-card)" stroke="var(--accent)"/>
+          <text x="570" y="44" text-anchor="middle" font-weight="bold" fill="var(--accent)">행위(Behavioral)</text>
+          <text x="480" y="68" font-size="12">· Strategy · Observer</text>
+          <text x="480" y="86" font-size="12">· Command · State</text>
+          <text x="480" y="104" font-size="12">· Template Method</text>
+          <text x="480" y="122" font-size="12">· Iterator · Chain of Resp.</text>
+          <text x="480" y="140" font-size="12">· Mediator · Memento</text>
+          <text x="480" y="158" font-size="12">· Visitor · Interpreter</text>
+          <text x="570" y="190" text-anchor="middle" font-size="11" fill="var(--text-muted)">"어떻게 협력할 것인가"</text>
+        </g>
+      </svg>
+      <span class="viz-caption">생성=만들기, 구조=합치기, 행위=협력. 이 세 줄로 23개를 분류해 외운다.</span>
+    </div>
+
+    <h3>2) 생성(Creational) — 객체 생성을 캡슐화</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>패턴</th><th>의도</th><th>대표 예시</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Singleton</td><td>한 클래스에 인스턴스 하나만 보장</td><td>로그 매니저, 설정 객체</td></tr>
+        <tr><td>Factory Method</td><td>구체 클래스 결정을 서브클래스로 위임</td><td><code>List.of()</code>, <code>Calendar.getInstance()</code></td></tr>
+        <tr><td>Abstract Factory</td><td>관련된 객체군을 함께 생성</td><td>UI 룩&amp;필 (Mac/Windows 위젯 가족)</td></tr>
+        <tr><td>Builder</td><td>복잡한 객체를 단계적으로 조립</td><td><code>StringBuilder</code>, Lombok <code>@Builder</code></td></tr>
+        <tr><td>Prototype</td><td>기존 객체를 복제해 새 객체 생성</td><td>JS의 prototype, <code>Object.clone()</code></td></tr>
+      </tbody>
+    </table>
+
+<pre><code>// Builder — 큰 객체를 가독성 있게 조립
+HttpRequest req = HttpRequest.newBuilder()
+        .uri(URI.create("https://api.example.com"))
+        .header("Authorization", "Bearer ...")
+        .timeout(Duration.ofSeconds(5))
+        .GET()
+        .build();
+</code></pre>
+
+    <h3>3) 구조(Structural) — 객체를 합치는 형태</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>패턴</th><th>의도</th><th>대표 예시</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Adapter</td><td>호환되지 않는 인터페이스를 변환</td><td>레거시 API 래퍼</td></tr>
+        <tr><td>Decorator</td><td>객체에 책임을 동적으로 덧붙임</td><td>Java I/O <code>BufferedInputStream</code></td></tr>
+        <tr><td>Proxy</td><td>접근 제어·지연 로딩 등 대리자</td><td>JPA의 lazy loading, RPC stub</td></tr>
+        <tr><td>Facade</td><td>복잡한 서브시스템에 단순한 입구</td><td>Spring의 <code>JdbcTemplate</code></td></tr>
+        <tr><td>Composite</td><td>부분-전체 트리 구조를 동일하게</td><td>UI 트리, 파일 시스템</td></tr>
+        <tr><td>Bridge</td><td>추상과 구현을 분리해 독립 변경</td><td>JDBC API ↔ 드라이버</td></tr>
+        <tr><td>Flyweight</td><td>다수의 작은 객체를 공유로 절약</td><td>String 풀, 폰트 글리프 캐시</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>// Decorator — 기능을 한 겹씩 덧입히기
+Reader r = new BufferedReader(
+              new InputStreamReader(
+                 new FileInputStream("data.txt"),
+                 StandardCharsets.UTF_8));
+// File 읽기 → 인코딩 변환 → 버퍼링이 차례로 추가
+</code></pre>
+
+    <h3>4) 행위(Behavioral) — 객체 사이의 협력 방식</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>패턴</th><th>의도</th><th>대표 예시</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Strategy</td><td>알고리즘을 갈아끼울 수 있게</td><td>정렬 비교자, 결제 수단</td></tr>
+        <tr><td>Observer</td><td>상태 변화를 구독자에게 통지</td><td>UI 이벤트, 발행/구독</td></tr>
+        <tr><td>Command</td><td>요청을 객체로 캡슐화</td><td>Undo/Redo, 작업 큐</td></tr>
+        <tr><td>State</td><td>객체의 상태에 따라 동작이 변함</td><td>주문 상태머신</td></tr>
+        <tr><td>Template Method</td><td>알고리즘 골격은 부모, 일부는 자식</td><td>Spring <code>JdbcTemplate</code> hook</td></tr>
+        <tr><td>Iterator</td><td>내부 표현 노출 없이 순회</td><td>Java <code>Iterator</code></td></tr>
+        <tr><td>Chain of Responsibility</td><td>요청을 처리자 체인으로 전달</td><td>Servlet Filter, 미들웨어</td></tr>
+        <tr><td>Mediator</td><td>객체 사이 통신을 중재자로 모음</td><td>채팅 룸 서버</td></tr>
+        <tr><td>Memento</td><td>상태 스냅샷을 저장/복원</td><td>편집기의 undo 스택</td></tr>
+        <tr><td>Visitor</td><td>구조를 그대로 두고 동작을 추가</td><td>AST 위 코드 분석기</td></tr>
+        <tr><td>Interpreter</td><td>도메인 언어의 문법 트리 해석</td><td>정규식 엔진, SQL 파서</td></tr>
+      </tbody>
+    </table>
+
+<pre><code>// Strategy — 알고리즘 갈아끼우기
+interface SortStrategy { void sort(int[] a); }
+class QuickSort implements SortStrategy { public void sort(int[] a) { ... } }
+class MergeSort implements SortStrategy { public void sort(int[] a) { ... } }
+
+class Sorter {
+    private final SortStrategy s;
+    Sorter(SortStrategy s) { this.s = s; }
+    void run(int[] a) { s.sort(a); }
+}
+</code></pre>
+
+<pre><code>// Observer — 발행/구독
+interface Observer { void onEvent(Event e); }
+class Topic {
+    private final List&lt;Observer&gt; subs = new ArrayList&lt;&gt;();
+    public void subscribe(Observer o) { subs.add(o); }
+    public void publish(Event e) { subs.forEach(s -&gt; s.onEvent(e)); }
+}
+</code></pre>
+
+    <h3>5) "Strategy"와 "State"의 차이</h3>
+    <p>
+      구조는 거의 같지만 의도가 다릅니다. Strategy는 <strong>외부에서 골라주는 알고리즘</strong>이고, State는 <strong>객체 내부 상태에 따라 자동으로 바뀌는 동작</strong>입니다.
+      Strategy는 클라이언트가 의도적으로 갈아끼우고, State는 객체가 스스로 상태 전이를 관리합니다.
+    </p>
+
+    <h3>6) 패턴을 어떻게 고를까 — 변화의 축</h3>
+    <p>
+      "코드의 어느 부분이 자주 바뀌는가?"를 먼저 보고, 그 변화 축에 맞는 패턴을 고릅니다.
+    </p>
+    <ul>
+      <li>알고리즘만 바뀐다 → <strong>Strategy</strong></li>
+      <li>객체 생성 방식이 다양하다 → <strong>Factory / Builder</strong></li>
+      <li>기능을 누적해 덧붙이고 싶다 → <strong>Decorator</strong></li>
+      <li>요청 자체를 저장·재생하고 싶다 → <strong>Command</strong></li>
+      <li>상태에 따라 다르게 동작한다 → <strong>State</strong></li>
+      <li>외부 시스템 인터페이스가 다르다 → <strong>Adapter / Facade</strong></li>
+      <li>접근/생성 비용을 제어 → <strong>Proxy / Flyweight</strong></li>
+    </ul>
+
+    <h3>7) 모던 자바와 패턴</h3>
+    <ul>
+      <li><strong>람다 / 메서드 레퍼런스</strong>로 Strategy·Command·Observer를 인터페이스 1메서드로 간단히.</li>
+      <li><strong>레코드 / sealed class</strong>가 Visitor·State 패턴과 잘 어울림(switch 표현식).</li>
+      <li><strong>Stream</strong>이 Iterator를 한 단계 추상화.</li>
+      <li><strong>Optional</strong>이 Null Object 패턴의 변형.</li>
+      <li>Spring 같은 IoC 컨테이너가 Factory·Singleton·Strategy 결합을 대신 처리.</li>
+    </ul>
+
+    <h2>시간/공간 복잡도 또는 trade-off</h2>
+    <ul>
+      <li><strong>가독성 vs 유연성</strong> — 패턴은 유연성을 주지만 흐름 추적이 어려워질 수 있다. 단순한 곳엔 안 쓰는 게 낫다.</li>
+      <li><strong>클래스 수 폭증</strong> — 인터페이스 + 구현체 + 팩토리 + 컨텍스트 등 파일이 늘어남.</li>
+      <li><strong>추상화 비용</strong> — 가상 호출, 객체 생성 비용이 약간 증가.</li>
+      <li><strong>학습 곡선</strong> — 팀이 같은 패턴 어휘를 공유하지 않으면 오히려 의사소통 비용이 늘어난다.</li>
+    </ul>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>Spring</strong> — Factory(BeanFactory), Singleton(빈 스코프), Proxy(@Transactional, AOP), Template Method(JdbcTemplate).</li>
+      <li><strong>Java I/O</strong> — Decorator(Stream/Reader 체이닝), Adapter(InputStreamReader).</li>
+      <li><strong>UI 프레임워크</strong> — Composite(트리), Observer(이벤트), Strategy(layout, 정렬).</li>
+      <li><strong>정적 도구</strong> — Visitor(AST 분석), Interpreter(파서), Iterator(컬렉션 순회).</li>
+      <li><strong>메시징/이벤트</strong> — Observer/Mediator로 약한 결합 유지.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">디자인 패턴 카테고리 3가지와 각 카테고리의 의도는?</div>
+      <div class="a">
+        생성(Creational)은 객체 생성 방식을 캡슐화해 변화에 대비하는 패턴(Factory, Builder, Singleton 등),
+        구조(Structural)는 객체를 결합해 더 큰 구조를 만들거나 인터페이스를 변환하는 패턴(Adapter, Decorator, Proxy 등),
+        행위(Behavioral)는 객체 간 책임 분배와 협력 방식을 다루는 패턴(Strategy, Observer, State 등)입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Strategy와 State 패턴의 차이는?</div>
+      <div class="a">
+        구조는 비슷하지만 의도가 다릅니다. Strategy는 외부에서 알고리즘을 선택해 주입하는 패턴이고,
+        State는 객체 내부 상태에 따라 동작이 자동으로 바뀌며 객체 스스로 상태 전이를 관리하는 패턴입니다.
+        "내가 원하는 알고리즘으로 갈아끼우는가" vs "객체의 상태에 따라 동작이 자연스럽게 바뀌는가"로 구분합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Singleton의 단점은?</div>
+      <div class="a">
+        ① 전역 상태가 되어 테스트 격리를 어렵게 합니다.
+        ② 멀티스레드 환경에서 잘못 구현하면 race condition이 발생합니다(이중 검증 락, 정적 홀더, enum 등으로 해결).
+        ③ 의존을 숨겨 결합을 늘립니다(필요한 곳에 명시적으로 주입하는 게 보통 더 낫다).
+        실무에선 Spring의 빈 스코프가 사실상 Singleton 역할을 안전하게 대신해 줍니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Decorator와 Proxy의 차이는?</div>
+      <div class="a">
+        구조는 같지만 목적이 다릅니다. Decorator는 <strong>기능을 동적으로 추가</strong>하는 데 초점이 있고,
+        Proxy는 <strong>접근 제어·지연 로딩·원격 호출</strong> 같이 객체 접근을 통제하는 데 초점이 있습니다.
+        Java I/O의 BufferedReader는 Decorator의 예, JPA의 lazy proxy는 Proxy의 예입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">디자인 패턴을 외워서 다 적용하면 좋은가요?</div>
+      <div class="a">
+        아닙니다. 패턴은 변화가 자주 일어나는 곳에 꺼내 드는 도구이지, 모든 코드를 패턴 모양으로 다듬어야 하는 건 아닙니다.
+        과도하게 적용하면 클래스 수가 폭발하고 흐름이 흐려집니다. "이 변화 축이 실제로 자주 발생하는가"를 먼저 보고 적용하세요.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">현대 자바·프레임워크에서 사라진/덜 보이는 패턴이 있나요?</div>
+      <div class="a">
+        함수형 인터페이스와 람다가 들어오면서 Strategy·Command·Observer는 명시적 클래스 없이 람다로 표현되는 경우가 많아졌습니다.
+        DI 컨테이너가 Factory·Singleton 결합을 대신 처리해 직접 작성하는 일도 줄었습니다. sealed class와 pattern matching이 들어오면서 Visitor의 자리도 줄어드는 추세입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="oop.html">OOP</a></li>
+      <li><a href="solid.html">SOLID 원칙</a></li>
+      <li><a href="testing-strategy.html">테스트 전략</a></li>
+      <li><a href="index.html">소프트웨어공학 목록</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="solid.html">
+        <span class="label">이전</span>
+        ← SOLID 원칙
+      </a>
+      <a href="index.html">📂 소프트웨어공학으로</a>
+      <a class="next" href="testing-strategy.html">
+        <span class="label">다음</span>
+        테스트 전략 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
