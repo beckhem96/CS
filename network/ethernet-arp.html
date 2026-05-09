@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>이더넷 / MAC / ARP · 네트워크 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">네트워크</a>
+      <span class="sep">›</span>
+      <span>이더넷 / MAC / ARP</span>
+    </nav>
+
+    <h1>이더넷 / MAC / ARP — 같은 LAN 안에서 패킷이 전달되는 방식</h1>
+
+    <div class="definition">
+      <strong>이더넷(Ethernet)</strong>은 같은 LAN 안에서 전기·광 신호로 데이터를 주고받는 가장 흔한 데이터링크 계층 기술이고,
+      그 안에서 각 NIC를 식별하는 48비트 주소가 <strong>MAC 주소</strong>입니다.
+      <strong>ARP(Address Resolution Protocol)</strong>는 IP 주소만 아는 상태에서 같은 LAN 안의 MAC 주소를 찾아내는 프로토콜로,
+      IP 패킷이 실제 전선 위에서 전달되기 위해 반드시 거치는 단계입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      "192.168.1.10에 있는 동료 컴퓨터에 핑을 보내라"고 명령하면, 우리는 IP 주소만 떠올립니다.
+      하지만 실제 LAN 케이블 위로 흐르는 신호는 IP 주소를 모릅니다 — 이더넷은 <strong>MAC 주소</strong>로만 목적지를 인식합니다.
+      그래서 IP 패킷을 전송하기 전에 "이 IP를 가진 NIC의 MAC 주소가 무엇인가?"를 알아내야 하는데, 그 일을 ARP가 합니다.
+    </p>
+    <p>
+      이 흐름을 한 번 알면 핑이 안 갈 때, 같은 서브넷 안에서 통신이 안 될 때, 가상 머신·컨테이너 네트워크가 이상할 때 어디를 봐야 할지가 명확해집니다.
+      네트워크 디버깅의 가장 깊은 층이 바로 이 L2/ARP 영역입니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>핵심 한 줄 — IP는 "어디로", MAC은 "지금 누구에게"</strong></p>
+      <p>
+        IP 주소는 출발지에서 목적지까지의 <em>전체 여정</em>을 알려주고, MAC 주소는 한 LAN 안에서 <em>다음 한 발짝</em>을 알려줍니다.
+        그래서 IP는 패킷이 라우터를 지나는 동안 그대로 유지되지만, MAC 주소는 라우터를 지날 때마다 바뀝니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>물리 매체와 논리 주소의 분리</strong> — IP를 NIC에 박아두면 NIC를 교체할 때마다 IP가 바뀌어 운영이 어렵습니다. MAC은 NIC가 갖고 IP는 OS가 부여하는 분리가 자연스럽습니다.</li>
+      <li><strong>같은 LAN 안의 직접 전달</strong> — 라우터를 거치지 않고 같은 스위치에 연결된 호스트끼리는 직접 프레임을 주고받아야 합니다. 이때 필요한 건 IP가 아니라 MAC입니다.</li>
+      <li><strong>주소 변환의 자동화</strong> — IP만 알고 있는 응용/OS가 ARP 덕분에 MAC을 자동으로 알아냅니다. 사람이 직접 ARP 테이블을 적어둘 필요가 없습니다.</li>
+      <li><strong>네트워크 디버깅의 기반</strong> — "IP는 보이는데 통신이 안 된다"는 문제는 거의 항상 ARP/L2 단계에서 발생합니다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 이더넷 프레임 구조</h3>
+    <div class="viz">
+      <svg width="680" height="200" viewBox="0 0 680 200" role="img" aria-label="이더넷 프레임 구조">
+        <rect class="node" x="20" y="60" width="80" height="50" rx="4" fill="#3a3a3a"/>
+        <text class="label" x="60" y="85" text-anchor="middle">Preamble</text>
+        <text class="label" x="60" y="100" text-anchor="middle">7 byte</text>
+
+        <rect class="node" x="100" y="60" width="60" height="50" rx="4" fill="#3a3a3a"/>
+        <text class="label" x="130" y="85" text-anchor="middle">SFD</text>
+        <text class="label" x="130" y="100" text-anchor="middle">1 byte</text>
+
+        <rect class="node highlight" x="160" y="60" width="100" height="50" rx="4"/>
+        <text class="label" x="210" y="83" text-anchor="middle" fill="#1a1a1a" font-weight="bold">Dest MAC</text>
+        <text class="label" x="210" y="100" text-anchor="middle" fill="#1a1a1a">6 byte</text>
+
+        <rect class="node highlight" x="260" y="60" width="100" height="50" rx="4"/>
+        <text class="label" x="310" y="83" text-anchor="middle" fill="#1a1a1a" font-weight="bold">Src MAC</text>
+        <text class="label" x="310" y="100" text-anchor="middle" fill="#1a1a1a">6 byte</text>
+
+        <rect class="node" x="360" y="60" width="80" height="50" rx="4"/>
+        <text class="label" x="400" y="85" text-anchor="middle">EtherType</text>
+        <text class="label" x="400" y="100" text-anchor="middle">2 byte</text>
+
+        <rect class="node" x="440" y="60" width="160" height="50" rx="4" fill="#444"/>
+        <text class="label" x="520" y="85" text-anchor="middle">Payload (IP 패킷 등)</text>
+        <text class="label" x="520" y="100" text-anchor="middle">46 ~ 1500 byte</text>
+
+        <rect class="node" x="600" y="60" width="60" height="50" rx="4" fill="#3a3a3a"/>
+        <text class="label" x="630" y="85" text-anchor="middle">FCS</text>
+        <text class="label" x="630" y="100" text-anchor="middle">4 byte</text>
+
+        <text class="label" x="340" y="155" text-anchor="middle">EtherType: 0x0800=IPv4, 0x0806=ARP, 0x86DD=IPv6</text>
+        <text class="label" x="340" y="175" text-anchor="middle">FCS = CRC-32 — 손상 검출(정정 아님)</text>
+      </svg>
+      <span class="viz-caption">출발지·목적지 MAC, 어떤 상위 프로토콜인지(EtherType), 그리고 페이로드와 검증 코드.</span>
+    </div>
+
+    <h3>2) MAC 주소 — 48비트의 의미</h3>
+    <p>
+      MAC 주소는 48비트(6바이트)로 보통 <code>aa:bb:cc:dd:ee:ff</code>처럼 표기합니다.
+      앞 24비트(<strong>OUI, Organizationally Unique Identifier</strong>)는 IEEE가 제조사에 발급하고, 뒤 24비트는 제조사가 NIC마다 부여합니다.
+      그래서 MAC만 보고도 어떤 회사 NIC인지 추정 가능합니다(예: <code>00:50:56</code> = VMware).
+    </p>
+    <ul>
+      <li><strong>유니캐스트</strong> — 첫 바이트의 LSB가 0. 한 NIC를 정확히 가리킴.</li>
+      <li><strong>멀티캐스트</strong> — 첫 바이트 LSB가 1. 여러 NIC가 함께 받기.</li>
+      <li><strong>브로드캐스트</strong> — <code>ff:ff:ff:ff:ff:ff</code>. LAN 안의 모든 NIC가 받기. ARP가 사용.</li>
+      <li><strong>로컬 / 글로벌</strong> — 두 번째 비트(U/L)가 1이면 로컬 관리(가상 머신·컨테이너가 자주 만드는 MAC).</li>
+    </ul>
+
+    <h3>3) ARP — IP를 MAC으로 바꾸는 4단계</h3>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="ARP 동작 흐름">
+        <defs>
+          <marker id="arpA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node highlight" x="20" y="40" width="160" height="70" rx="8"/>
+        <text class="node-text" x="100" y="68" fill="#1a1a1a" font-weight="bold">A (192.168.1.5)</text>
+        <text class="label" x="100" y="88" text-anchor="middle" fill="#1a1a1a">MAC: aa:aa:aa:aa:aa:aa</text>
+        <text class="label" x="100" y="103" text-anchor="middle" fill="#1a1a1a">B의 MAC을 모름</text>
+
+        <rect class="node" x="260" y="40" width="160" height="70" rx="8" fill="#444"/>
+        <text class="node-text" x="340" y="68">스위치 / LAN</text>
+        <text class="label" x="340" y="88" text-anchor="middle">브로드캐스트 전파</text>
+
+        <rect class="node highlight" x="500" y="40" width="160" height="70" rx="8"/>
+        <text class="node-text" x="580" y="68" fill="#1a1a1a" font-weight="bold">B (192.168.1.10)</text>
+        <text class="label" x="580" y="88" text-anchor="middle" fill="#1a1a1a">MAC: bb:bb:bb:bb:bb:bb</text>
+
+        <text class="label" x="340" y="140" text-anchor="middle" font-weight="bold">① ARP Request — 브로드캐스트</text>
+        <line x1="180" y1="155" x2="500" y2="155" stroke="var(--accent)" stroke-width="2" marker-end="url(#arpA)"/>
+        <text class="label" x="340" y="172" text-anchor="middle">"192.168.1.10 누구야? 너의 MAC을 알려줘" (Dest MAC = ff:ff:ff:ff:ff:ff)</text>
+
+        <text class="label" x="340" y="210" text-anchor="middle" font-weight="bold">② ARP Reply — 유니캐스트</text>
+        <line x1="500" y1="225" x2="180" y2="225" stroke="var(--accent)" stroke-width="2" marker-end="url(#arpA)"/>
+        <text class="label" x="340" y="242" text-anchor="middle">"내가 192.168.1.10이고, MAC은 bb:bb:bb:bb:bb:bb다"</text>
+
+        <text class="label" x="100" y="280" text-anchor="middle">③ A의 ARP 캐시에 저장</text>
+        <text class="label" x="580" y="280" text-anchor="middle">④ 이후 IP 패킷을 B의 MAC으로 직접 송신</text>
+      </svg>
+      <span class="viz-caption">ARP는 LAN 전체에 "누구야?"를 묻는 브로드캐스트로 시작해, 당사자만 답하는 유니캐스트로 끝난다.</span>
+    </div>
+
+    <h3>4) ARP 캐시 — 자주 묻지 않으려는 장치</h3>
+    <p>
+      매 패킷마다 ARP를 하면 LAN 트래픽이 폭발하므로, OS는 한 번 알아낸 IP↔MAC 매핑을 잠시 캐시합니다(보통 수 초 ~ 수 분).
+      <code>arp -n</code>(리눅스), <code>arp -a</code>(맥/윈도우)로 현재 캐시를 볼 수 있습니다.
+    </p>
+<pre><code>$ arp -n
+Address              HWtype  HWaddress           Iface
+192.168.1.1          ether   00:11:22:33:44:55   wlan0
+192.168.1.10         ether   bb:bb:bb:bb:bb:bb   wlan0
+</code></pre>
+    <p>
+      캐시가 만료되거나 호스트가 사라지면 다음 통신 직전 ARP가 다시 발생합니다.
+      <strong>Gratuitous ARP</strong>는 자기가 새 IP를 갖게 됐을 때 LAN 전체에 미리 알리는 ARP로, 페일오버나 IP 이전 직후 캐시 갱신에 쓰입니다.
+    </p>
+
+    <h3>5) 같은 LAN vs 다른 LAN — 패킷 전달의 결정적 차이</h3>
+    <p>
+      목적지 IP가 같은 서브넷이면 그 호스트의 MAC으로 직접 보냅니다.
+      다른 서브넷이면 그 IP의 MAC을 알 수 없고, 대신 <strong>"기본 게이트웨이의 MAC"</strong>으로 보냅니다.
+      라우터가 받아서 IP는 그대로 둔 채 자기가 다음 홉에 적합한 MAC으로 다시 감싸 전달합니다 — IP는 끝까지 유지, MAC은 매 홉마다 교체.
+    </p>
+    <div class="viz">
+      <svg width="680" height="240" viewBox="0 0 680 240" role="img" aria-label="같은/다른 LAN 패킷 전달">
+        <defs>
+          <marker id="lA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="label" x="170" y="20" text-anchor="middle">같은 LAN</text>
+        <rect class="node" x="40" y="40" width="80" height="50" rx="6"/><text class="label" x="80" y="68" text-anchor="middle">A</text>
+        <rect class="node" x="220" y="40" width="80" height="50" rx="6"/><text class="label" x="260" y="68" text-anchor="middle">B</text>
+        <line x1="120" y1="65" x2="220" y2="65" stroke="var(--accent)" stroke-width="2" marker-end="url(#lA)"/>
+        <text class="label" x="170" y="105" text-anchor="middle">Dst IP=B, Dst MAC=B의 MAC</text>
+        <text class="label" x="170" y="120" text-anchor="middle">한 홉으로 직접 도착</text>
+
+        <text class="label" x="510" y="20" text-anchor="middle">다른 LAN</text>
+        <rect class="node" x="380" y="40" width="60" height="50" rx="6"/><text class="label" x="410" y="68" text-anchor="middle">A</text>
+        <rect class="node" x="470" y="40" width="80" height="50" rx="6" fill="#444"/><text class="label" x="510" y="68" text-anchor="middle">Router</text>
+        <rect class="node" x="580" y="40" width="80" height="50" rx="6"/><text class="label" x="620" y="68" text-anchor="middle">C</text>
+        <line x1="440" y1="65" x2="470" y2="65" stroke="var(--accent)" stroke-width="2" marker-end="url(#lA)"/>
+        <line x1="550" y1="65" x2="580" y2="65" stroke="var(--accent)" stroke-width="2" marker-end="url(#lA)"/>
+        <text class="label" x="455" y="105" text-anchor="middle">Dst IP=C, Dst MAC=Router</text>
+        <text class="label" x="615" y="105" text-anchor="middle">Dst IP=C, Dst MAC=C</text>
+        <text class="label" x="510" y="125" text-anchor="middle">IP 유지, MAC만 매 홉 교체</text>
+
+        <text class="label" x="340" y="190" text-anchor="middle">"IP는 여행 전체의 목적지, MAC은 다음 한 발짝의 목적지"</text>
+      </svg>
+      <span class="viz-caption">목적지 IP가 같은 서브넷인지 아닌지에 따라 ARP 대상이 달라진다 — 호스트의 MAC vs 게이트웨이의 MAC.</span>
+    </div>
+
+    <h3>6) ARP 보안 — Spoofing과 그 방어</h3>
+    <p>
+      ARP는 응답 진위를 검증하지 않습니다. 누가 "192.168.1.1은 내 MAC이야"라고 답해도 그대로 캐시에 들어갑니다.
+      이를 악용해 공격자가 자기를 게이트웨이로 위장해 트래픽을 중간에서 가로채는 공격이 <strong>ARP Spoofing(또는 ARP Poisoning)</strong>입니다.
+      방어는 보통 다음 조합으로 합니다.
+    </p>
+    <ul>
+      <li><strong>스위치의 Dynamic ARP Inspection(DAI)</strong> — DHCP 스누핑 정보로 가짜 ARP를 차단.</li>
+      <li><strong>정적 ARP 항목</strong> — 게이트웨이 등 핵심 호스트는 수동으로 MAC을 못 박기.</li>
+      <li><strong>네트워크 분리</strong> — VLAN·private VLAN으로 브로드캐스트 도메인을 작게 유지.</li>
+      <li><strong>L2 모니터링</strong> — <code>arpwatch</code> 같은 도구로 매핑 변화를 감시.</li>
+    </ul>
+
+    <h2>trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>설계 결정</th><th>장점</th><th>비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ARP 캐시 길게</td><td>ARP 트래픽 감소, 지연 감소</td><td>호스트 변경(페일오버 등) 반영이 느림</td></tr>
+        <tr><td>ARP 캐시 짧게</td><td>변경 반영 빠름, 가상 환경에 유리</td><td>ARP 트래픽 증가, 짧은 시간마다 브로드캐스트</td></tr>
+        <tr><td>큰 브로드캐스트 도메인</td><td>VLAN 설계 단순</td><td>ARP·브로드캐스트 트래픽 폭주, 보안 영향 범위 큼</td></tr>
+        <tr><td>VLAN으로 분할</td><td>브로드캐스트 격리, 보안 영역 분리</td><td>VLAN 간 통신은 라우터 거쳐야 — 설계 복잡</td></tr>
+        <tr><td>점보 프레임 (MTU &gt; 1500)</td><td>대용량 전송 효율 ↑</td><td>경로 모든 장치 지원 필요, MTU 불일치 시 단편화</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>"같은 서브넷인데 통신이 안 됨" 디버깅</strong> — <code>arp -n</code>으로 매핑이 비어 있거나 잘못됐는지 확인하는 게 1순위입니다.</li>
+      <li><strong>VRRP / Keepalived 페일오버</strong> — 가상 IP가 다른 노드로 옮겨갈 때 Gratuitous ARP를 보내 LAN의 캐시를 갱신합니다.</li>
+      <li><strong>컨테이너 / VM 네트워크</strong> — 가상 NIC마다 자체 MAC이 부여되고, 브리지·OVS가 ARP를 처리합니다. 가상 MAC 관리가 모든 컨테이너 네트워크의 기반입니다.</li>
+      <li><strong>네트워크 보안 모니터링</strong> — ARP 변화 감지로 spoofing·rogue 디바이스를 식별합니다.</li>
+      <li><strong>패킷 분석</strong> — Wireshark에서 EtherType·MAC 헤더가 가장 먼저 보이고, 디버깅의 출발점이 됩니다.</li>
+      <li><strong>스위치 학습 테이블</strong> — 스위치는 프레임의 출발지 MAC을 보고 어느 포트가 누구인지 학습합니다(MAC learning).</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">IP 주소와 MAC 주소의 차이는 무엇인가요?</div>
+      <div class="a">
+        IP 주소는 네트워크 계층에서 사용하는 논리 주소로, 인터넷 전체에서 출발지부터 목적지까지의 여정을 식별합니다.
+        MAC 주소는 데이터링크 계층에서 사용하는 물리 주소로, 같은 LAN 안에서 다음 홉을 식별합니다.
+        그래서 IP는 패킷이 라우터를 지나도 그대로지만, MAC은 한 홉마다 출발지·목적지가 바뀝니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ARP는 무엇이고 왜 필요한가요?</div>
+      <div class="a">
+        ARP는 같은 LAN 안에서 IP 주소만 알고 있을 때 그에 해당하는 MAC 주소를 찾기 위한 프로토콜입니다.
+        이더넷은 MAC 주소로만 프레임을 전달하므로, IP 패킷을 보내기 전에 반드시 MAC을 알아내야 합니다.
+        호스트는 LAN에 "이 IP의 MAC이 뭐야?"를 브로드캐스트로 묻고, 해당 IP를 가진 호스트만 자기 MAC을 유니캐스트로 회신합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">같은 서브넷과 다른 서브넷의 통신은 ARP 측면에서 어떻게 다른가요?</div>
+      <div class="a">
+        같은 서브넷이면 그 호스트의 MAC을 ARP로 알아내 직접 프레임을 보냅니다.
+        다른 서브넷이면 목적지 호스트의 MAC을 알 수 없고, 대신 기본 게이트웨이(라우터)의 MAC을 ARP로 알아낸 뒤 그 게이트웨이에게 프레임을 보냅니다.
+        라우터가 IP를 보고 다음 홉을 결정해 다시 그쪽 LAN의 MAC으로 감싸 전달합니다 — IP는 끝까지 유지, MAC은 홉마다 바뀝니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ARP 캐시는 왜 사용하고, 보안적으로 위험한 점은 무엇인가요?</div>
+      <div class="a">
+        매 패킷마다 ARP를 하면 LAN에 브로드캐스트가 폭주하므로, 한 번 알아낸 IP↔MAC 매핑을 짧게 캐시합니다.
+        하지만 ARP는 응답을 검증하지 않아 누구든 "이 IP는 내 MAC이야"라고 답할 수 있고, 이를 악용한 ARP Spoofing으로 트래픽을 가로챌 수 있습니다.
+        방어로 스위치의 Dynamic ARP Inspection, 정적 ARP, VLAN 분리, arpwatch 같은 모니터링을 함께 사용합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Gratuitous ARP는 무엇이고 언제 쓰이나요?</div>
+      <div class="a">
+        Gratuitous ARP는 호스트가 누가 묻지 않았는데도 "내가 이 IP를 갖고 있고 내 MAC은 X다"를 LAN에 알리는 ARP입니다.
+        가상 IP가 다른 노드로 페일오버될 때, IP가 새로 할당될 때, MAC이 바뀐 뒤 LAN의 ARP 캐시를 갱신하기 위해 사용됩니다.
+        VRRP·Keepalived 같은 HA 도구가 페일오버 직후 자동으로 보냅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">이더넷 프레임의 EtherType은 어떤 역할인가요?</div>
+      <div class="a">
+        EtherType은 프레임이 담고 있는 페이로드가 어떤 상위 프로토콜에 속하는지 알려 줍니다.
+        0x0800은 IPv4, 0x86DD는 IPv6, 0x0806은 ARP를 의미합니다.
+        수신 측은 EtherType을 보고 페이로드를 IP 스택으로 보낼지 ARP 처리기로 보낼지 결정합니다.
+        이 한 필드가 같은 케이블 위에서 여러 프로토콜을 공존시키는 토대가 됩니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="osi-tcp-ip.html">OSI / TCP-IP 계층 모델</a></li>
+      <li><a href="ip-cidr.html">IP / CIDR</a></li>
+      <li><a href="routing-nat.html">라우팅 / NAT</a></li>
+      <li><a href="../data-communication/medium-access-control.html">데이터통신 — 매체 접근 제어</a></li>
+      <li><a href="index.html">네트워크 목록</a></li>
+    </ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="ip-cidr.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">IP / CIDR</span>
+            <span class="hint">L2 위에서 동작하는 네트워크 계층 — IP 주소·서브넷 체계</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="routing-nat.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">라우팅 / NAT</span>
+            <span class="hint">다른 LAN으로 패킷이 어떻게 흘러가는지 — 라우터의 일</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="osi-tcp-ip.html">
+        <span class="label">이전</span>
+        ← OSI / TCP-IP
+      </a>
+      <a href="index.html">📂 네트워크로</a>
+      <a class="next" href="ip-cidr.html">
+        <span class="label">다음</span>
+        IP / CIDR →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

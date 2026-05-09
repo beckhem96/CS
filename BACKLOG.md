@@ -24,14 +24,14 @@
 - [x] ~~**시스템 콜 / 유저 vs 커널 모드**~~ → ✅ `operating-system/system-call.html`
 - [x] ~~**IPC (프로세스 간 통신)**~~ → ✅ `operating-system/ipc.html`
 
-### 데이터베이스
-- [ ] **SQL 기본 (DDL / DML / DCL / TCL)** (`database/sql-basics.html`) — 다른 DB 페이지가 모두 전제로 깔고 있는 쿼리 자체. 카테고리/실행 흐름·자주 헷갈리는 문법
-- [ ] **ER 모델링과 DB 설계** (`database/er-modeling.html`) — 엔티티/관계/카디널리티/약한 엔티티, ER → 관계형 변환, 정규화 이전 단계
-- [ ] **복제 (Replication)** (`database/replication.html`) — 동기/비동기, 리더-팔로워, 읽기 분산, 페일오버, 리플리카 지연 문제
+### 데이터베이스 ✅ 보강 완료
+- [x] ~~**SQL 기본 (DDL / DML / DCL / TCL)**~~ → ✅ `database/sql-basics.html`
+- [x] ~~**ER 모델링과 DB 설계**~~ → ✅ `database/er-modeling.html`
+- [x] ~~**복제 (Replication)**~~ → ✅ `database/replication.html`
 
-### 네트워크
-- [ ] **HTTP 메서드와 상태 코드** (`network/http-methods-status.html`) — GET/POST/PUT/PATCH/DELETE 의미·멱등성/안전성, 1xx~5xx 분류와 자주 헷갈리는 코드(301 vs 302, 401 vs 403, 502 vs 504)
-- [ ] **이더넷 / MAC / ARP** (`network/ethernet-arp.html`) — L2 프레임 구조, MAC 주소, ARP 동작, 같은 LAN/다른 LAN에서의 패킷 전달 차이
+### 네트워크 ✅ 보강 완료
+- [x] ~~**HTTP 메서드와 상태 코드**~~ → ✅ `network/http-methods-status.html`
+- [x] ~~**이더넷 / MAC / ARP**~~ → ✅ `network/ethernet-arp.html`
 
 ### 컴퓨터구조
 - [ ] **DMA / I/O 시스템 / 버스** (`computer-architecture/dma-io.html`) — Programmed I/O vs Interrupt-driven vs DMA, 메모리 버스/시스템 버스/PCIe, MMIO와 포트 I/O
@@ -40,8 +40,8 @@
 - [ ] **클린 코드 / 리팩터링 / 코드 리뷰** (`software-engineering/clean-code.html`) — 의도가 드러나는 이름, 작은 함수, 코드 스멜, 안전한 리팩터링 절차, 효과적 코드 리뷰
 - [ ] **모놀리식 vs MSA / 아키텍처 스타일** (`software-engineering/architecture-styles.html`) — 단일 배포 vs 분산, 레이어드/헥사고날/이벤트 드리븐, 분리 기준과 trade-off
 
-### 알고리즘
-- [ ] **비트 조작 / 비트마스킹** (`algorithm/bit-manipulation.html`) — AND/OR/XOR/Shift, 부분집합 표현, popcount, 비트 DP, XOR 트릭
+### 알고리즘 ✅ 보강 완료
+- [x] ~~**비트 조작 / 비트마스킹**~~ → ✅ `algorithm/bit-manipulation.html`
 
 ---
 

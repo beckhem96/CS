@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>비트 조작 / 비트마스킹 · 알고리즘 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">알고리즘</a>
+      <span class="sep">›</span>
+      <span>비트 조작 / 비트마스킹</span>
+    </nav>
+
+    <h1>비트 조작 / 비트마스킹 (Bit Manipulation / Bitmasking)</h1>
+
+    <div class="definition">
+      <strong>비트 조작</strong>은 정수를 0과 1의 시퀀스로 보고 AND·OR·XOR·Shift 같은 연산으로 직접 다루는 기법입니다.
+      <strong>비트마스킹</strong>은 이 기법을 활용해 <em>N개 원소의 부분집합</em>이나 <em>여러 boolean 플래그</em>를 정수 하나로 표현하는 패턴입니다.
+      탐색·DP·자료구조에서 시간과 공간을 동시에 줄이는 가장 강력한 도구 중 하나입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      컴퓨터에서 정수는 결국 비트 배열입니다. 64비트 정수 하나는 0/1 64개를 묶어둔 것이고,
+      "<code>x &amp; (1 &lt;&lt; k)</code>가 0이 아니다"는 "x의 k번 비트가 켜져 있다"와 정확히 같은 의미입니다.
+      이렇게 정수와 boolean 배열을 자유롭게 오가는 시각이 비트마스킹의 출발입니다.
+    </p>
+    <p>
+      "N≤20인 부분집합 모두 시도하기"는 <code>2^20 ≈ 100만</code>개를 도는 일이고, 각 부분집합을 정수 하나로 표현하면 메모리·캐시·해시가 매우 가벼워집니다.
+      비트 DP, 외판원 문제(TSP), 권한 플래그, 색상 비트필드 같은 영역이 모두 이 시각 위에서 동작합니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>핵심 매핑 — 비트 ↔ 부분집합 ↔ 플래그</strong></p>
+      <ul style="margin:8px 0;">
+        <li>k번 비트 = "원소 k가 들어 있는가"</li>
+        <li>비트마스크 정수 m = "어떤 부분집합인가"</li>
+        <li>OR/AND/XOR = 합집합 / 교집합 / 대칭차</li>
+        <li>popcount(m) = 부분집합의 크기</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>속도</strong> — 비트 연산은 CPU 1~2 사이클이면 끝납니다. 같은 일을 boolean 배열로 하면 캐시·메모리 비용이 더 큽니다.</li>
+      <li><strong>공간</strong> — 64개 원소의 boolean 집합이 단 8바이트(64비트 정수 하나)에 들어갑니다.</li>
+      <li><strong>비트 DP의 상태</strong> — "지금까지 방문한 도시 집합" 같은 상태를 그대로 정수로 만들어 DP 테이블의 인덱스로 쓸 수 있습니다.</li>
+      <li><strong>저수준 시스템</strong> — 권한 플래그(<code>O_RDONLY|O_CREAT</code>), 색상 비트필드, 프로토콜 헤더가 모두 비트 단위로 정의됩니다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 비트 연산자 기본</h3>
+    <div class="viz">
+      <svg width="680" height="240" viewBox="0 0 680 240" role="img" aria-label="비트 연산자 진리표">
+        <text class="label" x="60" y="30" text-anchor="middle" font-weight="bold">a</text>
+        <text class="label" x="120" y="30" text-anchor="middle" font-weight="bold">b</text>
+        <text class="label" x="200" y="30" text-anchor="middle" font-weight="bold">a &amp; b</text>
+        <text class="label" x="290" y="30" text-anchor="middle" font-weight="bold">a | b</text>
+        <text class="label" x="380" y="30" text-anchor="middle" font-weight="bold">a ^ b</text>
+        <text class="label" x="480" y="30" text-anchor="middle" font-weight="bold">~a</text>
+        <line x1="20" y1="40" x2="540" y2="40" stroke="var(--text-muted)" stroke-width="1"/>
+
+        <text class="label" x="60" y="60" text-anchor="middle">0</text>
+        <text class="label" x="120" y="60" text-anchor="middle">0</text>
+        <text class="label" x="200" y="60" text-anchor="middle">0</text>
+        <text class="label" x="290" y="60" text-anchor="middle">0</text>
+        <text class="label" x="380" y="60" text-anchor="middle">0</text>
+        <text class="label" x="480" y="60" text-anchor="middle">1</text>
+
+        <text class="label" x="60" y="80" text-anchor="middle">0</text>
+        <text class="label" x="120" y="80" text-anchor="middle">1</text>
+        <text class="label" x="200" y="80" text-anchor="middle">0</text>
+        <text class="label" x="290" y="80" text-anchor="middle">1</text>
+        <text class="label" x="380" y="80" text-anchor="middle">1</text>
+        <text class="label" x="480" y="80" text-anchor="middle">1</text>
+
+        <text class="label" x="60" y="100" text-anchor="middle">1</text>
+        <text class="label" x="120" y="100" text-anchor="middle">0</text>
+        <text class="label" x="200" y="100" text-anchor="middle">0</text>
+        <text class="label" x="290" y="100" text-anchor="middle">1</text>
+        <text class="label" x="380" y="100" text-anchor="middle">1</text>
+        <text class="label" x="480" y="100" text-anchor="middle">0</text>
+
+        <text class="label" x="60" y="120" text-anchor="middle">1</text>
+        <text class="label" x="120" y="120" text-anchor="middle">1</text>
+        <text class="label" x="200" y="120" text-anchor="middle">1</text>
+        <text class="label" x="290" y="120" text-anchor="middle">1</text>
+        <text class="label" x="380" y="120" text-anchor="middle">0</text>
+        <text class="label" x="480" y="120" text-anchor="middle">0</text>
+
+        <line x1="20" y1="160" x2="660" y2="160" stroke="var(--text-muted)" stroke-width="1"/>
+        <text class="label" x="120" y="180" text-anchor="middle" font-weight="bold">a &lt;&lt; n</text>
+        <text class="label" x="120" y="200" text-anchor="middle">왼쪽 시프트 — a × 2ⁿ</text>
+        <text class="label" x="120" y="218" text-anchor="middle">5 &lt;&lt; 2 = 20</text>
+
+        <text class="label" x="320" y="180" text-anchor="middle" font-weight="bold">a &gt;&gt; n</text>
+        <text class="label" x="320" y="200" text-anchor="middle">오른쪽 시프트 — a / 2ⁿ</text>
+        <text class="label" x="320" y="218" text-anchor="middle">20 &gt;&gt; 2 = 5</text>
+
+        <text class="label" x="540" y="180" text-anchor="middle" font-weight="bold">a ^ a = 0</text>
+        <text class="label" x="540" y="200" text-anchor="middle">자기 자신과 XOR = 0</text>
+        <text class="label" x="540" y="218" text-anchor="middle">a ^ 0 = a (항등)</text>
+      </svg>
+      <span class="viz-caption">AND·OR·XOR·NOT 진리표와 시프트의 의미. XOR의 두 가지 항등식이 비트 트릭의 핵심.</span>
+    </div>
+
+    <h3>2) 자주 쓰는 비트 트릭 6가지</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>목적</th><th>식</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>k번 비트 켜기</td><td><code>x | (1 &lt;&lt; k)</code></td><td>해당 자리만 1, 나머지 0인 마스크와 OR</td></tr>
+        <tr><td>k번 비트 끄기</td><td><code>x &amp; ~(1 &lt;&lt; k)</code></td><td>해당 자리만 0인 마스크와 AND</td></tr>
+        <tr><td>k번 비트 토글</td><td><code>x ^ (1 &lt;&lt; k)</code></td><td>XOR로 0↔1 뒤집기</td></tr>
+        <tr><td>k번 비트 검사</td><td><code>(x &gt;&gt; k) &amp; 1</code></td><td>k번을 LSB로 옮긴 뒤 AND 1</td></tr>
+        <tr><td>가장 낮은 1비트만 추출</td><td><code>x &amp; -x</code></td><td>"isolate lowest set bit" — Fenwick tree의 핵심</td></tr>
+        <tr><td>가장 낮은 1비트 끄기</td><td><code>x &amp; (x - 1)</code></td><td>popcount 루프, "x가 2의 거듭제곱인가" 검사에 활용</td></tr>
+      </tbody>
+    </table>
+<pre><code># Python — 자주 쓰는 트릭
+def set_bit(x, k):     return x | (1 &lt;&lt; k)
+def clear_bit(x, k):   return x &amp; ~(1 &lt;&lt; k)
+def toggle_bit(x, k):  return x ^ (1 &lt;&lt; k)
+def get_bit(x, k):     return (x &gt;&gt; k) &amp; 1
+
+# x가 2의 거듭제곱인가? (단, x &gt; 0)
+def is_power_of_two(x):
+    return x &gt; 0 and (x &amp; (x - 1)) == 0
+</code></pre>
+
+    <h3>3) 비트마스크로 부분집합 표현</h3>
+    <p>
+      원소가 N개인 집합의 부분집합은 총 <code>2^N</code>개입니다. 부분집합 하나를 N비트 정수 하나로 표현하면,
+      모든 부분집합을 <code>for m in range(1 &lt;&lt; N)</code>으로 순회할 수 있습니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="200" viewBox="0 0 680 200" role="img" aria-label="비트마스크와 부분집합 매핑">
+        <text class="label" x="40" y="30" text-anchor="middle" font-weight="bold">m (10진)</text>
+        <text class="label" x="170" y="30" text-anchor="middle" font-weight="bold">비트 (b₂b₁b₀)</text>
+        <text class="label" x="380" y="30" text-anchor="middle" font-weight="bold">부분집합 (원소: a,b,c)</text>
+        <line x1="0" y1="40" x2="680" y2="40" stroke="var(--text-muted)" stroke-width="1"/>
+
+        <text class="label" x="40" y="58" text-anchor="middle">0</text>
+        <text class="label" x="170" y="58" text-anchor="middle">000</text>
+        <text class="label" x="380" y="58" text-anchor="middle">{}</text>
+
+        <text class="label" x="40" y="78" text-anchor="middle">1</text>
+        <text class="label" x="170" y="78" text-anchor="middle">001</text>
+        <text class="label" x="380" y="78" text-anchor="middle">{a}</text>
+
+        <text class="label" x="40" y="98" text-anchor="middle">2</text>
+        <text class="label" x="170" y="98" text-anchor="middle">010</text>
+        <text class="label" x="380" y="98" text-anchor="middle">{b}</text>
+
+        <text class="label" x="40" y="118" text-anchor="middle">3</text>
+        <text class="label" x="170" y="118" text-anchor="middle">011</text>
+        <text class="label" x="380" y="118" text-anchor="middle">{a, b}</text>
+
+        <text class="label" x="40" y="138" text-anchor="middle">5</text>
+        <text class="label" x="170" y="138" text-anchor="middle">101</text>
+        <text class="label" x="380" y="138" text-anchor="middle">{a, c}</text>
+
+        <text class="label" x="40" y="158" text-anchor="middle">7</text>
+        <text class="label" x="170" y="158" text-anchor="middle">111</text>
+        <text class="label" x="380" y="158" text-anchor="middle">{a, b, c}</text>
+
+        <text class="label" x="340" y="190" text-anchor="middle">정수 하나 = 부분집합 하나 — N≤20 정도면 모든 부분집합 순회가 현실적</text>
+      </svg>
+      <span class="viz-caption">k번 비트가 1이면 "원소 k가 부분집합에 포함" — 정수와 집합이 1:1로 대응된다.</span>
+    </div>
+<pre><code># 모든 부분집합 순회와 합집합/교집합
+N = 3
+items = ['a', 'b', 'c']
+
+for m in range(1 &lt;&lt; N):                # 0 .. 2^N - 1
+    subset = [items[k] for k in range(N) if (m &gt;&gt; k) &amp; 1]
+    print(bin(m), subset)
+
+A = 0b1010   # {b, d}
+B = 0b1100   # {c, d}
+print(bin(A | B))   # 합집합  → 0b1110
+print(bin(A &amp; B))   # 교집합  → 0b1000
+print(bin(A ^ B))   # 대칭차  → 0b0110
+</code></pre>
+
+    <h3>4) popcount — 켜진 비트 수 세기</h3>
+    <p>
+      "이 부분집합의 크기는?" "두 사용자가 공통으로 가진 권한이 몇 개?" 같은 질문이 모두 popcount로 풀립니다.
+      Python은 <code>bin(x).count('1')</code> 또는 <code>x.bit_count()</code>(3.10+)를, C/C++은 <code>__builtin_popcount</code>를 제공합니다.
+      직접 구현은 Brian Kernighan의 알고리즘이 우아합니다 — <strong>가장 낮은 1비트를 끄는 횟수가 곧 켜진 비트 수</strong>입니다.
+    </p>
+<pre><code>def popcount(x):
+    cnt = 0
+    while x:
+        x &amp;= x - 1     # 가장 낮은 1비트 하나 제거
+        cnt += 1
+    return cnt
+
+# Python 3.10+
+print((0b10110101).bit_count())   # 5
+</code></pre>
+
+    <h3>5) 비트 DP — TSP를 예시로</h3>
+    <p>
+      외판원 문제(TSP)는 N개 도시를 모두 한 번씩 방문하는 최단 경로를 찾는 문제입니다.
+      "지금까지 방문한 도시 집합"이라는 상태를 표현해야 하는데, 이때 비트마스크를 쓰면 상태가 정수 하나로 표현되어
+      DP 테이블이 <code>dp[mask][last]</code> 형태가 됩니다 — 시간 <code>O(2^N · N²)</code>, 공간 <code>O(2^N · N)</code>으로 N≈20까지 가능합니다.
+    </p>
+<pre><code>INF = float('inf')
+
+def tsp(dist):
+    N = len(dist)
+    dp = [[INF] * N for _ in range(1 &lt;&lt; N)]
+    dp[1][0] = 0       # 0번 도시에서 시작, 방문집합 = {0}
+
+    for mask in range(1 &lt;&lt; N):
+        for last in range(N):
+            if dp[mask][last] == INF:
+                continue
+            for nxt in range(N):
+                if mask &amp; (1 &lt;&lt; nxt):     # 이미 방문
+                    continue
+                nmask = mask | (1 &lt;&lt; nxt)
+                cand = dp[mask][last] + dist[last][nxt]
+                if cand &lt; dp[nmask][nxt]:
+                    dp[nmask][nxt] = cand
+
+    full = (1 &lt;&lt; N) - 1
+    return min(dp[full][last] + dist[last][0] for last in range(N))
+</code></pre>
+
+    <h3>6) XOR 트릭 — 한 번 등장한 수 찾기 / 변수 swap</h3>
+    <p>
+      XOR의 두 가지 성질, <code>a ^ a = 0</code>과 <code>a ^ 0 = a</code>는 강력한 트릭의 원천입니다.
+      "정수 배열에서 모든 원소가 두 번씩 나오는데 단 하나만 한 번 등장한다"는 문제는 전체를 XOR하면 답이 나옵니다 — 두 번 나오는 값들은 자기 자신과 XOR되어 0으로 사라지고 하나만 살아남습니다.
+    </p>
+<pre><code># 한 번만 등장하는 수
+def find_unique(arr):
+    r = 0
+    for x in arr:
+        r ^= x
+    return r
+
+print(find_unique([2, 3, 4, 3, 2]))   # 4
+
+# 임시 변수 없이 swap (학술적 — 실무에선 그냥 a, b = b, a)
+a, b = 7, 11
+a = a ^ b
+b = a ^ b   # = a
+a = a ^ b   # = b
+print(a, b)   # 11 7
+</code></pre>
+
+    <h2>trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>설계 결정</th><th>장점</th><th>비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>비트마스크로 집합 표현</td><td>매우 작은 메모리, 빠른 합집합/교집합</td><td>N이 비트 폭(보통 64) 이상이면 적용 불가</td></tr>
+        <tr><td>비트 DP로 부분집합 순회</td><td>O(2^N · 폴리(N)) 풀이가 가능</td><td>N≈20을 넘기면 사실상 불가</td></tr>
+        <tr><td>비트 트릭 적극 사용</td><td>코드가 짧고 캐시 친화적</td><td>가독성 ↓, 잘못된 마스크/시프트는 디버깅 어려움</td></tr>
+        <tr><td>플래그를 비트필드로</td><td>한 정수에 여러 boolean 압축</td><td>의미 잃기 쉬움 — 상수·enum으로 명명 필수</td></tr>
+        <tr><td>signed shift 사용</td><td>나눗셈을 빠르게 대체</td><td>음수 시프트 동작은 언어/컴파일러마다 다름 — 주의</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>권한 / 옵션 플래그</strong> — <code>open(path, O_RDWR | O_CREAT | O_TRUNC)</code>처럼 OR로 옵션을 합치는 패턴이 어디에나 있습니다.</li>
+      <li><strong>색상 / 픽셀</strong> — RGBA 32비트, 마스크로 채널 추출 (<code>(rgba &gt;&gt; 16) &amp; 0xFF</code>로 R 추출).</li>
+      <li><strong>Bloom filter / Bitset</strong> — 큰 boolean 배열을 비트로 압축해 캐시 효율을 극대화.</li>
+      <li><strong>Fenwick Tree (BIT)</strong> — 인덱스 갱신이 <code>i &amp;= i - 1</code>, <code>i += i &amp; -i</code> 같은 비트 트릭으로 동작.</li>
+      <li><strong>외판원·집합 분할 같은 NP 문제 (소규모)</strong> — N≤20 환경에서 비트 DP가 표준 도구.</li>
+      <li><strong>네트워크 / 프로토콜 헤더</strong> — TCP 플래그(SYN/ACK/FIN/RST), IP 헤더의 옵션, MAC의 유니/멀티캐스트 비트.</li>
+      <li><strong>해시 / 체크섬 / 암호</strong> — XOR 기반 mixing, MurmurHash, SipHash, CRC가 모두 비트 연산 위에서 동작.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">x가 2의 거듭제곱인지 어떻게 한 줄로 판단하나요?</div>
+      <div class="a">
+        <code>x &gt; 0</code>이면서 <code>x &amp; (x - 1) == 0</code>이면 2의 거듭제곱입니다.
+        2의 거듭제곱은 비트 표현이 정확히 한 자리만 1이고, <code>x - 1</code>은 그 자리부터 아래가 모두 1로 바뀌므로 AND 결과가 0이 됩니다.
+        예를 들어 8(1000)과 7(0111)을 AND하면 0입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">N개 원소의 부분집합을 비트마스크로 표현하면 어떤 점이 좋은가요?</div>
+      <div class="a">
+        부분집합 하나가 N비트 정수 하나로 표현되어 메모리·해시·캐시가 가벼워지고, 합집합·교집합·대칭차가 OR/AND/XOR 한 번이면 끝납니다.
+        모든 부분집합을 순회하는 것도 <code>for m in range(1 &lt;&lt; N)</code>으로 단순합니다.
+        다만 N이 비트 폭(보통 64)을 넘으면 정수 하나로는 불가능해 일반 배열로 돌아가야 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">XOR의 어떤 성질이 알고리즘에서 자주 쓰이나요?</div>
+      <div class="a">
+        두 가지가 핵심입니다 — <code>a ^ a = 0</code>(자기 자신과 XOR하면 0)과 <code>a ^ 0 = a</code>(0과 XOR하면 자기 자신).
+        이 두 성질 덕분에 "두 번 등장하는 값은 사라지고 한 번 등장하는 값만 남는" 트릭이 가능하고,
+        한 번에 모든 값을 XOR하면 짝이 맞지 않는 유일한 값을 O(N) 시간 O(1) 공간으로 찾을 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">비트 DP로 풀 수 있는 문제와 한계는 무엇인가요?</div>
+      <div class="a">
+        "지금까지 방문한 집합"이나 "지금까지 사용한 자원" 같은 부분집합 상태를 정수로 표현해야 하는 문제에 적합합니다.
+        TSP, 비트마스크 할당, 메뉴/조합 최적화 같은 문제들이 대표적입니다.
+        한계는 N이 작아야 한다는 점으로, 시간 <code>O(2^N · N)</code> 또는 <code>O(2^N · N²)</code> 풀이가 일반적이라 N≈20이 사실상의 상한입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">popcount(켜진 비트 수)를 효율적으로 구하는 방법은 무엇인가요?</div>
+      <div class="a">
+        많은 언어가 빌트인을 제공하고(C/C++의 <code>__builtin_popcount</code>, Python 3.10+의 <code>int.bit_count()</code>),
+        직접 구현 시 Brian Kernighan의 알고리즘이 자연스럽습니다 — <code>x &amp;= x - 1</code>로 가장 낮은 1비트를 한 번에 하나씩 끄면서 횟수를 세면, 켜진 비트 수만큼만 루프를 돕니다.
+        시간 복잡도는 켜진 비트 수에 비례해 O(popcount(x))입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">"가장 낮은 1비트를 추출"하는 식 <code>x &amp; -x</code>는 어떻게 동작하나요?</div>
+      <div class="a">
+        2의 보수에서 <code>-x</code>는 <code>~x + 1</code>과 같습니다. 그래서 <code>-x</code>는 가장 낮은 1비트는 그대로 유지되고, 그보다 높은 비트들은 모두 반전됩니다.
+        AND를 하면 가장 낮은 1비트만 살아남습니다. 예: x = 0b10110100이면 <code>x &amp; -x = 0b00000100</code>.
+        이 트릭은 Fenwick Tree(BIT)의 인덱스 갱신·구간 합 계산의 핵심입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="dynamic-programming.html">동적 계획법</a></li>
+      <li><a href="backtracking.html">백트래킹</a></li>
+      <li><a href="../data-structure/hash-table.html">해시 테이블</a></li>
+      <li><a href="index.html">알고리즘 목록</a></li>
+    </ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="dynamic-programming.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">동적 계획법</span>
+            <span class="hint">비트마스크는 DP의 상태 표현에서 가장 자주 만나는 도구</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="backtracking.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">백트래킹</span>
+            <span class="hint">집합 탐색의 또 다른 접근 — 비트마스크와 자주 비교된다</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="union-find.html">
+        <span class="label">이전</span>
+        ← 유니온 파인드
+      </a>
+      <a href="index.html">📂 알고리즘으로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
