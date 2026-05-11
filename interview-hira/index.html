@@ -46,44 +46,44 @@
 
     <section class="concept-section">
       <h3>1. 직무 지식·기술 습득 경험</h3>
-      <p>Java/SQL/Python 역량을 어떻게 쌓았고, 입사 후 어떻게 활용할 것인가.</p>
+      <p>BASS 통계 대시보드 1분→1초 단축, 외부 시험 적재 API, SSAFY 책크인 하이브리드 추천(우수상).</p>
       <ul class="concept-list">
         <li>
-          <a href="q1-tech-stack.html">PreparedStatement Full Scan · ETL · FastAPI</a>
-          <span class="summary">실행 계획 해석, 바인드 변수 picking, ETL 단계, FastAPI 선택 이유, 대용량 처리 전략.</span>
+          <a href="q1-tech-stack.html">MyBatis + concat/cast Full Scan · PlatformTransactionManager · FastAPI</a>
+          <span class="summary">DBeaver vs 서버 실행 계획 교차 검증, Selectivity 추정 실패, 학생 단위 트랜잭션 분리, 콘텐츠+협업 하이브리드 추천.</span>
         </li>
       </ul>
     </section>
 
     <section class="concept-section">
       <h3>2. 관행을 깨고 원칙을 지킨 경험</h3>
-      <p>STT 협력사 지연 → 외부 API PoC → gRPC 스트리밍 + Race Condition 해결.</p>
+      <p>ATV 자막 — 협력사 STT 지연 → CLOVA Speech API PoC → gRPC 양방향 스트리밍 + @Synchronized 임계영역.</p>
       <ul class="concept-list">
         <li>
-          <a href="q2-stt-poc.html">STT API · gRPC 스트리밍 · 임계영역 제어</a>
-          <span class="summary">PoC 절차, gRPC vs REST, 4가지 스트리밍 모드, Race Condition과 동기화 도구.</span>
+          <a href="q2-stt-poc.html">CLOVA Speech · proto oneof · @Synchronized · lockCanvas 재시도</a>
+          <span class="summary">512byte PCM 청크, 시스템 앱 권한(SurfaceFlinger), 채널 변경 시 Race Condition, 3×23 그리드 버퍼.</span>
         </li>
       </ul>
     </section>
 
     <section class="concept-section">
       <h3>3. 단점으로 인한 소통 어려움 극복 경험</h3>
-      <p>Spring Batch vs Crontab 사전 협의 누락 → 의사결정 공유 습관화.</p>
+      <p>Spring Batch 단독 결정 → 인프라 제약 미확인 → Crontab + Java 메모리 정렬 + 500건 청크로 재구현.</p>
       <ul class="concept-list">
         <li>
-          <a href="q3-communication.html">Spring Batch · Crontab · 의사결정 공유</a>
-          <span class="summary">두 도구의 차이, Job/Step 구조, ADR/RFC, 기술 결정 사전 합의의 중요성.</span>
+          <a href="q3-communication.html">Spring Batch · Crontab · 의사결정 공유 · 게이미피케이션 순위</a>
+          <span class="summary">인프라 제약, Job/Step 구조, DB 부하 오프로딩, OOM 방지 청크, ADR과 사전 합의 습관.</span>
         </li>
       </ul>
     </section>
 
     <section class="concept-section">
       <h3>4. 효율적 방식 도입 경험</h3>
-      <p>설정값 복호화 유틸리티 자체 개발 → 팀 생산성 향상.</p>
+      <p>BASS Properties 복호화 유틸리티 사내 배포 → 팀 구두 문의 0, 개발 흐름 단절 제거.</p>
       <ul class="concept-list">
         <li>
-          <a href="q4-decrypt-utility.html">설정값 암호화 · 키 관리 · 사내 도구 배포</a>
-          <span class="summary">대칭키 vs 비대칭키, AES, Jasypt/Vault/KMS, 키 보관 표준, 보안 위험 분석.</span>
+          <a href="q4-decrypt-utility.html">대칭키 AES · KMS · Salt/Pepper · 시크릿 관리</a>
+          <span class="summary">CLI 형태 단일 jar 배포, 키 OS 권한 분리, Jasypt/Vault 비교, GCM·해싱·키 로테이션.</span>
         </li>
       </ul>
     </section>

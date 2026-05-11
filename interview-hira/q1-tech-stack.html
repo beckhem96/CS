@@ -31,93 +31,131 @@
     <div class="callout">
       <p><strong>🎯 한 줄 핵심 메시지</strong></p>
       <p>
-        "Java/SQL은 <em>실행 계획 기반의 성능 튜닝 경험</em>으로,
-        Python은 <em>ETL부터 추천 API 서빙까지 end-to-end 구현</em>으로 깊이를 키웠고,
-        이 두 축을 진료비 심사 ETL 성능 개선과 운영 자동화에 그대로 옮겨 쓸 수 있다."
+        "BASS 프로젝트에서 <em>실행 계획 교차 검증으로 PreparedStatement + DB 함수 바인딩 패턴의 Full Scan을 규명</em>하고
+        <em>외부 시험 결과 적재 API에서 트랜잭션을 학생 단위로 분리</em>해 정합성을 지켜낸 경험,
+        그리고 SSAFY 책크인에서 <em>하이브리드 추천 엔진을 FastAPI로 서빙</em>한 경험을
+        진료비 심사 데이터의 대용량 처리·운영 자동화에 그대로 옮겨 쓸 수 있다."
       </p>
     </div>
 
     <h2>📄 자소서 원문 요약</h2>
     <div class="definition">
-      공공 교육 플랫폼에서 통계 대시보드 1분+ 응답 지연을 실행 계획 + DB 로그 분석으로 진단,
-      <strong>PreparedStatement 바인드 변수가 옵티마이저의 인덱스 선택을 막아 Full Scan</strong>이 발생한 것을 확인.
-      파라미터 참조 방식을 개선해 1초 내로 단축. Python으로는 Pandas/NumPy로 공공 도서관 데이터 ETL,
-      FastAPI 기반 추천 API를 구현. 입사 후 <strong>진료비 심사 데이터 ETL 성능 개선</strong>과
-      <strong>운영 자동화·데이터 분석</strong>에 활용 예정.
+      BASS(부산교육청 자기주도학습 플랫폼) 통계 대시보드의 1분+ 응답 지연 원인을 실행 계획 교차 검증으로 추적해
+      <strong>MyBatis의 PreparedStatement + PostgreSQL 옵티마이저 사이의 Selectivity 추정 실패</strong>임을 규명, 응답 1초 이내로 단축.
+      Python으로는 SSAFY 책크인(우수상) 프로젝트에서 Pandas/NumPy로 공공 도서관 데이터 ETL과
+      <strong>FastAPI 기반 하이브리드 추천 API</strong>를 구현. 입사 후 진료비 심사 데이터 ETL 성능 개선과 운영 자동화·데이터 분석에 활용 예정.
     </div>
 
     <h2>🔥 경험 deep dive 질문</h2>
 
     <div class="qa">
-      <div class="q">통계 대시보드의 응답 지연을 어떻게 진단했나요? 어떤 도구·로그를 봤는지 구체적으로 설명해 주세요.</div>
+      <div class="q">통계 대시보드 1분+ 지연 원인을 어떻게 진단했고, 무엇을 보고 "비정상 플랜"이라고 판단했나요?</div>
       <div class="a">
-        먼저 WAS 로그에서 어떤 쿼리가 1분 이상 걸리는지 식별한 뒤, 해당 쿼리를 DB에 직접 붙여 <code>EXPLAIN</code>(또는 Oracle <code>EXPLAIN PLAN</code>)으로 실행 계획을 확인했습니다.
-        예상은 인덱스를 탄 Index Range Scan이었지만 실제로는 <strong>TABLE FULL SCAN</strong>이 잡혔고, COST와 ROWS 추정치가 비현실적으로 컸습니다.
-        DB 측의 슬로우 쿼리 로그와 세션 통계로 "이 쿼리가 PreparedStatement로 바인딩되어 들어왔다"는 사실을 확인하고,
-        바인드 변수의 데이터 분포(특히 NULL 비율)에 따라 옵티마이저가 인덱스를 포기한다는 점을 가설로 세웠습니다.
+        먼저 같은 쿼리를 두 환경에서 따로 실행해 비교했습니다 — DBeaver(SQL IDE)에서는 0.X초로 정상이었고 인덱스 기반 Index Scan 플랜이 잡혔는데,
+        실제 서버 환경(MyBatis 통한 호출)에서는 1분 이상 걸리며 <strong>Nested Loop 내부에서 Full Scan이 반복</strong>되는 플랜이 잡혔습니다.
+        같은 SQL인데 플랜이 다르다면 쿼리 자체의 논리적 결함이 아니라 <em>애플리케이션 레이어와 옵티마이저 사이의 상호작용 문제</em>임을 의심했고,
+        실행 계획 로그·MyBatis 매핑·옵티마이저 통계까지 다각적으로 교차 검증하면서 원인을 좁혔습니다.
       </div>
     </div>
 
     <div class="qa">
-      <div class="q">"파라미터 참조 방식을 개선했다"고 했는데, 정확히 무엇을 어떻게 바꿨는지 설명해 주세요.</div>
+      <div class="q">"파라미터 참조 방식 개선"의 정확한 의미가 무엇인가요? 어떤 부분을 어떻게 바꾸셨나요?</div>
       <div class="a">
-        문제가 된 쿼리는 검색 조건이 동적이었고, 사용하지 않는 파라미터에는 NULL을 바인딩한 뒤 <code>WHERE col = ? OR ? IS NULL</code> 패턴을 쓰고 있었습니다.
-        이 형태에서는 옵티마이저가 인덱스 선택성을 판단하기 어려워 Full Scan으로 떨어졌습니다.
-        개선은 두 단계로 진행했습니다 — ① <strong>조건 분기 SQL을 동적으로 조립</strong>해 실제 사용되는 컬럼만 WHERE에 들어가도록 하고,
-        ② 자주 사용되는 키 컬럼은 <strong>리터럴 또는 명시적 캐스팅</strong>으로 옵티마이저가 선택성을 정확히 추정할 수 있게 했습니다.
-        그 결과 동일 데이터에서 Index Range Scan으로 전환되며 1분+ → 1초 이내로 단축되었습니다.
+        문제가 된 쿼리는 <code>WHERE created_at &lt; concat($1, ...)::timestamp</code>처럼
+        <strong>파라미터를 DB 내부 함수(concat·cast)로 한 번 감싸서 동적 바인딩</strong>하는 레거시 패턴이었습니다.
+        PostgreSQL 옵티마이저는 PreparedStatement 실행 계획 수립 시점에 함수로 감싸진 값의 실제 범위를 알 수 없어
+        <strong>Selectivity 추정에 실패</strong>하고, 인덱스 활용을 포기한 채 Full Scan으로 떨어진 것이 근본 원인이었습니다.
+        해결은 단순했습니다 — <strong>Java 애플리케이션 레이어에서 timestamp 문자열을 미리 완성</strong>해
+        <code>'2026-04-01 23:59:59'</code> 형태 그대로 바인딩했더니, 옵티마이저가 정확한 값의 범위를 인지해 Index Scan을 선택했습니다.
+        결과적으로 <em>데이터 가공 책임을 DB에서 애플리케이션 레이어로 이전</em>한 것이 본질이었습니다.
       </div>
     </div>
 
     <div class="qa">
-      <div class="q">ETL 프로세스를 어떻게 설계했고, Pandas와 NumPy를 각각 어디에 활용했나요?</div>
+      <div class="q">한 쿼리만 고치고 끝낸 게 아니라고 하셨는데, 후속 조치는 어떻게 하셨나요?</div>
       <div class="a">
-        Extract 단계에서 공공 도서관 OpenAPI를 호출해 JSON을 받아오고, Transform에서 Pandas로 결측치 처리·중복 제거·도서/모임 키 정규화를 수행했습니다.
-        장르 키워드 벡터화나 추천 점수 계산같이 행 단위 연산이 많은 부분은 <strong>NumPy 벡터 연산</strong>으로 바꿔 for 루프 대비 수십 배 빠르게 만들었습니다.
-        Load는 정제된 데이터프레임을 청크 단위로 DB에 적재했고, 멱등성을 위해 자연키 기준 upsert로 처리했습니다.
-        실패 시 재실행이 안전하도록 단계별로 idempotent하게 분리한 것이 가장 신경 쓴 부분입니다.
+        같은 시스템 안의 다른 레거시 쿼리에서도 <strong>"PreparedStatement + DB 함수 바인딩"</strong> 패턴이 반복되고 있을 가능성이 높다고 봤고,
+        그래프 형태로 의심 패턴을 정의해 시스템 내 쿼리들을 전수 조사했습니다.
+        같은 원인을 가진 쿼리들에 동일한 분석 기법을 적용해 <strong>선제적으로 성능 개선</strong>을 진행했고,
+        한 번의 트러블슈팅을 단건 조치가 아니라 <em>패턴 단위의 개선</em>으로 확장한 사례입니다.
       </div>
     </div>
 
     <div class="qa">
-      <div class="q">FastAPI를 선택한 이유는 무엇인가요? Flask·Django와 비교해 주세요.</div>
+      <div class="q">외부 시험 플랫폼 결과 적재 API에서 가장 신경 쓴 설계 결정은 무엇인가요?</div>
       <div class="a">
-        세 가지 이유였습니다. 첫째, <strong>비동기(async/await) 지원이 1급 시민</strong>이라 추천 API 호출 시 외부 OpenAPI를 동시에 부르는 데 유리했고,
-        둘째, <strong>Pydantic 기반 자동 스키마 검증과 OpenAPI 문서 자동 생성</strong>이 작은 팀에 큰 생산성을 줬습니다.
-        셋째, Django는 ORM·관리자·인증까지 묶인 풀스택이라 추천 API용으로는 무거웠고, Flask는 가볍지만 타입·문서화를 직접 갖춰야 했습니다.
-        FastAPI는 그 중간에서 "API에만 집중한 가벼운 풀세트"라서 적합했습니다.
+        외부 진단평가 시스템에서 수백~수천 명 학생의 시험 결과가 한 번에 들어오는 구조였습니다.
+        선언적 <code>@Transactional</code>로 묶으면 단 1건의 데이터 오류 때문에 정상인 수천 건이 모두 롤백되는 문제가 있었습니다.
+        그래서 <strong>PlatformTransactionManager로 프로그래밍 방식 트랜잭션</strong>을 잡아
+        <em>학생 1명 단위로 commit·rollback</em>을 분리했습니다(한 학생의 3과목이 모두 정상일 때만 commit, 실패 시 그 학생만 rollback).
+        그 위에 <strong>Fail-Fast 다단계 검증</strong>(API 인증 → 필수값 누락 검사 → 포맷 검증)을 DB 접근 전에 두어
+        비정상 데이터를 조기에 차단했고, 멱등성을 위해 <strong>Upsert(2건 이상 중복 시 DELETE 후 INSERT)</strong> 전략을 적용했습니다.
+        마지막으로 HTTP 응답을 전체 성공·부분 성공·전체 실패로 세분화해 외부 기관이 스스로 보정할 수 있는 피드백 루프를 만들었습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">대량 적재 안정성을 어떻게 검증하셨나요?</div>
+      <div class="a">
+        <strong>JMeter로 실제 운영 규모의 동시 요청 부하 테스트</strong>를 수행해, DB 커넥션 풀 고갈·데드락·타임아웃이 없음을 사전 검증했습니다.
+        부하 테스트로 평균·p95·p99 응답 시간과 트랜잭션 실패율을 함께 측정해 임계 처리량을 알아냈고,
+        그 결과를 운영 SLA에 반영해 외부 기관이 한 번에 보낼 수 있는 적정 배치 크기를 합의했습니다.
+        부하 테스트는 "구현 완료"의 마침표가 아니라 "운영 안정성에 대한 데이터 근거"라는 점이 핵심이었습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">SSAFY 책크인 프로젝트에서 추천 엔진을 어떻게 설계했나요?</div>
+      <div class="a">
+        공공 도서관 OpenAPI와 설문 데이터를 Pandas/NumPy로 ETL해 도서·독서모임 메타데이터를 정제했고,
+        <strong>콘텐츠 기반 필터링과 협업 필터링을 결합한 하이브리드 엔진</strong>을 구현했습니다.
+        신규 사용자(cold start) 구간은 콘텐츠 기반(키워드·장르 유사도)으로 추천하고,
+        사용자 행동 데이터가 쌓이면 협업 필터링 결과를 가중 평균으로 섞는 구조였습니다.
+        FastAPI 위에서 추천 API로 서빙했고, 자주 호출되는 사용자별 추천 결과는 Redis로 캐싱해 응답 시간을 줄였습니다.
+        이 프로젝트로 SSAFY 빅데이터 특화 우수상을 받았습니다.
       </div>
     </div>
 
     <div class="qa">
       <div class="q">진료비 심사 데이터의 대용량 ETL 성능 개선은 구체적으로 어떻게 접근하시겠어요?</div>
       <div class="a">
-        먼저 <strong>병목 측정이 우선</strong>입니다 — 추출·변환·적재 중 어디가 병목인지를 측정해야 잘못된 최적화를 피할 수 있습니다.
-        그 위에 일반적으로는 ① 행 단위 처리 → 배치 단위(<code>executeBatch</code>·<code>COPY</code>·<code>BULK INSERT</code>)로 전환,
-        ② 인덱스를 일시적으로 비활성화한 뒤 적재 후 재생성, ③ 파티셔닝과 병렬 처리,
-        ④ 변환 단계는 가능한 한 DB 안(SET 연산)에서 처리해 네트워크 왕복을 줄이는 순서로 적용합니다.
-        장애·재실행을 고려해 모든 단계는 멱등하게 설계하고, 실패 시 체크포인트부터 재개할 수 있게 만듭니다.
+        BASS에서 했던 것과 동일하게 <strong>병목 측정이 우선</strong>입니다 — 추출·변환·적재 중 어디에 시간이 몰리는지를 측정해야 잘못된 최적화를 피합니다.
+        그 위에 ① 행 단위 처리 → 배치(<code>executeBatch</code>·<code>COPY</code>) 전환,
+        ② 적재 직전 인덱스 비활성화 후 재생성, ③ 파티셔닝과 병렬 처리,
+        ④ 변환 단계는 가능한 한 SET 단위 SQL로 DB 안에서 처리해 네트워크 왕복 제거 순으로 적용합니다.
+        BASS 외부 시험 적재 API에서 했던 것처럼 <strong>학생 단위 같은 작은 단위로 트랜잭션을 분리</strong>해
+        부분 실패가 전체로 번지지 않게 만드는 패턴은 심사 데이터에도 그대로 적용 가능합니다.
       </div>
     </div>
 
     <h2>🧠 연관 CS 개념 질문</h2>
 
     <div class="qa">
-      <div class="q">PreparedStatement의 장점이 무엇이고, 왜 SQL Injection을 막을 수 있나요?</div>
+      <div class="q">PreparedStatement의 장점이 무엇인가요?</div>
       <div class="a">
-        쿼리 텍스트와 데이터가 분리되어 DB에 전달되므로, 데이터에 어떤 문자열이 들어와도 SQL의 일부로 해석되지 않습니다.
-        그래서 <code>'; DROP TABLE users; --</code> 같은 페이로드도 그저 한 문자열 값일 뿐 실행되지 않습니다.
+        쿼리 텍스트와 데이터가 분리되어 DB에 전달되므로 <strong>SQL Injection을 차단</strong>합니다 — 어떤 문자열이 들어와도 SQL 일부로 해석되지 않습니다.
         부수적으로 동일 쿼리의 실행 계획을 캐싱해 재사용할 수 있어 반복 호출 성능에도 이점이 있고, 타입 안전성도 강해집니다.
+        다만 BASS 사례처럼 <em>바인드 값이 함수로 감싸져 있으면 옵티마이저가 그 값의 범위를 추정하지 못해 오히려 잘못된 플랜을 고를 수 있다</em>는 함정도 있습니다.
       </div>
     </div>
 
     <div class="qa">
       <div class="q">Full Scan과 Index Scan은 각각 언제 더 유리한가요?</div>
       <div class="a">
-        Full Scan은 테이블의 모든 블록을 순차 읽기로 가져오므로, <strong>전체 행의 상당 비율(보통 10~20% 이상)을 읽어야 할 때</strong> 오히려 빠릅니다.
-        Index Scan은 인덱스를 거쳐 필요한 행만 랜덤 액세스로 읽으므로, <strong>선택성이 높을 때(전체의 일부만 필요)</strong> 유리합니다.
-        옵티마이저는 통계 정보(행 수, 카디널리티, 데이터 분포)를 보고 둘 중 더 싸 보이는 쪽을 고르므로,
-        통계가 오래되거나 바인드 변수 분포를 잘못 추정하면 Full Scan으로 떨어지는 사고가 생깁니다.
+        Full Scan은 테이블 모든 블록을 순차 읽기로 가져오므로 <strong>전체 행의 상당 비율(보통 10~20% 이상)을 읽어야 할 때</strong> 오히려 빠릅니다.
+        Index Scan은 인덱스를 거쳐 필요한 행만 랜덤 액세스하므로 <strong>선택성이 높을 때(전체의 일부만 필요)</strong> 유리합니다.
+        옵티마이저는 통계와 추정 selectivity를 보고 둘 중 더 싸 보이는 쪽을 고르므로,
+        통계가 오래되거나 BASS처럼 바인드 값을 추정 못 하면 잘못된 선택이 생깁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PostgreSQL 옵티마이저가 PreparedStatement에서 selectivity를 어떻게 추정하나요?</div>
+      <div class="a">
+        PostgreSQL은 PreparedStatement를 처음 실행할 때 실제 바인드 값으로 한 번 plan을 만들어 보고(custom plan),
+        몇 번 더 실행해 본 뒤 비용이 비슷하면 값에 무관한 generic plan으로 캐싱합니다(plan_cache_mode로 강제 가능).
+        값이 함수로 감싸져 있으면 옵티마이저가 값을 들여다볼 수 없어 가장 보수적인 추정으로 동작하고, 그 결과가 BASS의 Full Scan이었습니다.
+        해결의 본질은 <em>값을 함수 밖으로 꺼내 옵티마이저가 직접 볼 수 있게</em> 만드는 것이었습니다.
       </div>
     </div>
 
@@ -128,57 +166,59 @@
         ② 예상 ROWS와 실제 ROWS 차이(통계 신뢰도),
         ③ JOIN 알고리즘(Nested Loop / Hash / Sort-Merge)과 그 순서,
         ④ Sort·Hash 같이 메모리·디스크를 쓰는 연산이 있는지,
-        ⑤ 마지막으로 COST의 절댓값이 아니라 단계별 분포를 봅니다.
-        예상과 실제 ROWS가 크게 어긋나면 통계 갱신 또는 hint·SQL 재작성을 고려합니다.
+        ⑤ COST의 절댓값이 아니라 단계별 분포.
+        BASS 사례에서는 "Nested Loop 내부의 반복 Full Scan"이 결정적 신호였습니다.
       </div>
     </div>
 
     <div class="qa">
-      <div class="q">ETL과 ELT의 차이는 무엇인가요? 심사 데이터에는 어떤 게 더 적합할까요?</div>
+      <div class="q">선언적 트랜잭션(<code>@Transactional</code>)과 프로그래밍 방식 트랜잭션(<code>PlatformTransactionManager</code>)의 차이는 무엇인가요?</div>
       <div class="a">
-        ETL은 추출 후 변환을 별도 워커에서 처리한 뒤 적재하는 방식이고, ELT는 일단 적재해 둔 뒤 DB·DW의 SQL 엔진으로 변환하는 방식입니다.
-        대용량·반복적인 변환 로직과 강력한 DB(예: 컬럼나 DW)가 있다면 ELT가 변환을 병렬·SET 단위로 처리해 유리합니다.
-        진료비 심사처럼 정합성과 검증 규칙이 복잡하고 규제 추적성이 필요하다면, 적재 전에 검증을 끝내는 ETL이 안전한 경우가 많습니다.
-        실제로는 두 가지를 섞어 쓰는 하이브리드 형태가 흔합니다.
+        <code>@Transactional</code>은 메서드 진입·종료를 트랜잭션 경계로 자동 묶어 주는 선언적 방식이라 단순·일관된 코드가 강점입니다.
+        반면 <code>PlatformTransactionManager</code>는 코드로 직접 <code>begin()</code>·<code>commit()</code>·<code>rollback()</code>을 호출해
+        <strong>트랜잭션 경계를 동적으로 자르거나 합칠 수 있는 유연성</strong>이 강점입니다.
+        BASS 외부 시험 적재 API처럼 "학생 1명 단위로 commit·rollback을 분리해야 한다"처럼 경계가 데이터에 따라 달라지는 경우엔 후자가 적합합니다.
       </div>
     </div>
 
     <div class="qa">
-      <div class="q">대용량 처리에서 데이터베이스 인덱스를 어떻게 다루시겠어요?</div>
+      <div class="q">Upsert가 무엇이고 멱등성과 어떻게 연결되나요?</div>
       <div class="a">
-        대량 적재 시에는 인덱스 갱신 비용이 매번 누적되므로, ① 적재 전 인덱스를 비활성화·삭제 → ② 데이터 적재 → ③ 인덱스 재생성 순서가 일반적입니다.
-        다만 운영 중인 테이블이라면 가용성을 고려해 <strong>온라인 인덱스 빌드</strong> 옵션을 사용하거나, 파티션 단위로 적재·인덱스 작업을 끊어 진행합니다.
-        조회 성능을 위해서는 자주 사용되는 WHERE·JOIN 키에 복합 인덱스를 잡고, 카디널리티 순서를 고려해 컬럼 순서를 결정합니다.
+        Upsert는 INSERT를 시도하되 이미 존재하면 UPDATE로 대체하는 연산입니다(PostgreSQL은 <code>ON CONFLICT</code>, MySQL은 <code>ON DUPLICATE KEY UPDATE</code>).
+        외부 API가 네트워크 지연으로 같은 요청을 두 번 보내도 결과가 같아지는 <strong>멱등성</strong>을 자연스럽게 보장합니다.
+        BASS에서는 한 발 더 나가 "2건 이상 중복된 레거시 이상 상태"에서는 <strong>DELETE 후 INSERT</strong>로 정합성을 강제하는 보호 장치를 두었습니다.
       </div>
     </div>
 
     <div class="qa">
-      <div class="q">추천 알고리즘은 어떤 방식으로 구현했나요?</div>
+      <div class="q">하이브리드 추천 엔진에서 콘텐츠 기반과 협업 필터링을 어떻게 결합하시나요?</div>
       <div class="a">
-        프로젝트에서는 사용자가 입력한 관심 키워드와 도서 메타데이터(장르·저자·키워드)를 벡터화한 뒤 코사인 유사도로 점수를 매기는
-        <strong>콘텐츠 기반 필터링(Content-based)</strong>을 적용했습니다.
-        Cold start 문제(신규 사용자에게 데이터가 없음)를 완화하기 위해 인기 도서·신간을 백오프로 끼워 넣었고,
-        장기적으로는 사용자 행동 로그가 쌓이면 <strong>협업 필터링(Collaborative Filtering)</strong>이나 두 가지를 결합한 하이브리드로 발전시킬 계획이었습니다.
+        콘텐츠 기반은 아이템 메타데이터의 유사도(키워드·장르·저자)로 점수를 매기고, 협업 필터링은 사용자 행동 패턴이 비슷한 사용자의 선호로 점수를 매깁니다.
+        결합 방식은 ① <strong>가중 평균</strong>(α × CB + (1-α) × CF, α는 사용자 데이터 양에 따라 조정),
+        ② 단계별 폴백(신규 사용자는 CB, 데이터가 쌓이면 CF로 점진 전환),
+        ③ 후처리 다양성(top-N에 카테고리 분산 강제) 같은 기법을 함께 씁니다.
+        Cold start와 long-tail 문제를 동시에 줄이는 게 하이브리드의 가장 큰 이점입니다.
       </div>
     </div>
 
     <div class="qa">
-      <div class="q">Python의 GIL이 있는데 ETL 같은 데이터 처리에서 병렬성을 어떻게 확보할 수 있나요?</div>
+      <div class="q">FastAPI를 선택한 이유는 무엇인가요?</div>
       <div class="a">
-        GIL은 같은 프로세스 안의 파이썬 바이트코드 실행을 한 번에 한 스레드만 허용하므로 CPU-bound 작업에서 멀티스레딩 효과가 제한됩니다.
-        대신 <strong><code>multiprocessing</code>이나 <code>concurrent.futures.ProcessPoolExecutor</code></strong>로 별도 프로세스를 띄워 진짜 병렬을 얻을 수 있고,
-        I/O bound 작업(API 호출, DB 적재)은 <strong><code>asyncio</code></strong>로 한 스레드 안에서도 동시성을 충분히 얻습니다.
-        Pandas/NumPy 연산은 내부 C 구현이 GIL을 풀기 때문에 사실상 단일 프로세스로도 빠르게 동작하고, 더 큰 규모는 Dask/PySpark로 확장합니다.
+        세 가지 이유였습니다 — 첫째, <strong>비동기(async/await) 지원이 1급 시민</strong>이라 외부 OpenAPI를 동시 호출하는 데 유리,
+        둘째, <strong>Pydantic 기반 자동 스키마 검증과 OpenAPI 문서 자동 생성</strong>이 작은 팀의 생산성을 크게 높여 줌,
+        셋째, Django는 풀스택이라 추천 API용으로 무거웠고 Flask는 가볍지만 타입·문서화를 직접 갖춰야 했습니다.
+        FastAPI는 그 사이에서 "API에만 집중한 가벼운 풀세트"라 적합했고, 현재 회사에서도 Slack/Jira 게이트웨이 서버를 FastAPI로 만들고 있습니다.
       </div>
     </div>
 
     <h2>🎣 실패 가능성 있는 꼬리 질문</h2>
     <ul style="line-height:1.9;">
-      <li>"Bind Peeking"이 무엇이고, 왜 PreparedStatement 성능 문제의 근본 원인이 되는지 설명할 수 있나요?</li>
-      <li>실행 계획의 COST 단위는 무엇이고, 절댓값을 신뢰해도 되나요? (답: 옵티마이저 내부 단위, 절댓값보다 상대 비교용)</li>
-      <li>FastAPI의 비동기 핸들러 안에서 동기 ORM(SQLAlchemy 1.x)을 호출하면 어떤 문제가 생기나요?</li>
-      <li>심사 데이터에서 PII가 포함된다면 ETL 과정에서 어떻게 보호하시겠어요? (마스킹·키 분리·접근 통제)</li>
-      <li>Pandas의 <code>apply</code>와 NumPy 벡터 연산의 성능 차이가 왜 발생하는지?</li>
+      <li>PostgreSQL의 <code>plan_cache_mode</code>(custom·generic·force_custom_plan)를 알고 있나요?</li>
+      <li>"Java로 timestamp를 미리 완성"이 SQL Injection 측면에서는 안전한가요? (답: 정적 문자열로 바인딩하면 PreparedStatement 보호 그대로 유지)</li>
+      <li>JMeter 외에 부하 테스트 도구를 써봤다면 어떤 도구이고 차이는 무엇인가요? (k6, Locust, Gatling)</li>
+      <li>PlatformTransactionManager로 학생 단위 트랜잭션을 잡으면 트랜잭션 수가 폭증하는데 DB에 부담은 없나요?</li>
+      <li>심사 데이터에 PII가 포함된다면 ETL 과정에서 어떻게 보호하시겠어요? (마스킹·키 분리·접근 통제)</li>
+      <li>현재 회사에서 만들고 있는 Slack/Jira 게이트웨이의 구조와 Claude Code 활용 방식을 설명할 수 있나요?</li>
     </ul>
 
     <h2>📚 관련 CS 노트</h2>
@@ -186,6 +226,7 @@
       <li><a href="../database/execution-plan.html">실행 계획</a></li>
       <li><a href="../database/indexing.html">인덱스</a></li>
       <li><a href="../database/sql-basics.html">SQL 기본</a></li>
+      <li><a href="../database/transaction-acid.html">트랜잭션 ACID</a></li>
       <li><a href="../database/join-algorithm.html">조인 알고리즘</a></li>
       <li><a href="../python/python-basics.html">Python 기본</a></li>
       <li><a href="../python/iterators-generators.html">제너레이터 (ETL 청크 처리)</a></li>
