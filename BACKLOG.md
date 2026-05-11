@@ -33,12 +33,12 @@
 - [x] ~~**HTTP 메서드와 상태 코드**~~ → ✅ `network/http-methods-status.html`
 - [x] ~~**이더넷 / MAC / ARP**~~ → ✅ `network/ethernet-arp.html`
 
-### 컴퓨터구조
-- [ ] **DMA / I/O 시스템 / 버스** (`computer-architecture/dma-io.html`) — Programmed I/O vs Interrupt-driven vs DMA, 메모리 버스/시스템 버스/PCIe, MMIO와 포트 I/O
+### 컴퓨터구조 ✅ 보강 완료
+- [x] ~~**DMA / I/O 시스템 / 버스**~~ → ✅ `computer-architecture/dma-io.html`
 
-### 소프트웨어공학
-- [ ] **클린 코드 / 리팩터링 / 코드 리뷰** (`software-engineering/clean-code.html`) — 의도가 드러나는 이름, 작은 함수, 코드 스멜, 안전한 리팩터링 절차, 효과적 코드 리뷰
-- [ ] **모놀리식 vs MSA / 아키텍처 스타일** (`software-engineering/architecture-styles.html`) — 단일 배포 vs 분산, 레이어드/헥사고날/이벤트 드리븐, 분리 기준과 trade-off
+### 소프트웨어공학 ✅ 보강 완료
+- [x] ~~**클린 코드 / 리팩터링 / 코드 리뷰**~~ → ✅ `software-engineering/clean-code.html`
+- [x] ~~**모놀리식 vs MSA / 아키텍처 스타일**~~ → ✅ `software-engineering/architecture-styles.html`
 
 ### 알고리즘 ✅ 보강 완료
 - [x] ~~**비트 조작 / 비트마스킹**~~ → ✅ `algorithm/bit-manipulation.html`

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>모놀리식 vs MSA / 아키텍처 스타일 · 소프트웨어공학 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">소프트웨어공학</a>
+      <span class="sep">›</span>
+      <span>아키텍처 스타일</span>
+    </nav>
+
+    <h1>아키텍처 스타일 — 모놀리식 vs MSA, 그리고 그 사이</h1>
+
+    <div class="definition">
+      <strong>아키텍처 스타일</strong>은 한 시스템을 어떻게 나누고, 그 조각들이 어떤 규칙으로 통신할지에 대한 큰 그림입니다.
+      "한 덩어리로 배포하는 모놀리식", "독립 배포 가능한 작은 서비스로 쪼개는 MSA",
+      그리고 그 사이의 레이어드·헥사고날·이벤트 드리븐 같은 패턴들이 모두 여기에 속합니다.
+      어떤 스타일을 택하든 정답은 없고, <em>어떤 trade-off를 받아들일 것인가</em>의 문제입니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      처음 만들 때는 누구나 한 덩어리로 시작합니다. 한 코드베이스, 한 데이터베이스, 한 번의 배포 — 이게 가장 단순합니다.
+      그런데 팀이 커지고 도메인이 복잡해지면 "여러 팀이 같은 코드를 만지면서 충돌하고", "한 모듈 변경 때문에 전체가 재배포되고",
+      "트래픽이 몰리는 모듈만 따로 확장할 수가 없는" 문제가 등장합니다. 아키텍처 스타일은 이 문제를 어떤 방식으로 다룰지를 결정합니다.
+    </p>
+    <p>
+      MSA(Microservices)는 "팀별로 독립 배포·독립 확장이 가능한 작은 서비스로 쪼개자"는 답입니다.
+      하지만 그 대가로 분산 시스템의 모든 어려움(네트워크 실패·트랜잭션 분리·관측성·운영 복잡도)을 떠안습니다.
+      그래서 현장에서는 모놀리식과 MSA를 양극단으로 두고, <strong>모듈러 모놀리식·매크로 서비스·서비스 메시</strong> 같은 다양한 절충안이 사용됩니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>핵심 원칙 — "팀 경계와 서비스 경계를 일치시킨다"</strong></p>
+      <p>
+        Conway의 법칙: "조직이 시스템을 닮는다." 한 서비스를 한 팀이 온전히 책임질 수 있어야 MSA의 이점이 나옵니다.
+        조직 변화 없이 코드만 쪼개면, 결국 분산된 모놀리식(distributed monolith)이 되어 두 세계의 단점만 모두 갖게 됩니다.
+      </p>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>변경의 격리</strong> — 한 모듈 변경이 다른 모듈을 흔들지 않게.</li>
+      <li><strong>독립 배포</strong> — 팀별로 자기 페이스로 배포하고 롤백할 수 있게.</li>
+      <li><strong>독립 확장</strong> — 트래픽이 몰리는 부분만 따로 스케일링할 수 있게.</li>
+      <li><strong>기술 다양성</strong> — 적합한 도구를 선택할 자유 (단, 운영 복잡도 ↑).</li>
+      <li><strong>조직 확장</strong> — 100명 팀이 한 코드베이스에서 일하지 않게, 자율적인 작은 팀으로.</li>
+      <li><strong>장애 격리</strong> — 한 서비스 장애가 전체로 번지지 않게 (단, 분산 자체가 새 장애 원인).</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) 모놀리식 vs MSA — 가장 큰 대비</h3>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="모놀리식과 MSA 비교">
+        <defs>
+          <marker id="asA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="label" x="170" y="20" text-anchor="middle" font-weight="bold">모놀리식</text>
+
+        <rect class="node highlight" x="40" y="40" width="260" height="180" rx="10"/>
+        <rect x="60" y="60" width="100" height="40" rx="4" fill="#444"/>
+        <text class="label" x="110" y="84" text-anchor="middle">User</text>
+        <rect x="180" y="60" width="100" height="40" rx="4" fill="#444"/>
+        <text class="label" x="230" y="84" text-anchor="middle">Order</text>
+        <rect x="60" y="110" width="100" height="40" rx="4" fill="#444"/>
+        <text class="label" x="110" y="134" text-anchor="middle">Payment</text>
+        <rect x="180" y="110" width="100" height="40" rx="4" fill="#444"/>
+        <text class="label" x="230" y="134" text-anchor="middle">Catalog</text>
+        <text class="label" x="170" y="180" text-anchor="middle" fill="#1a1a1a">한 프로세스 · 한 DB · 한 배포</text>
+        <text class="label" x="170" y="200" text-anchor="middle" fill="#1a1a1a">함수 호출로 통신</text>
+
+        <text class="label" x="510" y="20" text-anchor="middle" font-weight="bold">MSA</text>
+
+        <rect class="node" x="360" y="40" width="120" height="60" rx="8"/>
+        <text class="node-text" x="420" y="68">User Svc</text>
+        <text class="label" x="420" y="86" text-anchor="middle">DB-User</text>
+
+        <rect class="node" x="500" y="40" width="120" height="60" rx="8"/>
+        <text class="node-text" x="560" y="68">Order Svc</text>
+        <text class="label" x="560" y="86" text-anchor="middle">DB-Order</text>
+
+        <rect class="node" x="360" y="120" width="120" height="60" rx="8"/>
+        <text class="node-text" x="420" y="148">Payment Svc</text>
+        <text class="label" x="420" y="166" text-anchor="middle">DB-Pay</text>
+
+        <rect class="node" x="500" y="120" width="120" height="60" rx="8"/>
+        <text class="node-text" x="560" y="148">Catalog Svc</text>
+        <text class="label" x="560" y="166" text-anchor="middle">DB-Cat</text>
+
+        <line x1="480" y1="70" x2="500" y2="70" stroke="var(--accent)" stroke-width="2" marker-end="url(#asA)"/>
+        <line x1="500" y1="80" x2="480" y2="80" stroke="var(--accent)" stroke-width="2" marker-end="url(#asA)"/>
+        <line x1="420" y1="100" x2="420" y2="120" stroke="var(--accent)" stroke-width="2" marker-end="url(#asA)"/>
+        <line x1="560" y1="100" x2="560" y2="120" stroke="var(--accent)" stroke-width="2" marker-end="url(#asA)"/>
+
+        <text class="label" x="490" y="220" text-anchor="middle">독립 프로세스 · DB 분리 · 독립 배포</text>
+        <text class="label" x="490" y="240" text-anchor="middle">HTTP/gRPC/메시지로 통신</text>
+
+        <text class="label" x="340" y="280" text-anchor="middle">"사이의 호출이 함수 호출 → 네트워크 호출"로 바뀌는 순간 모든 trade-off가 따라온다.</text>
+      </svg>
+      <span class="viz-caption">한 프로세스 vs 분산 — 통신 비용·실패 모델·트랜잭션이 근본적으로 달라진다.</span>
+    </div>
+    <table class="complexity">
+      <thead>
+        <tr><th>측면</th><th>모놀리식</th><th>MSA</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>배포 단위</td><td>전체 한 번에</td><td>서비스별 독립</td></tr>
+        <tr><td>모듈 간 통신</td><td>함수 호출</td><td>HTTP / gRPC / 메시지</td></tr>
+        <tr><td>트랜잭션</td><td>DB 하나 → ACID 자연스러움</td><td>분산 → Saga·이벤트로 보정</td></tr>
+        <tr><td>스케일링</td><td>전체를 같이 (수직·수평)</td><td>서비스별 (수평)</td></tr>
+        <tr><td>장애 격리</td><td>한 모듈 충돌이 전체 영향</td><td>한 서비스 장애가 격리 가능 (회로 차단기)</td></tr>
+        <tr><td>관측성</td><td>로그 한 곳</td><td>분산 추적·로그 집계 필수</td></tr>
+        <tr><td>운영 복잡도</td><td>낮음</td><td>높음 (CI/CD·인프라·네트워크)</td></tr>
+        <tr><td>적합한 조직</td><td>소규모·단일 팀</td><td>다팀·자율 팀</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2) 레이어드 아키텍처 — 가장 흔한 분해</h3>
+    <p>
+      레이어드는 코드 자체를 책임에 따라 가로로 자르는 방식입니다. 보통 <strong>표현(Presentation) → 응용(Application) → 도메인(Domain) → 인프라(Infrastructure)</strong>의 4계층을 두고,
+      위 계층은 아래 계층에만 의존합니다. 모놀리식 안에서도 "내부적으로는 레이어드 구조"인 경우가 많습니다.
+    </p>
+    <ul>
+      <li><strong>장점</strong> — 직관적, 책임 분리, 신규 개발자가 적응하기 쉬움.</li>
+      <li><strong>한계</strong> — 도메인이 인프라(DB·HTTP)에 점점 끌려가기 쉬움. 변경이 한 기능 안에서 모든 계층을 동시에 건드리는 일이 많음.</li>
+    </ul>
+
+    <h3>3) 헥사고날(포트와 어댑터) — 도메인을 가운데에</h3>
+    <p>
+      헥사고날 아키텍처는 도메인을 정중앙에 두고, 외부와의 접점을 <strong>포트(인터페이스)</strong>로 정의한 뒤 어댑터가 구현합니다.
+      웹 컨트롤러·DB·메시지 큐가 모두 "외부 어댑터"로 동등하게 취급되므로, <strong>도메인이 어떤 인프라에도 끌려가지 않습니다</strong>.
+      덕분에 테스트가 쉬워지고, 인프라 교체(예: REST → gRPC, MySQL → DynamoDB)가 도메인 코드를 흔들지 않습니다.
+    </p>
+<pre><code>// 도메인 (가운데)
+public class OrderService {
+    private final OrderRepository repo;       // 포트 (인터페이스)
+    private final PaymentGateway payment;     // 포트
+
+    public Order place(NewOrder cmd) {
+        Order order = Order.of(cmd);
+        payment.charge(order.total());
+        return repo.save(order);
+    }
+}
+
+// 어댑터 — 인프라 (바깥)
+class JpaOrderRepository implements OrderRepository { ... }
+class StripePaymentGateway implements PaymentGateway { ... }
+</code></pre>
+
+    <h3>4) 이벤트 드리븐 — 명령 대신 사실을 흘려보내기</h3>
+    <p>
+      서비스가 서로를 직접 호출하는 대신 "사건이 일어났다"는 이벤트만 발행하고, 관심 있는 서비스가 받아서 처리하는 스타일입니다.
+      Kafka·SQS·EventBridge 같은 메시지 인프라가 그 통로가 되고, 송신자는 누가 듣는지 몰라도 됩니다(낮은 결합).
+      장애 격리·시간 분리·이력 보존(이벤트 소싱)에 강력하지만, <strong>흐름 추적이 어렵고</strong> "지금 시스템 상태"를 한눈에 보기 힘들어집니다.
+    </p>
+    <ul>
+      <li><strong>강점</strong> — 비동기·확장성·결합도 낮음·시간 분리(소비자가 잠시 죽어도 이벤트는 큐에 남음).</li>
+      <li><strong>약점</strong> — 디버깅 어려움, 순서·중복 처리(at-least-once / idempotency) 책임이 소비자에 있음.</li>
+      <li><strong>자주 함께 쓰이는 패턴</strong> — Outbox, CDC, Saga, Event Sourcing, CQRS.</li>
+    </ul>
+
+    <h3>5) 분리 기준 — 어떻게 자를 것인가</h3>
+    <table class="complexity">
+      <thead>
+        <tr><th>기준</th><th>설명</th><th>예</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>도메인 경계 (Bounded Context)</td><td>비즈니스 의미가 다른 영역끼리 분리</td><td>주문 vs 결제 vs 배송</td></tr>
+        <tr><td>변경 빈도</td><td>같이 변경되는 것은 같이, 따로 변경되는 것은 따로</td><td>UI vs 가격 정책</td></tr>
+        <tr><td>팀 경계</td><td>한 서비스를 한 팀이 책임질 수 있도록</td><td>2-pizza team당 1~3 서비스</td></tr>
+        <tr><td>데이터 경계</td><td>강한 일관성이 필요한 데이터는 같은 서비스</td><td>주문과 주문항목은 한 서비스</td></tr>
+        <tr><td>확장 패턴</td><td>트래픽 패턴이 다르면 분리</td><td>읽기 폭주 검색 vs 쓰기 폭주 결제</td></tr>
+        <tr><td>가용성 요구</td><td>SLA가 다른 영역 분리</td><td>결제(99.99%) vs 추천(99.5%)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6) 점진적 마이그레이션 — Strangler Fig 패턴</h3>
+    <p>
+      모놀리식을 한 번에 MSA로 갈아엎는 빅뱅은 거의 항상 실패합니다. 대신 <strong>스트랭글러 무화과(strangler fig)</strong>처럼,
+      옛 시스템 위에 새 서비스를 한 기능씩 만들고 라우팅을 점진적으로 옮겨, 옛 시스템이 자연스럽게 죽어 가게 만듭니다.
+    </p>
+    <div class="viz">
+      <svg width="680" height="220" viewBox="0 0 680 220" role="img" aria-label="Strangler Fig 점진적 이전">
+        <defs>
+          <marker id="sfA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="20" y="80" width="100" height="60" rx="8" fill="#444"/>
+        <text class="node-text" x="70" y="108">Client</text>
+
+        <rect class="node highlight" x="200" y="80" width="140" height="60" rx="8"/>
+        <text class="node-text" x="270" y="108" fill="#1a1a1a" font-weight="bold">API Gateway</text>
+        <text class="label" x="270" y="125" text-anchor="middle" fill="#1a1a1a">라우팅</text>
+
+        <rect class="node" x="420" y="20" width="220" height="60" rx="8" fill="#444"/>
+        <text class="node-text" x="530" y="48">기존 모놀리식</text>
+        <text class="label" x="530" y="64" text-anchor="middle">/users · /orders · /payments</text>
+
+        <rect class="node" x="420" y="110" width="100" height="50" rx="8"/>
+        <text class="label" x="470" y="140" text-anchor="middle">신규 Order Svc</text>
+
+        <rect class="node" x="540" y="110" width="100" height="50" rx="8"/>
+        <text class="label" x="590" y="140" text-anchor="middle">신규 Payment Svc</text>
+
+        <line x1="120" y1="110" x2="200" y2="110" stroke="var(--accent)" stroke-width="2" marker-end="url(#sfA)"/>
+        <line x1="340" y1="100" x2="420" y2="60" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#sfA)"/>
+        <line x1="340" y1="120" x2="420" y2="135" stroke="var(--accent)" stroke-width="2" marker-end="url(#sfA)"/>
+
+        <text class="label" x="340" y="190" text-anchor="middle">신규 서비스가 한 기능씩 떼어 가며 모놀리식이 점차 작아진다 — 안전하고 되돌리기 쉽다.</text>
+      </svg>
+      <span class="viz-caption">옛 시스템을 죽이지 않고, 게이트웨이의 라우팅을 점진적으로 새 서비스로 옮긴다.</span>
+    </div>
+
+    <h2>trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>설계 결정</th><th>장점</th><th>비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>모놀리식 유지</td><td>운영·디버깅 단순, ACID 자연스러움</td><td>팀 충돌 ↑, 한 모듈 문제로 전체 영향</td></tr>
+        <tr><td>모듈러 모놀리식</td><td>모듈 경계는 잡으면서 운영은 단순</td><td>경계 위반이 빈번 → 규율 필요</td></tr>
+        <tr><td>MSA로 분해</td><td>독립 배포·확장·기술 선택의 자유</td><td>분산 트랜잭션·관측성·운영 비용 폭증</td></tr>
+        <tr><td>이벤트 드리븐</td><td>결합도 ↓, 시간 분리, 확장성</td><td>흐름 추적 어려움, 멱등·순서 보장 책임</td></tr>
+        <tr><td>헥사고날</td><td>도메인 중심, 인프라 교체 용이</td><td>초기 구조 학습·일관 적용 비용</td></tr>
+        <tr><td>대규모 빅뱅 마이그레이션</td><td>한 번에 깨끗</td><td>거의 항상 실패 — 강추: 점진적(Strangler)</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>스타트업 초기</strong> — 거의 모두 모놀리식 (또는 모듈러 모놀리식)으로 시작, 시기상조의 분해는 비용만 큼.</li>
+      <li><strong>중·대규모</strong> — 도메인이 명확해지고 팀이 커지면 일부를 떼어 MSA로 (예: 결제·검색 우선).</li>
+      <li><strong>이벤트 드리븐</strong> — 결제·물류·추천 같이 비동기·이력 보존이 중요한 도메인.</li>
+      <li><strong>헥사고날</strong> — 도메인 로직이 복잡한 시스템(금융·보험)과 DDD를 깊게 적용하는 팀.</li>
+      <li><strong>서버리스 / 함수 단위</strong> — 트래픽이 spiky하거나 이벤트 처리가 중심인 워크로드.</li>
+      <li><strong>레거시 모더나이제이션</strong> — Strangler Fig 패턴 + API Gateway로 위험을 통제하며 점진적 이전.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">모놀리식과 MSA를 어떻게 비교하시겠어요?</div>
+      <div class="a">
+        모놀리식은 한 코드베이스·한 DB·한 배포로 단순하고, ACID 트랜잭션·디버깅·관측이 자연스럽습니다.
+        MSA는 서비스별 독립 배포·독립 확장·기술 선택의 자유를 얻지만, 분산 트랜잭션·네트워크 실패·관측성·운영 복잡도라는 비용을 떠안습니다.
+        일반적으로 작은 팀·초기 제품은 모놀리식으로 시작하고, 도메인과 조직이 커진 뒤 명확한 경계가 보일 때 일부를 떼어 MSA로 전환하는 흐름이 안전합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">MSA를 도입하면 어떤 문제가 새로 생기나요?</div>
+      <div class="a">
+        함수 호출이 네트워크 호출로 바뀌면서 부분 실패·지연·타임아웃이 일상이 됩니다. 데이터가 서비스별로 나뉘어 글로벌 트랜잭션이 어려워지고,
+        Saga·이벤트·보정 트랜잭션 같은 패턴이 필요해집니다. 또한 분산 추적·로그 집계·메트릭 같은 관측성, CI/CD·서비스 디스커버리·메시 인프라 같은 운영 부담이 크게 늘어납니다.
+        Conway의 법칙에 따라 조직 변화 없이 코드만 쪼개면 "분산된 모놀리식"이 되어 두 세계의 단점만 모두 갖게 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">서비스를 어떤 기준으로 나누시나요?</div>
+      <div class="a">
+        가장 우선시하는 기준은 도메인 경계(Bounded Context)와 팀 경계입니다. 한 팀이 한 서비스를 온전히 책임질 수 있어야 MSA의 이점이 살아납니다.
+        그 외에 변경 빈도가 다른지, 강한 일관성이 필요한 데이터가 같이 있어야 하는지, 트래픽 패턴이나 가용성 요구가 다른지를 함께 봅니다.
+        명확한 경계가 안 보이면 모듈러 모놀리식으로 두고 경계가 안정될 때까지 기다리는 편이 안전합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">헥사고날(포트와 어댑터) 아키텍처가 주는 이점은 무엇인가요?</div>
+      <div class="a">
+        도메인을 가운데에 두고 외부와의 접점을 모두 포트(인터페이스)와 어댑터로 정의해, 도메인이 인프라(HTTP·DB·큐)에 끌려가지 않게 합니다.
+        그 결과 도메인 로직만 분리해 단위 테스트하기 쉽고, REST를 gRPC로 바꾸거나 MySQL을 DynamoDB로 바꾸는 인프라 교체가 도메인 코드를 흔들지 않습니다.
+        DDD나 복잡한 비즈니스 규칙이 있는 도메인에서 특히 가치가 큽니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">이벤트 드리븐 아키텍처의 강점과 함정은 무엇인가요?</div>
+      <div class="a">
+        강점은 결합도가 낮고 비동기로 시간이 분리되어, 한 서비스가 잠시 죽어도 이벤트가 큐에 쌓여 있다가 복구 후 처리되는 등 회복력이 좋습니다.
+        함정은 흐름 추적이 어렵고, 메시지 시스템의 at-least-once 특성 때문에 소비자가 멱등성과 순서 보장을 직접 책임져야 한다는 점입니다.
+        Outbox·CDC·Saga 같은 패턴을 함께 쓰지 않으면 일관성이 깨지기 쉽습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">레거시 모놀리식을 MSA로 옮기는 안전한 방법은 무엇인가요?</div>
+      <div class="a">
+        한 번에 갈아엎는 빅뱅은 거의 항상 실패하므로, Strangler Fig 패턴을 권장합니다.
+        API Gateway를 앞에 두고, 한 기능씩 새 서비스로 떼어내며 라우팅을 점진적으로 옮깁니다. 새 서비스가 안정화되면 옛 모놀리식의 해당 코드 경로를 제거하는 식으로,
+        옛 시스템이 점차 작아지다 자연스럽게 사라지게 만듭니다. 매 단계가 작고 되돌릴 수 있어야 하고, 관측성과 회귀 테스트가 안전망이 됩니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="solid.html">SOLID 원칙</a></li>
+      <li><a href="design-patterns.html">디자인 패턴</a></li>
+      <li><a href="clean-code.html">클린 코드</a></li>
+      <li><a href="ci-cd.html">CI / CD</a></li>
+      <li><a href="../database/replication.html">DB 복제</a></li>
+      <li><a href="index.html">소프트웨어공학 목록</a></li>
+    </ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="ci-cd.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">CI / CD</span>
+            <span class="hint">MSA의 독립 배포를 가능하게 만드는 자동화 파이프라인</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="../database/replication.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">DB 복제</span>
+            <span class="hint">서비스마다 DB가 분리될 때 일관성·가용성을 만드는 도구</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="clean-code.html">
+        <span class="label">이전</span>
+        ← 클린 코드
+      </a>
+      <a href="index.html">📂 소프트웨어공학으로</a>
+      <a class="next" href="testing-strategy.html">
+        <span class="label">다음</span>
+        테스트 전략 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

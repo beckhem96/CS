@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DMA / I/O 시스템 / 버스 · 컴퓨터구조 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">컴퓨터구조</a>
+      <span class="sep">›</span>
+      <span>DMA / I/O / 버스</span>
+    </nav>
+
+    <h1>DMA / I/O 시스템 / 버스 — CPU 없이 흐르는 데이터</h1>
+
+    <div class="definition">
+      <strong>DMA(Direct Memory Access)</strong>는 CPU를 거치지 않고 장치와 메모리가 직접 데이터를 주고받게 해 주는 기법입니다.
+      넓게는 <strong>I/O 시스템</strong>이 "CPU·메모리·장치 사이를 어떤 방식·어떤 길로 데이터가 오가는가"를 다루는 영역이고,
+      그 길이 바로 <strong>버스(Bus)</strong>입니다. 이 셋을 함께 보면 CPU가 어떻게 디스크·NIC·GPU와 협업하는지가 한눈에 들어옵니다.
+    </div>
+
+    <h2>구체적인 개념 설명</h2>
+    <p>
+      디스크에서 1MB를 읽어와 메모리에 올리는 작업을 생각해 봅시다. CPU가 한 워드씩 직접 옮긴다면, 그동안 다른 일을 못 합니다.
+      디스크는 ms 단위로 느리니 CPU가 수십만 ~ 수백만 사이클을 허비하게 됩니다. <strong>이 낭비를 없애는 가장 강력한 방법이 DMA</strong>입니다.
+      CPU가 "이 주소부터 1MB를 메모리의 저쪽 주소로 옮겨라"고 DMA 컨트롤러에 시킨 뒤 다른 일을 보면, 전송이 끝났을 때 인터럽트로 알려 줍니다.
+    </p>
+    <p>
+      하지만 DMA는 혼자 동작하지 않습니다. <strong>버스</strong>라는 공유 통로를 두고 CPU·메모리·장치가 함께 사용하므로, 누가 언제 사용할지 중재가 필요합니다.
+      그리고 장치와 통신하는 방식도 두 가지(<strong>MMIO</strong> vs <strong>포트 I/O</strong>)가 있고, 시스템에 따라 버스 구조도 다양합니다.
+      이 큰 그림을 알면 NVMe·GPU·RDMA 같은 고성능 I/O가 왜 그 모양인지 이해할 수 있습니다.
+    </p>
+
+    <div class="callout">
+      <p><strong>I/O 처리는 항상 셋 중 하나다</strong></p>
+      <ul style="margin:8px 0;">
+        <li><strong>Programmed I/O (PIO)</strong> — CPU가 직접 한 워드씩 옮긴다. 단순하지만 느림.</li>
+        <li><strong>Interrupt-driven I/O</strong> — 장치가 준비될 때마다 CPU에게 인터럽트로 알려줘 한 워드씩 옮긴다.</li>
+        <li><strong>DMA</strong> — DMA 컨트롤러에게 위임하고 CPU는 다른 일. 전송 종료 시 한 번만 인터럽트.</li>
+      </ul>
+    </div>
+
+    <h2>왜 필요한가?</h2>
+    <ul>
+      <li><strong>CPU 시간 절약</strong> — 대용량 전송에서 CPU를 자유롭게 두면 다른 프로세스가 그 시간을 쓸 수 있어 처리량이 크게 늘어납니다.</li>
+      <li><strong>응답성</strong> — 인터럽트 기반 I/O는 폴링보다 응답성이 좋고, DMA는 인터럽트 횟수까지 줄여 줍니다.</li>
+      <li><strong>대역폭</strong> — 메모리 ↔ 장치 직통 경로는 CPU를 거칠 때보다 전송 대역폭이 훨씬 큽니다.</li>
+      <li><strong>모듈화</strong> — 버스 표준 덕분에 NIC·SSD·GPU를 끼우기만 하면 동작합니다 — CPU가 모든 장치를 직접 알 필요가 없습니다.</li>
+    </ul>
+
+    <h2>어떻게 동작하는가?</h2>
+
+    <h3>1) I/O 처리 방식 3가지 비교</h3>
+    <div class="viz">
+      <svg width="680" height="280" viewBox="0 0 680 280" role="img" aria-label="PIO/Interrupt/DMA 비교">
+        <defs>
+          <marker id="ioA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="label" x="115" y="20" text-anchor="middle" font-weight="bold">Programmed I/O</text>
+        <rect class="node" x="20" y="40" width="60" height="40" rx="4"/><text class="label" x="50" y="64" text-anchor="middle">CPU</text>
+        <rect class="node" x="100" y="40" width="60" height="40" rx="4"/><text class="label" x="130" y="64" text-anchor="middle">Device</text>
+        <rect class="node" x="180" y="40" width="40" height="40" rx="4" fill="#444"/><text class="label" x="200" y="64" text-anchor="middle">Mem</text>
+        <line x1="80" y1="55" x2="100" y2="55" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <line x1="100" y1="68" x2="80" y2="68" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <line x1="80" y1="78" x2="180" y2="78" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <text class="label" x="115" y="115" text-anchor="middle">CPU가 한 워드씩 폴링·복사</text>
+        <text class="label" x="115" y="132" text-anchor="middle">→ 매우 단순, CPU 100% 점유</text>
+
+        <text class="label" x="340" y="20" text-anchor="middle" font-weight="bold">Interrupt-driven</text>
+        <rect class="node" x="240" y="40" width="60" height="40" rx="4"/><text class="label" x="270" y="64" text-anchor="middle">CPU</text>
+        <rect class="node" x="320" y="40" width="60" height="40" rx="4"/><text class="label" x="350" y="64" text-anchor="middle">Device</text>
+        <rect class="node" x="400" y="40" width="40" height="40" rx="4" fill="#444"/><text class="label" x="420" y="64" text-anchor="middle">Mem</text>
+        <line x1="320" y1="55" x2="300" y2="55" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#ioA)"/>
+        <line x1="300" y1="68" x2="320" y2="68" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <line x1="300" y1="78" x2="400" y2="78" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <text class="label" x="340" y="115" text-anchor="middle">장치가 준비되면 IRQ → CPU 복사</text>
+        <text class="label" x="340" y="132" text-anchor="middle">→ CPU 일부 시간 회수, 워드당 1 IRQ</text>
+
+        <text class="label" x="580" y="20" text-anchor="middle" font-weight="bold">DMA</text>
+        <rect class="node" x="465" y="40" width="50" height="40" rx="4"/><text class="label" x="490" y="64" text-anchor="middle">CPU</text>
+        <rect class="node highlight" x="525" y="40" width="50" height="40" rx="4"/><text class="label" x="550" y="64" text-anchor="middle" fill="#1a1a1a">DMA</text>
+        <rect class="node" x="585" y="40" width="40" height="40" rx="4"/><text class="label" x="605" y="64" text-anchor="middle">Dev</text>
+        <rect class="node" x="635" y="40" width="40" height="40" rx="4" fill="#444"/><text class="label" x="655" y="64" text-anchor="middle">Mem</text>
+        <line x1="515" y1="55" x2="525" y2="55" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <line x1="575" y1="55" x2="585" y2="55" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <line x1="585" y1="78" x2="635" y2="78" stroke="var(--accent)" stroke-width="2" marker-end="url(#ioA)"/>
+        <line x1="525" y1="68" x2="515" y2="68" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#ioA)"/>
+        <text class="label" x="565" y="115" text-anchor="middle">CPU 위임 → DMA가 직접 전송</text>
+        <text class="label" x="565" y="132" text-anchor="middle">→ 종료 시 1 IRQ만, CPU 거의 free</text>
+
+        <text class="label" x="340" y="200" text-anchor="middle">실선=데이터, 점선=인터럽트</text>
+        <text class="label" x="340" y="230" text-anchor="middle">전송량이 클수록 DMA의 이득이 압도적이다.</text>
+      </svg>
+      <span class="viz-caption">3가지 I/O 방식 — CPU의 개입 정도와 인터럽트 발생 횟수가 다르다.</span>
+    </div>
+
+    <h3>2) DMA 동작 단계</h3>
+    <div class="viz">
+      <svg width="680" height="280" viewBox="0 0 680 280" role="img" aria-label="DMA 동작 단계">
+        <defs>
+          <marker id="dmaA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node highlight" x="20" y="40" width="120" height="60" rx="8"/>
+        <text class="node-text" x="80" y="68" fill="#1a1a1a" font-weight="bold">CPU</text>
+        <text class="label" x="80" y="85" text-anchor="middle" fill="#1a1a1a">디스크립터 셋업</text>
+
+        <rect class="node" x="280" y="40" width="120" height="60" rx="8"/>
+        <text class="node-text" x="340" y="68">DMA 컨트롤러</text>
+        <text class="label" x="340" y="85" text-anchor="middle">src/dst/length</text>
+
+        <rect class="node" x="540" y="20" width="120" height="50" rx="8" fill="#444"/>
+        <text class="node-text" x="600" y="48">Device</text>
+        <rect class="node" x="540" y="80" width="120" height="50" rx="8" fill="#444"/>
+        <text class="node-text" x="600" y="108">Memory</text>
+
+        <line x1="140" y1="70" x2="280" y2="70" stroke="var(--accent)" stroke-width="2" marker-end="url(#dmaA)"/>
+        <text class="label" x="210" y="60" text-anchor="middle">① 시작 명령</text>
+
+        <line x1="400" y1="55" x2="540" y2="45" stroke="var(--accent)" stroke-width="2" marker-end="url(#dmaA)"/>
+        <line x1="540" y1="105" x2="400" y2="85" stroke="var(--accent)" stroke-width="2" marker-end="url(#dmaA)"/>
+        <text class="label" x="470" y="115" text-anchor="middle">② 직접 전송 (CPU 무관)</text>
+
+        <line x1="280" y1="80" x2="140" y2="90" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#dmaA)"/>
+        <text class="label" x="210" y="115" text-anchor="middle">④ 완료 IRQ</text>
+
+        <text class="label" x="340" y="170" text-anchor="middle" font-weight="bold">③ 그동안 CPU는 다른 프로세스를 실행</text>
+
+        <text class="label" x="340" y="220" text-anchor="middle">시작 시 1번 + 종료 시 1번, 단 두 번의 CPU 개입으로 대용량 전송 완료.</text>
+        <text class="label" x="340" y="240" text-anchor="middle">CPU와 DMA가 같은 메모리 버스를 공유하므로 cycle stealing이 일어난다.</text>
+      </svg>
+      <span class="viz-caption">DMA의 핵심 — 디스크립터(어디서·어디로·얼마) 한 번 셋업하면 그 뒤는 CPU 무관.</span>
+    </div>
+
+    <h3>3) MMIO vs 포트 I/O — 장치를 어떻게 부를 것인가</h3>
+    <p>
+      CPU가 장치 레지스터에 접근하는 방식은 두 가지입니다. <strong>MMIO(Memory-Mapped I/O)</strong>는 장치 레지스터를 메모리 주소 공간의 일부로 매핑해
+      일반 <code>load</code>/<code>store</code> 명령으로 접근하고, <strong>포트 I/O</strong>는 별도 I/O 주소 공간을 두고 <code>in</code>/<code>out</code> 같은 전용 명령으로 접근합니다.
+      현대 시스템은 거의 MMIO 중심입니다 — 같은 명령 세트, 같은 권한 모델, 같은 캐시 정책을 그대로 쓸 수 있기 때문입니다.
+    </p>
+    <table class="complexity">
+      <thead>
+        <tr><th>구분</th><th>MMIO</th><th>포트 I/O</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>주소 공간</td><td>메모리와 공유</td><td>별도 I/O 주소 공간</td></tr>
+        <tr><td>접근 명령</td><td>load/store (동일)</td><td>in/out (전용)</td></tr>
+        <tr><td>캐시</td><td>가능 (보통 비활성화 영역으로 매핑)</td><td>해당 없음</td></tr>
+        <tr><td>주소 폭</td><td>전체 주소 공간 (64비트)</td><td>제한적 (x86은 16비트)</td></tr>
+        <tr><td>현대 사용</td><td>표준 — PCIe·DRAM</td><td>레거시 (PIC, PIT 등)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4) 시스템 안의 버스 — 누가 무엇을 잇는가</h3>
+    <div class="viz">
+      <svg width="680" height="320" viewBox="0 0 680 320" role="img" aria-label="버스 구조 개요">
+        <rect class="node highlight" x="40" y="40" width="160" height="60" rx="8"/>
+        <text class="node-text" x="120" y="68" fill="#1a1a1a" font-weight="bold">CPU</text>
+        <text class="label" x="120" y="85" text-anchor="middle" fill="#1a1a1a">캐시 포함</text>
+
+        <rect class="node" x="260" y="40" width="160" height="60" rx="8" fill="#444"/>
+        <text class="node-text" x="340" y="68">메모리 컨트롤러</text>
+        <text class="label" x="340" y="85" text-anchor="middle">통합형 (현대 CPU 내장)</text>
+
+        <rect class="node" x="480" y="40" width="160" height="60" rx="8"/>
+        <text class="node-text" x="560" y="68">DRAM</text>
+
+        <line x1="200" y1="70" x2="260" y2="70" stroke="var(--accent)" stroke-width="3"/>
+        <text class="label" x="230" y="60" text-anchor="middle">메모리 버스 (DDR)</text>
+
+        <line x1="420" y1="70" x2="480" y2="70" stroke="var(--accent)" stroke-width="3"/>
+
+        <line x1="120" y1="100" x2="120" y2="180" stroke="var(--accent)" stroke-width="3"/>
+        <text class="label" x="160" y="140">I/O 버스 (PCIe / DMI)</text>
+
+        <rect class="node" x="40" y="200" width="160" height="60" rx="8" fill="#444"/>
+        <text class="node-text" x="120" y="228">PCH / I/O 허브</text>
+        <text class="label" x="120" y="246" text-anchor="middle">SATA·USB·이더넷·GPU</text>
+
+        <rect class="node" x="240" y="200" width="120" height="60" rx="8"/>
+        <text class="label" x="300" y="234" text-anchor="middle">NVMe SSD</text>
+        <rect class="node" x="380" y="200" width="120" height="60" rx="8"/>
+        <text class="label" x="440" y="234" text-anchor="middle">NIC</text>
+        <rect class="node" x="520" y="200" width="120" height="60" rx="8"/>
+        <text class="label" x="580" y="234" text-anchor="middle">GPU</text>
+
+        <line x1="200" y1="230" x2="240" y2="230" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="360" y1="230" x2="380" y2="230" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="500" y1="230" x2="520" y2="230" stroke="var(--accent)" stroke-width="2"/>
+
+        <text class="label" x="340" y="295" text-anchor="middle">현대 시스템: CPU↔메모리는 DDR, CPU↔주변장치는 PCIe가 기본 — 둘 다 점대점(point-to-point) 링크</text>
+      </svg>
+      <span class="viz-caption">옛날의 단일 시스템 버스 → 메모리 버스와 I/O 버스 분리 → PCIe로 점대점 진화.</span>
+    </div>
+
+    <h3>5) PCIe — 현대 I/O의 기본</h3>
+    <p>
+      PCIe(PCI Express)는 점대점 시리얼 링크 기반의 I/O 버스 표준입니다. 옛 PCI의 공유 병렬 버스와 달리, 각 장치가 CPU와 독립적인 레인을 갖고
+      양방향 전이중으로 통신합니다. 레인 수(x1·x4·x8·x16)와 세대(Gen3·4·5)로 대역폭이 정해지고, NVMe SSD·GPU·고속 NIC가 모두 PCIe 위에서 동작합니다.
+      <strong>PCIe 장치는 자기 메모리 영역을 호스트의 주소 공간에 MMIO로 매핑</strong>받아, CPU가 해당 주소에 쓰면 곧 장치 레지스터에 쓰기가 됩니다.
+    </p>
+
+    <h3>6) DMA와 캐시 일관성</h3>
+    <p>
+      DMA가 CPU를 거치지 않고 메모리에 쓰면, CPU의 캐시는 옛 값을 가질 수 있습니다. 반대로 CPU가 캐시에만 쓴 값이 메모리에 반영되지 않은 상태에서 DMA가 메모리를 읽으면 옛 데이터를 가져갑니다.
+      이 문제를 해결하는 두 가지 길이 있습니다.
+    </p>
+    <ul>
+      <li><strong>캐시 일관성 하드웨어</strong> — 현대 x86·ARM은 PCIe DMA가 캐시 일관성 프로토콜에 참여해 자동으로 해결합니다(coherent DMA).</li>
+      <li><strong>비일관성 DMA</strong> — 임베디드/일부 ARM은 DMA가 캐시와 협력하지 않으므로, 드라이버가 <strong>캐시 flush/invalidate</strong>를 명시적으로 호출해야 합니다.</li>
+    </ul>
+    <p>
+      RDMA·io_uring·NVMe 같은 고성능 I/O 스택은 이 일관성 비용까지 제거하기 위해 <em>장치가 사용자 메모리에 직접 접근</em>하도록 설계됩니다.
+    </p>
+
+    <h2>trade-off</h2>
+    <table class="complexity">
+      <thead>
+        <tr><th>설계 결정</th><th>장점</th><th>비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Programmed I/O</td><td>단순, 작은 마이크로컨트롤러에 적합</td><td>CPU 점유 100%, 처리량 낮음</td></tr>
+        <tr><td>Interrupt-driven</td><td>CPU 시간 회수 가능</td><td>전송량이 크면 IRQ 폭주(IRQ storm)</td></tr>
+        <tr><td>DMA</td><td>대용량에 압도적, CPU 거의 free</td><td>버스 cycle stealing, 캐시 일관성 비용, 디스크립터 셋업 오버헤드</td></tr>
+        <tr><td>MMIO</td><td>일반 명령 사용, 64비트 주소</td><td>캐시·정렬 정책을 드라이버가 신중하게 설정</td></tr>
+        <tr><td>점대점 PCIe</td><td>장치별 대역폭 보장, 확장성</td><td>레인·라우팅·신호 무결성 등 하드웨어 복잡도 ↑</td></tr>
+        <tr><td>코히런트 DMA</td><td>드라이버가 캐시 관리 불필요</td><td>스누핑 트래픽 비용</td></tr>
+      </tbody>
+    </table>
+
+    <h2>실무에서 어디에 쓰이는가?</h2>
+    <ul>
+      <li><strong>NVMe SSD</strong> — PCIe 위에서 호스트 메모리에 직접 DMA로 데이터를 옮겨, 디스크 I/O를 GB/s 단위로 가능하게 만듭니다.</li>
+      <li><strong>고속 NIC와 RDMA</strong> — 100Gb 이더넷, InfiniBand 같은 환경에서 NIC가 사용자 공간 메모리에 직접 read/write합니다.</li>
+      <li><strong>GPU 컴퓨팅</strong> — CUDA의 <code>cudaMemcpyAsync</code>는 PCIe DMA로 호스트↔GPU 메모리를 전송합니다. 최신 시스템은 GPUDirect로 NIC↔GPU 직통도 가능.</li>
+      <li><strong>오디오·영상</strong> — 사운드 카드·캡처 카드가 DMA로 버퍼를 채우고, CPU는 재생 시점만 동기화.</li>
+      <li><strong>io_uring</strong> — 사용자 공간 큐 + 커널 처리 + DMA 조합으로 시스템 콜 비용까지 줄여 NVMe·네트워크 I/O를 극한까지 끌어올립니다.</li>
+      <li><strong>임베디드</strong> — STM32 같은 MCU도 DMA 컨트롤러를 내장해 SPI·UART·ADC 데이터를 CPU 개입 없이 메모리로 옮깁니다.</li>
+    </ul>
+
+    <h2>면접에 나올 질문과 답변</h2>
+
+    <div class="qa">
+      <div class="q">DMA가 무엇이고 왜 필요한가요?</div>
+      <div class="a">
+        DMA는 CPU가 데이터 복사에 직접 참여하지 않고도 장치와 메모리가 직접 데이터를 주고받게 해 주는 기법입니다.
+        대용량 전송에서 CPU가 한 워드씩 옮기면 그 시간 동안 다른 일을 못 하므로, DMA 컨트롤러에게 위임하면 CPU는 다른 프로세스를 실행하고 전송 종료 시 한 번의 인터럽트만 받습니다.
+        결과적으로 시스템 처리량이 크게 늘고 응답성도 좋아집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Programmed I/O, 인터럽트 기반 I/O, DMA는 어떻게 다른가요?</div>
+      <div class="a">
+        Programmed I/O는 CPU가 한 워드씩 폴링하며 직접 옮기는 방식으로 단순하지만 CPU를 100% 점유합니다.
+        인터럽트 기반 I/O는 장치가 준비될 때마다 CPU에 인터럽트를 걸어 한 워드씩 복사하는 방식으로, CPU 시간을 일부 회수할 수 있지만 워드마다 인터럽트가 발생합니다.
+        DMA는 전송 전체를 컨트롤러에 위임하고 종료 시 한 번만 인터럽트를 받으므로, 대용량 전송에 압도적으로 유리합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">MMIO와 포트 I/O의 차이는 무엇인가요?</div>
+      <div class="a">
+        MMIO는 장치 레지스터를 메모리 주소 공간의 일부로 매핑해 일반 load/store 명령으로 접근하는 방식이고,
+        포트 I/O는 별도 I/O 주소 공간을 두고 in/out 같은 전용 명령으로 접근하는 방식입니다.
+        MMIO는 같은 명령·같은 권한·같은 주소 폭을 그대로 쓸 수 있어 현대 시스템의 표준이 되었고, 포트 I/O는 x86 레거시 장치(PIC, PIT 등)에 일부 남아 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DMA와 캐시 일관성은 어떤 관계인가요?</div>
+      <div class="a">
+        DMA가 메모리에 직접 쓰면 CPU 캐시의 옛 값과 어긋날 수 있고, 반대로 CPU가 캐시에만 쓴 값이 메모리에 반영되지 않은 상태에서 DMA가 읽으면 옛 데이터를 가져갈 수 있습니다.
+        x86·ARM 같은 현대 데스크톱·서버 CPU는 PCIe DMA가 캐시 일관성 프로토콜에 참여해 자동으로 해결하지만(coherent DMA),
+        일부 임베디드는 드라이버가 직접 캐시 flush/invalidate를 호출해 일관성을 보장해야 합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PCIe는 옛 PCI와 무엇이 다른가요?</div>
+      <div class="a">
+        옛 PCI는 여러 장치가 한 병렬 버스를 공유하는 구조였습니다 — 한 장치만 동시에 쓸 수 있었고, 속도도 모두가 같이 영향을 받았습니다.
+        PCIe는 점대점(point-to-point) 시리얼 링크로, 각 장치가 CPU와 자기만의 레인을 갖고 양방향 전이중으로 통신합니다.
+        그래서 한 장치가 바빠도 다른 장치의 대역폭에 영향을 주지 않고, 레인 수(x1~x16)와 세대(Gen3~Gen5)로 필요한 대역폭을 자유롭게 할당할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">DMA의 단점은 무엇인가요?</div>
+      <div class="a">
+        DMA 컨트롤러도 CPU와 같은 메모리 버스를 사용하므로, DMA가 활발하면 CPU가 메모리 접근에서 잠시 멈추는 cycle stealing이 발생합니다.
+        또한 DMA 시작 전 디스크립터(주소·길이) 셋업이 필요하고, 캐시 일관성을 유지하기 위한 비용도 있습니다.
+        그래서 짧은 전송에서는 DMA의 셋업 비용이 PIO보다 클 수 있고, 보통 일정 크기 이상의 전송에서만 DMA가 이득입니다.
+      </div>
+    </div>
+
+    <h2>관련 개념</h2>
+    <ul class="related-chips">
+      <li><a href="interrupt.html">인터럽트</a></li>
+      <li><a href="cache-memory.html">캐시 메모리</a></li>
+      <li><a href="cache-coherence.html">캐시 일관성</a></li>
+      <li><a href="../operating-system/file-system.html">파일 시스템</a></li>
+      <li><a href="index.html">컴퓨터구조 목록</a></li>
+    </ul>
+
+    <h2>📚 다음으로 알아볼 개념</h2>
+    <ul class="next-concepts">
+      <li>
+        <a href="interrupt.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">인터럽트</span>
+            <span class="hint">DMA 종료 시 CPU에게 알리는 그 메커니즘 자체</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="cache-coherence.html">
+          <span class="arrow">→</span>
+          <span class="body">
+            <span class="title">캐시 일관성</span>
+            <span class="hint">DMA와 캐시가 충돌하지 않게 만드는 하드웨어 프로토콜</span>
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="interrupt.html">
+        <span class="label">이전</span>
+        ← 인터럽트
+      </a>
+      <a href="index.html">📂 컴퓨터구조로</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
