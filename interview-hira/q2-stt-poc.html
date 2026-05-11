@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q2. 관행 개선 — STT PoC · 심평원 면접 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">심평원 면접</a>
+      <span class="sep">›</span>
+      <span>Q2. STT PoC</span>
+    </nav>
+
+    <h1>Q2. 관행 개선 — STT API PoC와 실시간 자막 파이프라인</h1>
+
+    <div class="callout">
+      <p><strong>🎯 한 줄 핵심 메시지</strong></p>
+      <p>
+        "협력사 모델만 사용한다는 관행을 <em>'고객사 일정 준수'라는 더 상위 원칙</em>으로 다시 보고,
+        외부 STT API PoC → gRPC 스트리밍 파이프라인 → Race Condition 임계영역 제어까지
+        한 사이클을 직접 끝내 자막 서비스를 완성했다."
+      </p>
+    </div>
+
+    <h2>📄 자소서 원문 요약</h2>
+    <div class="definition">
+      안드로이드 TV 자막 서비스에서 협력사 STT 모델 납기가 무기한 지연 → 자막 개발 전면 중단.
+      "협력사 모델만 사용" 전제가 수단에 고착됐다고 판단,
+      <strong>외부 STT API PoC를 팀장께 제안</strong>해 진행. 이후 <strong>gRPC 스트리밍 기반 실시간 텍스트 변환 파이프라인</strong>을 구축하고
+      멀티스레드 환경의 <strong>Race Condition을 임계영역 제어로 해결</strong>해 안정적인 자막 서비스를 완성.
+    </div>
+
+    <h2>🔥 경험 deep dive 질문</h2>
+
+    <div class="qa">
+      <div class="q">팀장께 외부 API를 제안할 때 어떻게 설득하셨나요? 거절될 가능성도 있었을 텐데요.</div>
+      <div class="a">
+        제안서가 아니라 <strong>2~3일짜리 작은 PoC 결과</strong>로 설득했습니다.
+        외부 API의 인식 정확도, 평균 지연(스트리밍 partial latency), 비용, 그리고 협력사 모델로 갈아탈 때의 인터페이스 변경 비용을 한 페이지로 정리했습니다.
+        "협력사 모델은 결국 들어올 것이지만, 그동안 중단되는 비용이 더 크다",
+        "API와 협력사 모델 모두를 추상화 계층 뒤에 두면 나중에 교체가 가능하다"는 두 가지 논거로 진행 결정을 받았습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PoC를 어떤 기준으로 진행하셨나요? "PoC 성공"의 기준이 무엇이었습니까?</div>
+      <div class="a">
+        세 가지 정량 기준을 정했습니다 — ① 한국어 음성에 대한 단어 오류율(WER) 일정 수준 이하, ② 첫 partial 결과까지의 지연 1초 이내,
+        ③ 30분 연속 스트리밍에서의 끊김·재연결 횟수 0.
+        여기에 비기능 기준으로 비용 단가와 정책(데이터 외부 전송 가능 여부)을 함께 검토했습니다.
+        PoC는 "성공·실패"를 미리 정의해 두지 않으면 의견 차이가 끝나지 않으므로, 시작 전 합의된 기준을 두는 게 가장 중요했습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">실시간 자막 파이프라인의 전체 흐름을 설명해 주세요.</div>
+      <div class="a">
+        ① TV 마이크/소스에서 PCM 오디오를 캡처해 일정 chunk 단위로 잘라 ② gRPC <strong>클라이언트 스트리밍</strong>으로 STT 서버에 업로드,
+        ③ 서버는 partial / final 텍스트를 같은 gRPC 채널로 <strong>양방향 스트리밍</strong>해 돌려주고,
+        ④ 안드로이드 측 자막 렌더러는 partial은 임시 표시·final은 확정 표시로 갱신했습니다.
+        오디오 캡처 스레드, 네트워크 송신 스레드, 자막 갱신 UI 스레드가 분리되어 있어 공유 버퍼 접근 동기화가 핵심 이슈였습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Race Condition이 정확히 어떤 상황에서 발생했고, 어떻게 해결했나요?</div>
+      <div class="a">
+        오디오 캡처 스레드가 링버퍼에 PCM 데이터를 쓰는 동안 네트워크 스레드가 같은 버퍼에서 chunk를 읽어 전송하는 구조였습니다.
+        둘이 동시에 인덱스(write_idx / read_idx)를 갱신해 chunk가 일부 누락되거나 중복 전송되는 사고가 있었습니다.
+        해결은 ① 공유 인덱스 갱신을 <strong>한정된 임계영역으로 묶고</strong>(Java의 <code>synchronized</code> 블록 / Kotlin의 <code>Mutex</code>),
+        ② chunk 단위는 <strong>불변 객체로 복사</strong>해 일단 큐에 넣고, ③ 큐는 thread-safe한 <code>BlockingQueue</code>로 두는 식의 producer-consumer 패턴으로 재설계했습니다.
+        그 뒤로는 동기화 범위가 좁아지면서 사고가 사라지고 지연도 개선됐습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">"협력사 모델만 써야 한다"는 전제를 깨는 데 부담은 없었나요? 어떤 위험을 검토했나요?</div>
+      <div class="a">
+        세 가지를 검토했습니다 — ① 음성 데이터가 외부로 나간다는 점에서 <strong>개인정보·법무 검토</strong>가 먼저 필요했고(고객사 컨펌 필요),
+        ② API 의존이 늘면 비용·SLA·장애가 외부에 종속되므로 <strong>인터페이스 추상화</strong>로 교체 가능성을 남기고,
+        ③ 협력사 관계 측면에서 "PoC는 임시 우회"라는 점을 명시했습니다.
+        결과적으로 "교체 가능한 임시 구현 + 추상화"라는 형태로 만들었기 때문에, 협력사 모델 입고 후에도 어댑터만 바꾸면 되게 설계했습니다.
+      </div>
+    </div>
+
+    <h2>🧠 연관 CS 개념 질문</h2>
+
+    <div class="qa">
+      <div class="q">gRPC와 REST의 차이는 무엇이고, 왜 자막 파이프라인에 gRPC를 선택했나요?</div>
+      <div class="a">
+        REST는 텍스트 JSON과 HTTP/1.1을 기반으로 한 요청-응답 모델이라 실시간 양방향 스트림에는 적합하지 않습니다.
+        gRPC는 HTTP/2 위의 binary protobuf 프로토콜로 <strong>multiplexing</strong>·<strong>스트리밍</strong>·<strong>strong typing</strong>을 1급 시민으로 지원합니다.
+        자막처럼 오디오 chunk를 끊임없이 보내고 부분 텍스트를 동시에 받아야 하는 경우 gRPC의 양방향 스트리밍이 자연스러운 선택이었습니다.
+        protobuf의 IDL로 클라이언트·서버 코드가 자동 생성되어 인터페이스 어긋남 사고도 줄어듭니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">gRPC의 4가지 통신 모드를 설명해 주세요.</div>
+      <div class="a">
+        ① <strong>Unary</strong> — 1 요청 / 1 응답 (REST의 일반 호출과 유사),
+        ② <strong>Server streaming</strong> — 1 요청 / N 응답 (대용량 결과를 청크로 받기),
+        ③ <strong>Client streaming</strong> — N 요청 / 1 응답 (파일 업로드처럼 청크로 보내기),
+        ④ <strong>Bidirectional streaming</strong> — N 요청 / N 응답 (채팅·실시간 변환).
+        STT는 오디오를 청크로 보내고 partial 텍스트를 받아야 하므로 양방향 스트리밍이 가장 자연스럽습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Race Condition을 막는 도구로 mutex, semaphore, atomic 변수가 있는데 각각 어떤 차이가 있나요?</div>
+      <div class="a">
+        <strong>뮤텍스(mutex)</strong>는 임계영역에 한 번에 한 스레드만 들어가게 하는 잠금이고, 락을 잡은 스레드가 반드시 해제해야 합니다.
+        <strong>세마포어(semaphore)</strong>는 동시 진입 가능한 수를 N개로 제한하는 카운팅 잠금으로, 자원 풀 제한이나 producer-consumer에서 유용합니다.
+        <strong>atomic 변수</strong>는 CPU의 CAS 같은 명령으로 락 없이 짧은 갱신을 보장하는 도구로,
+        카운터·플래그처럼 단순 연산에는 atomic이, 여러 변수를 함께 보호해야 하면 뮤텍스가 적합합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">"임계영역(critical section)"이란 무엇이고, 잘못 설정하면 어떤 문제가 생기나요?</div>
+      <div class="a">
+        공유 자원에 동시에 접근하면 안 되는 코드 구간을 임계영역이라고 합니다.
+        잘못 설정하면 두 가지 문제가 생깁니다 — ① 영역을 너무 좁게 잡으면 race condition을 못 막고,
+        ② 너무 넓게 잡으면 동시성을 잃어 처리량이 떨어지고 최악의 경우 <strong>데드락</strong>이 생깁니다.
+        그래서 "정확성을 보장하는 가장 좁은 범위"를 잡는 게 원칙이고, 잠금 순서를 일관되게 정해 데드락을 예방합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Producer-Consumer 패턴은 무엇이고, 자막 파이프라인에 어떻게 적용됐나요?</div>
+      <div class="a">
+        한쪽이 데이터를 생산하고 다른 쪽이 소비하는 두 역할을 큐로 분리해, 속도 차이를 흡수하고 동기화를 큐 한 곳으로 모으는 패턴입니다.
+        자막 파이프라인에서는 오디오 캡처 스레드가 producer, 네트워크 송신 스레드가 consumer가 되고, <code>BlockingQueue</code>(또는 channel)가 그 사이의 버퍼였습니다.
+        큐 자체가 thread-safe하므로 양쪽 코드에서 직접 락을 잡을 일이 거의 사라지고, 자연스럽게 back-pressure(소비가 느리면 producer가 대기)도 구현됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">HTTP/2가 HTTP/1.1과 비교해 gRPC에 적합한 이유는 무엇인가요?</div>
+      <div class="a">
+        HTTP/1.1은 한 연결에서 동시에 하나의 요청만 진행할 수 있어(헤더 블로킹), 양방향 스트리밍이 사실상 불가능합니다.
+        HTTP/2는 한 TCP 연결 위에 여러 스트림을 다중화(multiplexing)할 수 있고, 헤더 압축(HPACK)과 binary framing으로 오버헤드가 작습니다.
+        gRPC는 이 위에서 동작하므로 한 연결로 양방향 스트림을 자연스럽게 구성하고, 모바일·임베디드처럼 자원이 제한된 환경에서도 효율적입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">실시간 시스템에서 latency를 줄이려면 어떤 점을 고려하시겠어요?</div>
+      <div class="a">
+        ① 네트워크 — 청크 크기와 전송 주기를 최적화(작으면 RTT 누적, 크면 첫 결과 지연),
+        ② 직렬화 — JSON 대신 protobuf 같은 binary 포맷으로 크기·파싱 비용 감소,
+        ③ 스레드 — UI/캡처/네트워크 스레드를 분리하고 임계영역을 짧게 유지,
+        ④ 메모리 — 큰 객체 할당을 줄여 GC 휴지 최소화,
+        ⑤ 측정 — 단계별 지연을 측정해 잘못된 최적화를 피합니다.
+        실시간은 "어디에 시간이 가는지 측정 가능한 상태"를 만드는 것이 가장 중요합니다.
+      </div>
+    </div>
+
+    <h2>🎣 실패 가능성 있는 꼬리 질문</h2>
+    <ul style="line-height:1.9;">
+      <li>gRPC가 모바일 환경(특히 안드로이드 TV)에서 갖는 단점은 무엇인가요? (HTTP/2 프록시 호환, 디버깅 도구 빈약)</li>
+      <li>WER(Word Error Rate)이 무엇이고, partial 결과의 지연과는 어떤 트레이드오프가 있는지?</li>
+      <li>Java의 <code>synchronized</code>와 <code>ReentrantLock</code>의 차이는 무엇이고 언제 후자를 쓰나요? (timeout, fairness, condition)</li>
+      <li>안드로이드의 메인 스레드 정책 때문에 자막 렌더링에서 어떤 점을 주의해야 하나요? (네트워크·연산 메인 스레드 금지)</li>
+      <li>STT API 호출에 PII가 포함될 수 있다면 보안·법적 고려사항은 무엇인가요?</li>
+    </ul>
+
+    <h2>📚 관련 CS 노트</h2>
+    <ul class="related-chips">
+      <li><a href="../operating-system/synchronization.html">동기화 / 임계영역</a></li>
+      <li><a href="../operating-system/deadlock.html">데드락</a></li>
+      <li><a href="../operating-system/process-thread.html">프로세스와 스레드</a></li>
+      <li><a href="../network/http-versions.html">HTTP/2 / HTTP/3</a></li>
+      <li><a href="../network/tcp-udp.html">TCP / UDP</a></li>
+      <li><a href="../java/multithreading.html">Java 멀티스레딩</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="q1-tech-stack.html">
+        <span class="label">이전</span>
+        ← Q1. 기술 습득
+      </a>
+      <a href="index.html">📂 심평원 면접</a>
+      <a class="next" href="q3-communication.html">
+        <span class="label">다음</span>
+        Q3. 소통 단점 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

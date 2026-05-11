@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q3. 소통 단점 — Spring Batch vs Crontab · 심평원 면접 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">심평원 면접</a>
+      <span class="sep">›</span>
+      <span>Q3. 소통 단점</span>
+    </nav>
+
+    <h1>Q3. 소통 단점 — 기술 결정 사전 공유 습관화</h1>
+
+    <div class="callout">
+      <p><strong>🎯 한 줄 핵심 메시지</strong></p>
+      <p>
+        "구현 속도를 강점으로 가졌지만, 그것이 <em>'팀 합의 없이 혼자 결정하는 약점'</em>이기도 했다.
+        Spring Batch vs Crontab 사고를 계기로,
+        기술 결정 전에 선택 이유와 대안을 짧게 정리해 먼저 공유하는 습관을 만들어 재작업을 0으로 줄였다."
+      </p>
+    </div>
+
+    <h2>📄 자소서 원문 요약</h2>
+    <div class="definition">
+      공공 교육 플랫폼 학습 순위 집계 스케줄러를 받았을 때, 확장성을 이유로 <strong>Spring Batch</strong>를 단독 결정해 구현.
+      그러나 PL은 "이 규모에서는 <strong>Crontab 기반 스케줄러</strong>가 유지보수·운영에 더 적합하다"는 피드백을 줬고 전면 재작업이 필요했음.
+      이후부터는 <strong>구현 전에 선택 이유와 대안을 짧게 정리해 먼저 논의</strong>하는 습관으로 바꿔, 재작업 없이 일관된 흐름으로 개발.
+    </div>
+
+    <h2>🔥 경험 deep dive 질문</h2>
+
+    <div class="qa">
+      <div class="q">왜 Spring Batch가 적합하다고 판단하셨나요? 어떤 요건이 그 결정을 이끌었나요?</div>
+      <div class="a">
+        장기적으로 데이터 양이 늘었을 때 chunk 단위 처리·재시작·트랜잭션 관리가 필요할 것이라 보고 Spring Batch를 골랐습니다.
+        Job/Step 모델, ItemReader/Processor/Writer 추상화, 재실행 시 마지막 처리 지점부터 이어가는 메타테이블 구조가 매력이었습니다.
+        다만 그 판단은 <strong>"미래의 가능성"</strong>에 무게가 컸고, 현재 데이터 규모와 운영팀의 익숙한 도구를 충분히 고려하지 못한 점이 한계였습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PL의 피드백 — "이 규모에서는 Crontab이 더 적합하다"의 근거는 무엇이었을 거라 생각하시나요?</div>
+      <div class="a">
+        세 가지였을 것입니다. ① 처리 데이터 양이 적어 단순 SQL 한두 개로 끝나는 작업에 Spring Batch의 메타테이블·재시작 인프라는 과한 도구였고,
+        ② 운영팀이 Crontab 로그·시간 변경에 익숙해 장애 대응이 빠른 반면 Spring Batch는 별도 학습 비용이 있고,
+        ③ 인프라 측면에서도 별도 배치 서버나 잡 모니터링 도구가 추가로 필요해 운영 부담이 늘어났을 것입니다.
+        결국 "<em>YAGNI(You Aren't Gonna Need It)</em>" 원칙을 먼저 적용했어야 하는 경우였습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">"의사결정 전 공유"를 어떤 형식으로 하시나요? 너무 무거우면 오히려 안 하게 되지 않나요?</div>
+      <div class="a">
+        가장 가벼운 형태로는 <strong>3줄 노션/슬랙 메모</strong>입니다 — "할 것 / 후보 1·2 / 추천과 이유" 한 페이지로 정리합니다.
+        조금 더 큰 결정에는 <strong>ADR(Architecture Decision Record)</strong> 한 장(맥락·결정·결과·대안)을 PR과 함께 남기고,
+        리뷰어가 결정 자체에도 코멘트를 달 수 있게 합니다.
+        무게는 결정의 되돌리기 비용에 비례하게 두는 것이 핵심입니다 — 작은 결정은 슬랙 한 줄, 큰 결정은 ADR.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">이 단점이 다시 나오지 않게 만드는 시스템적 장치는 무엇인가요?</div>
+      <div class="a">
+        ① 새 라이브러리·프레임워크 도입은 <strong>PR 본문에 의무 섹션</strong>으로 "도입 이유 / 대안 / 운영 영향"을 적게 한다,
+        ② 일정 규모 이상의 변경은 ADR을 별도 폴더에 남긴다,
+        ③ 스프린트 시작 시 <strong>kick-off 30분</strong> 동안 큰 결정을 미리 합의한다,
+        ④ 회고에서 "사전 합의 없이 진행한 결정"의 사례를 식별해 공유한다.
+        장치를 만들지 않으면 결국 개인 의지에 기대게 되므로, 팀 워크플로 자체에 단계를 끼워 넣는 것이 중요합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">팀의 결정과 본인의 기술적 신념이 다를 때 어떻게 행동하시나요?</div>
+      <div class="a">
+        먼저 결정 근거를 한 번 더 확인합니다 — 팀의 이유가 명확하면 동의하고 빠르게 따릅니다.
+        그래도 신념과 다르다면, ① 팀 결정을 일단 따라 일정·약속을 지키고, ② 결정의 결과(성능, 운영 사고 빈도)를 데이터로 모은 뒤,
+        ③ 다음 회고에서 데이터를 근거로 재논의합니다.
+        의견 차이를 즉석 논쟁으로 해결하지 않고, 시간차 데이터로 풀어내는 것이 협업 비용을 낮추는 방법이라 생각합니다.
+      </div>
+    </div>
+
+    <h2>🧠 연관 CS 개념 질문</h2>
+
+    <div class="qa">
+      <div class="q">Spring Batch의 핵심 구성요소를 설명해 주세요.</div>
+      <div class="a">
+        <strong>Job</strong>이 가장 큰 단위로, 그 안에 여러 개의 <strong>Step</strong>이 순서대로 실행됩니다.
+        각 Step은 chunk 지향이라면 <strong>ItemReader → ItemProcessor → ItemWriter</strong>의 세 단계로 데이터를 chunk 크기 단위로 처리합니다.
+        Spring Batch는 <strong>JobRepository(메타테이블)</strong>에 실행 이력을 기록해 실패 시 마지막 처리 지점부터 재시작할 수 있고,
+        chunk 단위로 트랜잭션이 묶여 부분 실패 시 해당 chunk만 롤백됩니다. 이런 인프라가 대용량·장기 실행 배치에 큰 가치를 줍니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Crontab의 표현식과 동작 원리를 설명해 주세요.</div>
+      <div class="a">
+        Crontab은 분/시/일/월/요일 5필드(또는 초까지 6필드)로 시간 패턴을 표현하고, cron 데몬이 매분 표현식을 평가해 일치하는 작업을 실행합니다.
+        예: <code>0 3 * * 1-5</code>는 평일 오전 3시 정각, <code>*/10 * * * *</code>는 10분 간격.
+        장점은 OS 표준이라 학습 곡선이 짧고 외부 의존이 없다는 것이고,
+        한계는 작업 간 의존성·실패 처리·재실행이 직접 구현해야 한다는 점, 단일 서버에 묶인다는 점입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Spring Batch와 Crontab을 어떻게 비교하시겠어요? 언제 어떤 걸 쓰나요?</div>
+      <div class="a">
+        Crontab은 "정해진 시각에 명령을 실행"하는 <strong>스케줄러</strong>이고, Spring Batch는 "한 번의 배치 실행 안의 처리·재시작·통계"를 다루는 <strong>배치 프레임워크</strong>입니다.
+        실제로는 자주 결합해서 씁니다 — Crontab(또는 Quartz·K8s CronJob)이 트리거를 걸고, Spring Batch가 그 안에서 실제 처리를 책임집니다.
+        단순 SQL 한 줄·shell 한 줄로 끝나면 Crontab만으로 충분하고, 데이터가 크고 재시작·트랜잭션·메타데이터가 필요하면 Spring Batch가 적합합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">분산 환경에서 Crontab만으로는 어떤 문제가 생기나요?</div>
+      <div class="a">
+        ① <strong>중복 실행</strong> — 같은 cron이 여러 노드에서 동시에 실행되어 데이터가 두 번 처리될 수 있고,
+        ② <strong>리더 장애</strong> — 한 노드만 cron을 가졌다면 그 노드 장애 시 작업이 누락,
+        ③ <strong>관측성 부족</strong> — 분산 노드의 cron 로그를 한 곳에 모으기 어려움.
+        해결로는 분산 락(Redis·DB·Zookeeper)으로 단일 실행 보장, Kubernetes CronJob처럼 클러스터 차원의 스케줄러 사용,
+        Quartz의 클러스터 모드 같은 도구를 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">YAGNI와 KISS 원칙이 무엇이고, 이번 사례에 어떻게 적용되었나요?</div>
+      <div class="a">
+        <strong>YAGNI(You Aren't Gonna Need It)</strong>는 "지금 필요하지 않은 기능은 만들지 말라"는 원칙이고,
+        <strong>KISS(Keep It Simple, Stupid)</strong>는 "가능한 한 단순하게 유지하라"는 원칙입니다.
+        이번 사례는 "미래의 확장성"이라는 가정에 무게를 두고 현재 규모에 비해 과한 도구를 선택한 YAGNI 위반에 가까웠습니다.
+        교훈은 "확장이 필요해질 때 도구를 들이는 비용 vs 지금 들이는 비용"을 먼저 비교하는 것이고, 보통은 후자가 훨씬 큽니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">ADR(Architecture Decision Record)이 무엇이고, 왜 도입할 가치가 있나요?</div>
+      <div class="a">
+        ADR은 중요한 아키텍처 결정을 한 페이지에 <strong>맥락(Context) · 결정(Decision) · 결과(Consequences) · 대안(Alternatives)</strong> 형식으로 남기는 문서입니다.
+        가치는 ① 6개월 뒤 "왜 이렇게 결정했지?"를 빠르게 답할 수 있고, ② 신규 멤버에게 도메인 결정의 맥락을 빠르게 전달하며,
+        ③ 결정의 근거가 데이터화되어 재논의가 감정적이지 않아진다는 점입니다.
+        대신 너무 무겁게 만들면 안 쓰게 되므로, "한 페이지·간결" 규칙을 지키는 것이 핵심입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">학습 순위 집계를 SQL 한 줄로 짠다면 어떻게 짜시겠어요?</div>
+      <div class="a">
+        윈도우 함수 <code>RANK()</code> 또는 <code>DENSE_RANK()</code>를 활용합니다 — 예를 들어
+<pre><code>SELECT user_id, total_score,
+       RANK() OVER (ORDER BY total_score DESC) AS rnk
+FROM   user_scores
+WHERE  period = :daily_key
+</code></pre>
+        결과를 일별 스냅샷 테이블에 적재해 변경 이력을 남깁니다. 동점 처리 정책에 따라 RANK(동점 후 점프)와 DENSE_RANK(동점 후 연속) 중 선택,
+        상위 N만 노출하면 <code>QUALIFY rnk &lt;= 100</code>(또는 서브쿼리)로 제한합니다. 인덱스는 <code>(period, total_score DESC)</code> 복합 인덱스가 적합합니다.
+      </div>
+    </div>
+
+    <h2>🎣 실패 가능성 있는 꼬리 질문</h2>
+    <ul style="line-height:1.9;">
+      <li>Spring Batch에서 chunk 크기를 어떻게 정하시나요? 너무 크거나 작을 때의 문제는?</li>
+      <li>Quartz와 Spring Scheduler(<code>@Scheduled</code>)의 차이는 무엇인가요? (cluster 지원, persistence)</li>
+      <li>K8s CronJob의 <code>concurrencyPolicy</code> 옵션 3가지(Allow/Forbid/Replace)를 설명할 수 있나요?</li>
+      <li>본인의 강점이 단점이 된다는 표현이 있는데, 이번 단점의 강점 측면은 무엇이라 생각하나요?</li>
+      <li>"PL의 결정이 틀렸다"고 느낀 적이 있다면 어떻게 행동하셨나요?</li>
+    </ul>
+
+    <h2>📚 관련 CS 노트</h2>
+    <ul class="related-chips">
+      <li><a href="../software-engineering/clean-code.html">클린 코드 / 코드 리뷰</a></li>
+      <li><a href="../software-engineering/architecture-styles.html">아키텍처 스타일</a></li>
+      <li><a href="../software-engineering/ci-cd.html">CI / CD</a></li>
+      <li><a href="../database/sql-basics.html">SQL 기본</a></li>
+      <li><a href="../operating-system/process-thread.html">프로세스 / 데몬</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="q2-stt-poc.html">
+        <span class="label">이전</span>
+        ← Q2. STT PoC
+      </a>
+      <a href="index.html">📂 심평원 면접</a>
+      <a class="next" href="q4-decrypt-utility.html">
+        <span class="label">다음</span>
+        Q4. 복호화 유틸 →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
