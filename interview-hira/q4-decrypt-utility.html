@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q4. 효율화 — Properties 복호화 유틸리티 · 심평원 면접 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">심평원 면접</a>
+      <span class="sep">›</span>
+      <span>Q4. 복호화 유틸리티</span>
+    </nav>
+
+    <h1>Q4. 효율화 — BASS Properties 복호화 유틸리티 사내 배포</h1>
+
+    <div class="callout">
+      <p><strong>🎯 한 줄 핵심 메시지</strong></p>
+      <p>
+        "BASS 프로젝트에서 암호화된 Properties 확인 때마다 발생하던 팀원 간 구두 문의를
+        <em>'개인의 불편'이 아닌 '팀의 비효율'</em>로 보고 공용 복호화 유틸리티를 직접 만들어 배포해
+        커뮤니케이션 비용을 줄이고 개발 흐름의 끊김을 없앴다."
+      </p>
+    </div>
+
+    <h2>📄 자소서 원문 요약</h2>
+    <div class="definition">
+      BASS 프로젝트에서 DB 접속 정보 등 민감 환경 설정값(Properties)을 암호화 관리 중이었으나,
+      <strong>공통 복호화 도구가 없어 팀원 간 구두 문의</strong>가 반복.
+      이를 팀 단위 비효율로 인식하고 누구나 쓸 수 있는 <strong>복호화 유틸리티를 직접 개발·사내 배포</strong>.
+      이후 구두 문의가 사라지고 개발 흐름이 끊기지 않게 됨 → 커뮤니케이션 비용 절감 + 개발 생산성 향상.
+    </div>
+
+    <p style="color:var(--text-muted); font-size:13.5px; margin-top:24px; line-height:1.7;">
+      💡 각 답변 아래 <strong>"🎤 면접 답변"</strong> 박스는 그대로 입으로 옮기는 30초 내외의 구어체 스크립트입니다.
+    </p>
+
+    <h2>🔥 경험 deep dive 질문</h2>
+
+    <div class="qa">
+      <div class="q">유틸리티는 어떤 형태로 만들었고 어떻게 배포하셨나요?</div>
+      <div class="a">
+        진입 장벽을 가장 낮추기 위해 <strong>CLI 형태</strong>로 만들었습니다 — 한 줄 명령으로 암호화 값을 입력하면 평문이 출력되는 단순한 인터페이스였습니다.
+        내부적으로는 회사가 표준으로 사용하는 알고리즘과 키 로딩 로직을 모듈화해 라이브러리로 분리해 두고,
+        CLI는 그 라이브러리를 호출하는 얇은 wrapper로 만들었습니다.
+        같은 라이브러리를 다른 도구(빌드 스크립트, 점검용 스크립트)에서도 재사용할 수 있게 한 것이 의도였습니다.
+        팀 GitLab 저장소에 올리고 README 한 페이지로 사용법을 정리해 공유했습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        진입 장벽 낮추려고 CLI 형태로 만들었습니다. 한 줄 명령으로 암호화 값 입력하면 평문이 출력되는 단순한 인터페이스고요,
+        내부적으로는 회사 표준 알고리즘과 키 로딩 로직을 라이브러리로 분리해서 다른 빌드 스크립트에서도 재사용할 수 있게 했습니다.
+        팀 GitLab에 올리고 README 한 페이지로 사용법 공유했습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">복호화 키는 어떻게 보관·관리하셨나요? 누가 어디서 그 키에 접근할 수 있게 했나요?</div>
+      <div class="a">
+        키 자체를 코드나 리포지토리에 절대 두지 않고, 실행 환경의 OS 사용자 권한이 보호하는 별도 위치에 두고 로딩만 하도록 설계했습니다.
+        유틸리티 사용자는 키 값을 알 필요 없이 키를 읽을 수 있는 권한만 있으면 되었고, 권한은 운영팀이 통제했습니다.
+        이상적으로는 <strong>HashiCorp Vault·AWS KMS·HSM</strong> 같은 키 관리 시스템에 둬 회수·로테이션이 가능해야 하지만,
+        BASS는 공공 사업 인프라 제약 안에서 가능한 범위로 키를 분리한 형태였습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        키 자체는 코드나 리포지토리에 절대 두지 않고, 실행 환경의 OS 사용자 권한이 보호하는 별도 위치에 두고 로딩만 하도록 설계했습니다.
+        사용자는 키 값을 알 필요 없이 키를 읽을 수 있는 권한만 있으면 되고, 권한은 운영팀이 통제했고요.
+        이상적으로는 Vault나 KMS 같은 키 관리 시스템에 둬서 회수·로테이션이 자동화되어야 하지만,
+        BASS는 공공 사업 인프라 제약 안에서 가능한 범위로 키를 분리한 형태였습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">"누구나 쉽게 사용할 수 있도록 설계했다"고 하셨는데 사용성 측면에서 무엇을 고려하셨나요?</div>
+      <div class="a">
+        세 가지였습니다 — ① <strong>설치 없이 바로 실행</strong>(단일 jar/스크립트로 배포),
+        ② <strong>실수 방지</strong>(잘못된 입력 시 명확한 에러, 평문이 명령 히스토리에 남지 않도록 stdin·환경변수 입력 옵션 제공),
+        ③ <strong>로깅 분리</strong>(평문은 절대 파일·로그에 남지 않도록 stdout만 사용).
+        문서는 README 한 페이지로 짧게, 자주 쓰는 시나리오 3~4개를 예시로 포함했습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        세 가지였습니다. 첫째 설치 없이 바로 실행되도록 단일 jar로 배포, 둘째 잘못된 입력 시 명확한 에러와 평문이 명령 히스토리에 남지 않게
+        stdin·환경변수 입력 옵션 제공, 셋째 평문은 절대 파일·로그에 남지 않도록 stdout만 사용. 문서는 README 한 페이지로 짧게,
+        자주 쓰는 시나리오 3-4개를 예시로 포함했습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">기존에 Jasypt·Spring Cloud Config·Vault 같은 표준 도구가 있는데 자체 제작한 이유는 무엇인가요?</div>
+      <div class="a">
+        ① BASS는 공공 사업 환경이라 회사가 이미 자체 암호화 정책·알고리즘·키 보관 규정을 가지고 있어 외부 표준을 그대로 적용할 수 없었고,
+        ② 도입에 인프라·정책 변경이 필요해 단기간에 수용되기 어려웠으며,
+        ③ 당장 필요한 것은 "설정값 한 줄을 안전하게 복호화"라는 작은 기능이라 표준 도구가 과한 상황이었습니다.
+        다만 면접에서는 "장기적으로는 Vault나 KMS 같은 키 관리 시스템을 도입하는 것이 옳은 방향이고,
+        자체 도구는 그쪽으로 가는 첫 발판이었다"고 답하는 것이 정확합니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        BASS가 공공 사업 환경이라 회사가 이미 자체 암호화 정책·알고리즘·키 보관 규정을 갖고 있어서 외부 표준을 그대로 적용할 수 없었고,
+        도입에 인프라·정책 변경이 필요해서 단기간에 수용되기 어려웠습니다.
+        당장 필요한 게 설정값 한 줄 안전하게 복호화 정도라 표준 도구가 과한 상황이기도 했고요.
+        다만 장기적으로는 Vault나 KMS 가는 게 옳은 방향이고, 자체 도구는 그쪽으로 가는 첫 발판이라 봅니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">유틸리티가 잘못 쓰이거나 악용될 위험은 없었나요? 어떻게 통제했나요?</div>
+      <div class="a">
+        가장 큰 위험은 <strong>평문이 로그·CI 산출물·터미널 히스토리에 남는 것</strong>이었고, 다음으로 <strong>키 파일 권한 관리 실패</strong>였습니다.
+        통제는 ① 평문 출력은 stdout만 사용하고 자동으로 파일에 쓰지 않게 하기,
+        ② 키 파일은 OS 권한 0600으로 강제 검사,
+        ③ 도구 실행 시점이 감사 로그에 남도록 설계,
+        ④ 운영 환경에서는 사용 권한 자체를 제한된 사용자에게만 부여 — 같은 다층 통제로 만들었습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        가장 큰 위험은 평문이 로그·CI 산출물·터미널 히스토리에 남는 것이었고, 그다음이 키 파일 권한 관리 실패였습니다.
+        평문 출력은 stdout만, 키 파일은 OS 권한 0600 강제 검사, 도구 실행 시점이 감사 로그에 남도록 설계,
+        운영 환경에선 사용 권한 자체를 제한된 사용자에게만 부여하는 다층 통제로 만들었습니다.
+      </div>
+    </div>
+
+    <h2>🧠 연관 CS 개념 질문</h2>
+
+    <div class="qa">
+      <div class="q">대칭키와 비대칭키 암호화의 차이는 무엇이고, 설정값 암호화에는 어떤 게 적합한가요?</div>
+      <div class="a">
+        대칭키는 같은 키로 암·복호화 모두를 수행하는 방식(AES 등)으로 빠르고 짧은 키로 충분합니다.
+        비대칭키는 공개키로 암호화하고 개인키로 복호화하는 방식(RSA·ECC)으로 안전한 키 교환이나 서명에 유용하지만 느립니다.
+        설정값 같은 다량의 데이터를 자주 복호화해야 하는 용도에는 <strong>대칭키(AES)</strong>가 적합합니다.
+        실무에서는 둘을 조합해 비대칭키로 대칭키 자체를 안전하게 전달하는 하이브리드 방식이 표준입니다(TLS가 대표).
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        대칭키는 같은 키로 암·복호화하는 방식이라 빠르고 짧은 키로 충분합니다. AES가 대표고요.
+        비대칭키는 공개키로 암호화하고 개인키로 복호화하는 방식이라 안전한 키 교환이나 서명에 좋은데 느립니다.
+        설정값처럼 다량을 자주 복호화하는 용도엔 대칭키 AES가 적합하고, 실무에선 둘을 조합해서 비대칭키로 대칭키 자체를 안전하게 전달하는
+        하이브리드를 자주 씁니다. TLS가 대표적입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">AES의 동작 모드(ECB·CBC·GCM)를 설명해 주세요.</div>
+      <div class="a">
+        AES는 블록 암호이고, 여러 블록을 어떻게 이어 붙여 암호화할지가 동작 모드입니다.
+        <strong>ECB</strong>는 블록마다 독립 암호화 — 같은 평문 블록이 같은 암호문 블록이 되어 패턴이 노출되므로 사용 금지.
+        <strong>CBC</strong>는 직전 암호문과 XOR 후 암호화 — 패턴은 숨겨지지만 무결성 검증이 없어 패딩 오라클 공격에 취약.
+        <strong>GCM</strong>은 암호화 + 인증 태그까지 함께 만드는 인증 암호 모드로, 무결성·기밀성을 동시에 보장하므로 현대 표준 권장.
+        설정값 암호화도 가능하면 GCM 같은 AEAD 모드를 사용하는 것이 안전합니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        ECB는 블록마다 독립 암호화라 패턴이 노출돼서 사용 금지고요, CBC는 직전 암호문과 XOR 후 암호화라 패턴은 숨겨지는데 무결성 검증이 없어
+        패딩 오라클 공격에 취약합니다. GCM은 암호화에 인증 태그까지 함께 만드는 AEAD 모드라 무결성·기밀성을 동시에 보장하니까 현대 표준 권장입니다.
+        설정값 암호화도 가능하면 GCM 같은 AEAD가 안전합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">키 관리 시스템(KMS)이 무엇이고, 왜 자체 보관보다 KMS가 권장되나요?</div>
+      <div class="a">
+        KMS는 암호화 키의 생성·저장·로테이션·접근 통제를 전문 서비스로 분리해 제공하는 시스템입니다(AWS KMS, GCP KMS, HashiCorp Vault, HSM 등).
+        장점은 ① 키가 애플리케이션 외부에 격리되어 코드·서버 침해 시에도 키가 노출되지 않고,
+        ② 접근 정책·감사 로그가 표준화되며,
+        ③ 정기 키 로테이션과 즉시 회수가 자동화된다는 점입니다.
+        반면 자체 보관은 키 노출·로테이션 부담·감사 추적이 모두 운영팀의 수작업에 의존하게 됩니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        키 생성·저장·로테이션·접근 통제를 전문 서비스로 분리한 게 KMS입니다. 키가 애플리케이션 외부에 격리되어
+        코드나 서버 침해 시에도 키가 노출되지 않고, 접근 정책·감사 로그가 표준화되고, 정기 키 로테이션과 즉시 회수가 자동화됩니다.
+        자체 보관은 키 노출 부담·로테이션·감사가 다 운영팀 수작업에 의존하게 됩니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">비밀번호 같은 자격증명을 DB에 저장할 때는 암호화와 해싱 중 무엇을 쓰나요?</div>
+      <div class="a">
+        암호화는 복호화가 가능한 양방향 변환이고, 해싱은 단방향 변환이라 원래 값을 복원할 수 없습니다.
+        <strong>비밀번호는 원본을 다시 알 필요가 없으므로 해싱이 정답</strong>이고,
+        구체적으로는 <strong>bcrypt·scrypt·Argon2</strong>처럼 의도적으로 느리고 솔트(salt)가 결합된 알고리즘을 사용해야 합니다.
+        SHA-256만 쓰면 너무 빨라 GPU 무차별 대입에 취약합니다.
+        반면 BASS의 DB 접속 정보처럼 사용 시점에 원본이 필요한 값은 양방향 암호화를 씁니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        비밀번호는 원본을 다시 알 필요가 없으니 단방향 해싱이 정답이고요, bcrypt나 scrypt, Argon2처럼 의도적으로 느리고 솔트가 결합된 알고리즘을 써야 합니다.
+        SHA-256만 쓰면 너무 빨라서 GPU 무차별 대입에 취약합니다. BASS의 DB 접속 정보처럼 사용 시점에 원본이 필요한 값은 양방향 암호화를 씁니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Salt와 Pepper가 무엇이고 왜 필요한가요?</div>
+      <div class="a">
+        Salt는 각 사용자마다 다른 무작위 값으로, 같은 비밀번호도 다른 해시가 되게 만들어 <strong>레인보우 테이블 공격</strong>을 막습니다.
+        DB에 해시와 함께 저장됩니다.
+        Pepper는 모든 사용자에 공통으로 적용하는 추가 비밀로, 애플리케이션 코드나 별도 시크릿 저장소에 두며 DB 침해만으로는 노출되지 않게 합니다.
+        둘을 함께 사용하면 DB만 유출되어도 평문 비밀번호를 역산하기가 매우 어려워집니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        Salt는 사용자마다 다른 무작위 값으로, 같은 비밀번호도 다른 해시가 되게 만들어서 레인보우 테이블 공격을 막습니다. DB에 해시와 함께 저장되고요.
+        Pepper는 모든 사용자에 공통 적용하는 추가 비밀로, 코드나 별도 시크릿 저장소에 둬서 DB 침해만으로는 노출되지 않게 합니다.
+        둘 같이 쓰면 DB만 유출되어도 평문 비밀번호 역산이 매우 어려워집니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">설정값을 코드 리포지토리에 평문으로 두면 어떤 문제가 생기나요?</div>
+      <div class="a">
+        ① <strong>유출 위험</strong> — 리포지토리가 공개로 잘못 전환되거나 fork되면 즉시 노출,
+        ② <strong>git history 영구성</strong> — 한 번 커밋된 시크릿은 history에서 완전히 지우기가 어려움,
+        ③ <strong>접근 통제 실패</strong> — 코드 접근 권한이 시크릿 접근 권한과 같아져 최소 권한 원칙 위배,
+        ④ <strong>환경별 분리 어려움</strong> — 개발/스테이징/운영 시크릿이 같은 곳에 있게 됨.
+        해결은 환경 변수, <code>.env</code>(gitignore), 시크릿 매니저(Vault, KMS, GitHub Secrets) 같은 외부 보관입니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        리포지토리가 공개로 잘못 전환되거나 fork되면 즉시 노출되고, 한 번 커밋된 시크릿은 git history에서 완전히 지우기 거의 불가능합니다.
+        코드 접근 권한이 곧 시크릿 접근 권한이 되어서 최소 권한 원칙 위배되고, 개발·스테이징·운영 시크릿이 같은 곳에 있게 됩니다.
+        해결은 환경 변수, .env에 gitignore, Vault나 KMS 같은 시크릿 매니저 같은 외부 보관입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">키 로테이션은 왜 필요하고 어떻게 진행하나요?</div>
+      <div class="a">
+        키가 오래 쓰이면 노출 가능성이 누적되고, 한 키가 깨지면 모든 데이터가 위험해집니다. 그래서 정기적으로 새 키로 교체하는 것이 키 로테이션입니다.
+        절차는 ① 새 키 생성 → ② 새 키로도 암호화 가능하도록 시스템에 추가(이중 키 기간) → ③ 옛 키로 암호화된 값을 새 키로 재암호화 →
+        ④ 옛 키 폐기·아카이브.
+        KMS를 쓰면 이 과정이 자동화되어 키 ID만 바꿔도 새 데이터는 새 키로 암호화되며, 점진적 마이그레이션이 가능해집니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        키가 오래 쓰이면 노출 가능성이 누적되고, 한 키가 깨지면 모든 데이터가 위험해서 정기 교체가 필요합니다.
+        절차는 새 키 생성 → 새 키로도 암호화 가능하도록 시스템에 추가하는 이중 키 기간 → 옛 키로 암호화된 값을 새 키로 재암호화 → 옛 키 폐기·아카이브 순입니다.
+        KMS 쓰면 이 과정이 자동화되어서 키 ID만 바꿔도 새 데이터는 새 키로 암호화되고, 점진적 마이그레이션이 가능해집니다.
+      </div>
+    </div>
+
+    <h2>🎣 실패 가능성 있는 꼬리 질문</h2>
+    <ul style="line-height:1.9;">
+      <li>유틸리티 도입 후 효과를 정량적으로 측정해 보셨나요? (구두 문의 횟수, 작업 흐름 단절 시간 등)</li>
+      <li>심평원처럼 민감 정보가 많은 환경에서 시크릿 관리는 어떤 방식이 표준일까요? (KMS·HSM·Vault 비교)</li>
+      <li>암호화된 설정값 자체가 깨졌을 때(예: 키 분실) 복구 절차는 어떻게 설계하시겠어요?</li>
+      <li>HTTPS의 TLS 핸드셰이크에서 대칭키와 비대칭키가 각각 어디에 쓰이는지?</li>
+      <li>JWT 서명은 대칭키(HS256)와 비대칭키(RS256) 중 무엇이 어떤 상황에서 적합한가요?</li>
+      <li>이력서에 SQLD·정보처리기사·AI-102·AZ-900을 보유한 게 보이는데, 그 학습 경험이 이 문제 해결에 도움이 됐나요?</li>
+    </ul>
+
+    <h2>📚 관련 CS 노트</h2>
+    <ul class="related-chips">
+      <li><a href="../web/web-security.html">웹 보안 기본</a></li>
+      <li><a href="../network/http-https.html">HTTP / HTTPS</a></li>
+      <li><a href="../network/cookies-session-jwt.html">쿠키 / 세션 / JWT</a></li>
+      <li><a href="../software-engineering/ci-cd.html">CI / CD (시크릿 관리)</a></li>
+      <li><a href="../software-engineering/clean-code.html">클린 코드 / 도구화</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="q3-communication.html">
+        <span class="label">이전</span>
+        ← Q3. 소통 단점
+      </a>
+      <a href="index.html">📂 심평원 면접</a>
+      <span class="next"></span>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>

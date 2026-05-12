@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q1. 직무 지식·기술 습득 경험 · 심평원 면접 · CS 학습 노트</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/concept.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-title"><a href="../index.html">📚 CS 학습 노트</a></div>
+      <nav class="site-nav">
+        <button class="theme-toggle" type="button" aria-label="테마 전환">☀️</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <nav class="breadcrumb" aria-label="현재 위치">
+      <a href="../index.html">홈</a>
+      <span class="sep">›</span>
+      <a href="index.html">심평원 면접</a>
+      <span class="sep">›</span>
+      <span>Q1. 직무 지식·기술 습득 경험</span>
+    </nav>
+
+    <h1>Q1. 직무 지식·기술 습득 경험 — Java/SQL/Python</h1>
+
+    <div class="callout">
+      <p><strong>🎯 한 줄 핵심 메시지</strong></p>
+      <p>
+        "BASS 프로젝트에서 <em>실행 계획 교차 검증으로 PreparedStatement + DB 함수 바인딩 패턴의 Full Scan을 규명</em>하고
+        <em>외부 시험 결과 적재 API에서 트랜잭션을 학생 단위로 분리</em>해 정합성을 지켜낸 경험,
+        그리고 SSAFY 책크인에서 <em>하이브리드 추천 엔진을 FastAPI로 서빙</em>한 경험을
+        진료비 심사 데이터의 대용량 처리·운영 자동화에 그대로 옮겨 쓸 수 있다."
+      </p>
+    </div>
+
+    <h2>📄 자소서 원문 요약</h2>
+    <div class="definition">
+      BASS(부산교육청 자기주도학습 플랫폼) 통계 대시보드의 1분+ 응답 지연 원인을 실행 계획 교차 검증으로 추적해
+      <strong>MyBatis의 PreparedStatement + PostgreSQL 옵티마이저 사이의 Selectivity 추정 실패</strong>임을 규명, 응답 1초 이내로 단축.
+      Python으로는 SSAFY 책크인(우수상) 프로젝트에서 Pandas/NumPy로 공공 도서관 데이터 ETL과
+      <strong>FastAPI 기반 하이브리드 추천 API</strong>를 구현. 입사 후 진료비 심사 데이터 ETL 성능 개선과 운영 자동화·데이터 분석에 활용 예정.
+    </div>
+
+    <p style="color:var(--text-muted); font-size:13.5px; margin-top:24px; line-height:1.7;">
+      💡 각 답변 아래 <strong>"🎤 면접 답변"</strong> 박스는 그대로 입으로 옮기는 30초 내외의 구어체 스크립트입니다.
+      위쪽 글 답변은 디테일 학습용, 아래 박스는 실전 답변용으로 분리해 사용하세요.
+    </p>
+
+    <h2>🔥 경험 deep dive 질문</h2>
+
+    <div class="qa">
+      <div class="q">통계 대시보드 1분+ 지연 원인을 어떻게 진단했고, 무엇을 보고 "비정상 플랜"이라고 판단했나요?</div>
+      <div class="a">
+        먼저 같은 쿼리를 두 환경에서 따로 실행해 비교했습니다 — DBeaver(SQL IDE)에서는 0.X초로 정상이었고 인덱스 기반 Index Scan 플랜이 잡혔는데,
+        실제 서버 환경(MyBatis 통한 호출)에서는 1분 이상 걸리며 <strong>Nested Loop 내부에서 Full Scan이 반복</strong>되는 플랜이 잡혔습니다.
+        같은 SQL인데 플랜이 다르다면 쿼리 자체의 논리적 결함이 아니라 <em>애플리케이션 레이어와 옵티마이저 사이의 상호작용 문제</em>임을 의심했고,
+        실행 계획 로그·MyBatis 매핑·옵티마이저 통계까지 다각적으로 교차 검증하면서 원인을 좁혔습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        DBeaver에서는 0.X초로 잘 도는데 서버에서는 1분 넘게 걸렸습니다. 같은 SQL이 환경에 따라 다른 플랜이 잡힌다는 건 쿼리 자체 문제가 아니라
+        애플리케이션 레이어와 옵티마이저 사이의 상호작용 문제라는 신호여서, 실행 계획 로그를 비교했습니다.
+        서버 환경에서 Nested Loop 안에 Full Scan이 반복되는 플랜이 잡혀 있었고, 그게 결정적 단서였습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">"파라미터 참조 방식 개선"의 정확한 의미가 무엇인가요? 어떤 부분을 어떻게 바꾸셨나요?</div>
+      <div class="a">
+        문제가 된 쿼리는 <code>WHERE created_at &lt; concat($1, ...)::timestamp</code>처럼
+        <strong>파라미터를 DB 내부 함수(concat·cast)로 한 번 감싸서 동적 바인딩</strong>하는 레거시 패턴이었습니다.
+        PostgreSQL 옵티마이저는 PreparedStatement 실행 계획 수립 시점에 함수로 감싸진 값의 실제 범위를 알 수 없어
+        <strong>Selectivity 추정에 실패</strong>하고, 인덱스 활용을 포기한 채 Full Scan으로 떨어진 것이 근본 원인이었습니다.
+        해결은 단순했습니다 — <strong>Java 애플리케이션 레이어에서 timestamp 문자열을 미리 완성</strong>해
+        <code>'2026-04-01 23:59:59'</code> 형태 그대로 바인딩했더니, 옵티마이저가 정확한 값의 범위를 인지해 Index Scan을 선택했습니다.
+        결과적으로 <em>데이터 가공 책임을 DB에서 애플리케이션 레이어로 이전</em>한 것이 본질이었습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        기존엔 파라미터를 concat이나 cast 같은 DB 함수로 감싸서 바인딩하고 있었습니다. PostgreSQL 옵티마이저가 함수 안의 값을 들여다보지 못해
+        Selectivity 추정에 실패하고 Full Scan을 골랐던 게 원인이었고요. 그래서 Java 레이어에서 timestamp 문자열을 미리 완성해 그대로 바인딩하니까
+        옵티마이저가 정확한 범위를 인지하고 Index Scan으로 돌아왔습니다. 결국 데이터 가공 책임을 DB에서 애플리케이션으로 이전한 거였습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">한 쿼리만 고치고 끝낸 게 아니라고 하셨는데, 후속 조치는 어떻게 하셨나요?</div>
+      <div class="a">
+        같은 시스템 안의 다른 레거시 쿼리에서도 <strong>"PreparedStatement + DB 함수 바인딩"</strong> 패턴이 반복되고 있을 가능성이 높다고 봤고,
+        그래프 형태로 의심 패턴을 정의해 시스템 내 쿼리들을 전수 조사했습니다.
+        같은 원인을 가진 쿼리들에 동일한 분석 기법을 적용해 <strong>선제적으로 성능 개선</strong>을 진행했고,
+        한 번의 트러블슈팅을 단건 조치가 아니라 <em>패턴 단위의 개선</em>으로 확장한 사례입니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        같은 패턴이 다른 레거시 쿼리에도 있을 거라 보고, 시스템 내 PreparedStatement + DB 함수 바인딩 패턴을 전수 조사했습니다.
+        동일한 분석 기법을 적용해서 선제적으로 개선했고, 단건 조치가 아니라 패턴 단위 개선으로 끝냈습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">외부 시험 플랫폼 결과 적재 API에서 가장 신경 쓴 설계 결정은 무엇인가요?</div>
+      <div class="a">
+        외부 진단평가 시스템에서 수백~수천 명 학생의 시험 결과가 한 번에 들어오는 구조였습니다.
+        선언적 <code>@Transactional</code>로 묶으면 단 1건의 데이터 오류 때문에 정상인 수천 건이 모두 롤백되는 문제가 있었습니다.
+        그래서 <strong>PlatformTransactionManager로 프로그래밍 방식 트랜잭션</strong>을 잡아
+        <em>학생 1명 단위로 commit·rollback</em>을 분리했습니다(한 학생의 3과목이 모두 정상일 때만 commit, 실패 시 그 학생만 rollback).
+        그 위에 <strong>Fail-Fast 다단계 검증</strong>(API 인증 → 필수값 누락 검사 → 포맷 검증)을 DB 접근 전에 두어
+        비정상 데이터를 조기에 차단했고, 멱등성을 위해 <strong>Upsert(2건 이상 중복 시 DELETE 후 INSERT)</strong> 전략을 적용했습니다.
+        마지막으로 HTTP 응답을 전체 성공·부분 성공·전체 실패로 세분화해 외부 기관이 스스로 보정할 수 있는 피드백 루프를 만들었습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        @Transactional로 묶으면 1건 오류로 정상 수천 건이 다 롤백되는 문제가 있었습니다. 그래서 PlatformTransactionManager로
+        학생 한 명 단위로 commit·rollback을 분리했고요. DB 접근 전에 Fail-Fast 다단계 검증을 두고, 멱등성 위해 Upsert를 적용했습니다.
+        응답 코드도 전체성공·부분성공·전체실패로 세분화해서 외부 기관이 스스로 보정할 수 있도록 만들었습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">대량 적재 안정성을 어떻게 검증하셨나요?</div>
+      <div class="a">
+        <strong>JMeter로 실제 운영 규모의 동시 요청 부하 테스트</strong>를 수행해, DB 커넥션 풀 고갈·데드락·타임아웃이 없음을 사전 검증했습니다.
+        부하 테스트로 평균·p95·p99 응답 시간과 트랜잭션 실패율을 함께 측정해 임계 처리량을 알아냈고,
+        그 결과를 운영 SLA에 반영해 외부 기관이 한 번에 보낼 수 있는 적정 배치 크기를 합의했습니다.
+        부하 테스트는 "구현 완료"의 마침표가 아니라 "운영 안정성에 대한 데이터 근거"라는 점이 핵심이었습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        JMeter로 실제 운영 규모의 동시 요청 부하 테스트를 돌려서 DB 커넥션 풀 고갈이나 데드락이 없는지 사전 검증했습니다.
+        평균과 p95·p99도 같이 측정해서 임계 처리량을 알아냈고, 이걸 외부 기관과 적정 배치 크기 합의하는 기준으로 썼습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">SSAFY 책크인 프로젝트에서 추천 엔진을 어떻게 설계했나요?</div>
+      <div class="a">
+        공공 도서관 OpenAPI와 설문 데이터를 Pandas/NumPy로 ETL해 도서·독서모임 메타데이터를 정제했고,
+        <strong>콘텐츠 기반 필터링과 협업 필터링을 결합한 하이브리드 엔진</strong>을 구현했습니다.
+        신규 사용자(cold start) 구간은 콘텐츠 기반(키워드·장르 유사도)으로 추천하고,
+        사용자 행동 데이터가 쌓이면 협업 필터링 결과를 가중 평균으로 섞는 구조였습니다.
+        FastAPI 위에서 추천 API로 서빙했고, 자주 호출되는 사용자별 추천 결과는 Redis로 캐싱해 응답 시간을 줄였습니다.
+        이 프로젝트로 SSAFY 빅데이터 특화 우수상을 받았습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        공공 도서관 OpenAPI 데이터를 Pandas로 정제하고, 콘텐츠 기반과 협업 필터링을 결합한 하이브리드 엔진을 만들었습니다.
+        신규 사용자는 콘텐츠 기반으로 추천하고, 행동 데이터가 쌓이면 협업 필터링을 가중 평균으로 섞는 구조였습니다.
+        FastAPI로 서빙하고 자주 쓰는 결과는 Redis로 캐싱했고요. SSAFY 빅데이터 특화 우수상을 받은 프로젝트입니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">진료비 심사 데이터의 대용량 ETL 성능 개선은 구체적으로 어떻게 접근하시겠어요?</div>
+      <div class="a">
+        BASS에서 했던 것과 동일하게 <strong>병목 측정이 우선</strong>입니다 — 추출·변환·적재 중 어디에 시간이 몰리는지를 측정해야 잘못된 최적화를 피합니다.
+        그 위에 ① 행 단위 처리 → 배치(<code>executeBatch</code>·<code>COPY</code>) 전환,
+        ② 적재 직전 인덱스 비활성화 후 재생성, ③ 파티셔닝과 병렬 처리,
+        ④ 변환 단계는 가능한 한 SET 단위 SQL로 DB 안에서 처리해 네트워크 왕복 제거 순으로 적용합니다.
+        BASS 외부 시험 적재 API에서 했던 것처럼 <strong>학생 단위 같은 작은 단위로 트랜잭션을 분리</strong>해
+        부분 실패가 전체로 번지지 않게 만드는 패턴은 심사 데이터에도 그대로 적용 가능합니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        병목 측정이 우선이고, 그 위에 행 단위를 배치 단위로 바꾸고, 적재 직전 인덱스 비활성화 후 재생성, 파티셔닝과 병렬 처리,
+        변환은 가능한 DB SET 단위로 처리해 네트워크 왕복을 줄이는 순서로 적용합니다.
+        그리고 BASS에서 학생 단위로 트랜잭션 분리한 것처럼, 부분 실패가 전체로 번지지 않게 만드는 패턴은 심사 데이터에도 그대로 적용 가능합니다.
+      </div>
+    </div>
+
+    <h2>🧠 연관 CS 개념 질문</h2>
+
+    <div class="qa">
+      <div class="q">PreparedStatement의 장점이 무엇인가요?</div>
+      <div class="a">
+        쿼리 텍스트와 데이터가 분리되어 DB에 전달되므로 <strong>SQL Injection을 차단</strong>합니다 — 어떤 문자열이 들어와도 SQL 일부로 해석되지 않습니다.
+        부수적으로 동일 쿼리의 실행 계획을 캐싱해 재사용할 수 있어 반복 호출 성능에도 이점이 있고, 타입 안전성도 강해집니다.
+        다만 BASS 사례처럼 <em>바인드 값이 함수로 감싸져 있으면 옵티마이저가 그 값의 범위를 추정하지 못해 오히려 잘못된 플랜을 고를 수 있다</em>는 함정도 있습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        쿼리와 데이터가 분리되어 전달되니까 SQL Injection을 원천 차단합니다. 어떤 문자열이 들어와도 SQL의 일부로 해석되지 않아서요.
+        부수적으로 실행 계획 캐싱 효과도 있고요. 다만 BASS 사례처럼 바인드 값이 함수로 감싸지면 옵티마이저가 잘못된 플랜을 고를 수 있다는 함정도 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Full Scan과 Index Scan은 각각 언제 더 유리한가요?</div>
+      <div class="a">
+        Full Scan은 테이블 모든 블록을 순차 읽기로 가져오므로 <strong>전체 행의 상당 비율(보통 10~20% 이상)을 읽어야 할 때</strong> 오히려 빠릅니다.
+        Index Scan은 인덱스를 거쳐 필요한 행만 랜덤 액세스하므로 <strong>선택성이 높을 때(전체의 일부만 필요)</strong> 유리합니다.
+        옵티마이저는 통계와 추정 selectivity를 보고 둘 중 더 싸 보이는 쪽을 고르므로,
+        통계가 오래되거나 BASS처럼 바인드 값을 추정 못 하면 잘못된 선택이 생깁니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        전체 행의 10~20% 이상을 읽어야 하면 오히려 Full Scan이 빠르고, 일부만 필요한 선택성 높은 경우엔 Index Scan이 유리합니다.
+        옵티마이저가 통계로 둘 중 싸 보이는 쪽을 고르는데, 통계가 오래됐거나 BASS처럼 바인드 값을 추정 못 하면 잘못 선택할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">PostgreSQL 옵티마이저가 PreparedStatement에서 selectivity를 어떻게 추정하나요?</div>
+      <div class="a">
+        PostgreSQL은 PreparedStatement를 처음 실행할 때 실제 바인드 값으로 한 번 plan을 만들어 보고(custom plan),
+        몇 번 더 실행해 본 뒤 비용이 비슷하면 값에 무관한 generic plan으로 캐싱합니다(plan_cache_mode로 강제 가능).
+        값이 함수로 감싸져 있으면 옵티마이저가 값을 들여다볼 수 없어 가장 보수적인 추정으로 동작하고, 그 결과가 BASS의 Full Scan이었습니다.
+        해결의 본질은 <em>값을 함수 밖으로 꺼내 옵티마이저가 직접 볼 수 있게</em> 만드는 것이었습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        처음 몇 번은 실제 값으로 custom plan을 만들어 보고, 비용이 비슷하면 값에 무관한 generic plan으로 캐싱합니다.
+        값이 함수로 감싸지면 옵티마이저가 들여다보지 못해 가장 보수적으로 추정하는데, BASS의 Full Scan이 그 결과였습니다.
+        그래서 값을 함수 밖으로 꺼내는 게 해결의 본질이었습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">실행 계획에서 어떤 항목을 가장 먼저 확인하시나요?</div>
+      <div class="a">
+        ① 접근 방식(Seq/Index Scan, 어떤 인덱스를 탔는지),
+        ② 예상 ROWS와 실제 ROWS 차이(통계 신뢰도),
+        ③ JOIN 알고리즘(Nested Loop / Hash / Sort-Merge)과 그 순서,
+        ④ Sort·Hash 같이 메모리·디스크를 쓰는 연산이 있는지,
+        ⑤ COST의 절댓값이 아니라 단계별 분포.
+        BASS 사례에서는 "Nested Loop 내부의 반복 Full Scan"이 결정적 신호였습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        접근 방식이 어떤 인덱스를 탔는지, 예상 ROWS와 실제 ROWS 차이, 조인 알고리즘과 순서, Sort나 Hash 같이 메모리 쓰는 연산이 있는지,
+        그다음 COST 분포를 봅니다. BASS 사례에서는 Nested Loop 안의 반복 Full Scan이 결정적 신호였습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">선언적 트랜잭션(<code>@Transactional</code>)과 프로그래밍 방식 트랜잭션(<code>PlatformTransactionManager</code>)의 차이는 무엇인가요?</div>
+      <div class="a">
+        <code>@Transactional</code>은 메서드 진입·종료를 트랜잭션 경계로 자동 묶어 주는 선언적 방식이라 단순·일관된 코드가 강점입니다.
+        반면 <code>PlatformTransactionManager</code>는 코드로 직접 <code>begin()</code>·<code>commit()</code>·<code>rollback()</code>을 호출해
+        <strong>트랜잭션 경계를 동적으로 자르거나 합칠 수 있는 유연성</strong>이 강점입니다.
+        BASS 외부 시험 적재 API처럼 "학생 1명 단위로 commit·rollback을 분리해야 한다"처럼 경계가 데이터에 따라 달라지는 경우엔 후자가 적합합니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        @Transactional은 메서드 진입·종료를 자동으로 트랜잭션 경계로 묶어주는 선언적 방식이고요, PlatformTransactionManager는
+        코드로 직접 begin·commit·rollback을 호출해 경계를 동적으로 자를 수 있는 유연성이 강점입니다.
+        BASS처럼 학생 1명 단위로 commit·rollback을 분리해야 하는 경우엔 후자가 적합합니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">Upsert가 무엇이고 멱등성과 어떻게 연결되나요?</div>
+      <div class="a">
+        Upsert는 INSERT를 시도하되 이미 존재하면 UPDATE로 대체하는 연산입니다(PostgreSQL은 <code>ON CONFLICT</code>, MySQL은 <code>ON DUPLICATE KEY UPDATE</code>).
+        외부 API가 네트워크 지연으로 같은 요청을 두 번 보내도 결과가 같아지는 <strong>멱등성</strong>을 자연스럽게 보장합니다.
+        BASS에서는 한 발 더 나가 "2건 이상 중복된 레거시 이상 상태"에서는 <strong>DELETE 후 INSERT</strong>로 정합성을 강제하는 보호 장치를 두었습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        Upsert는 INSERT를 시도하되 이미 있으면 UPDATE로 대체하는 연산입니다. 외부 API가 네트워크 지연으로 같은 요청을 두 번 보내도
+        결과가 같아지는 멱등성을 자연스럽게 보장합니다. BASS에서는 한 발 더 나가 2건 이상 중복된 이상 상태에서는
+        DELETE 후 INSERT로 강제 정합성을 확보하는 보호 장치를 뒀습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">하이브리드 추천 엔진에서 콘텐츠 기반과 협업 필터링을 어떻게 결합하시나요?</div>
+      <div class="a">
+        콘텐츠 기반은 아이템 메타데이터의 유사도(키워드·장르·저자)로 점수를 매기고, 협업 필터링은 사용자 행동 패턴이 비슷한 사용자의 선호로 점수를 매깁니다.
+        결합 방식은 ① <strong>가중 평균</strong>(α × CB + (1-α) × CF, α는 사용자 데이터 양에 따라 조정),
+        ② 단계별 폴백(신규 사용자는 CB, 데이터가 쌓이면 CF로 점진 전환),
+        ③ 후처리 다양성(top-N에 카테고리 분산 강제) 같은 기법을 함께 씁니다.
+        Cold start와 long-tail 문제를 동시에 줄이는 게 하이브리드의 가장 큰 이점입니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        가중 평균으로 두 점수를 섞거나, 단계별 폴백으로 신규 사용자는 콘텐츠 기반, 데이터 쌓이면 협업 필터링으로 점진 전환하는 방식이 일반적입니다.
+        책크인에서도 신규 사용자는 콘텐츠 기반, 행동 데이터 쌓이면 협업 필터링 가중치를 높이는 구조로 만들었고요.
+        top-N에 카테고리 분산을 강제해서 다양성도 확보했습니다.
+      </div>
+    </div>
+
+    <div class="qa">
+      <div class="q">FastAPI를 선택한 이유는 무엇인가요?</div>
+      <div class="a">
+        세 가지 이유였습니다 — 첫째, <strong>비동기(async/await) 지원이 1급 시민</strong>이라 외부 OpenAPI를 동시 호출하는 데 유리,
+        둘째, <strong>Pydantic 기반 자동 스키마 검증과 OpenAPI 문서 자동 생성</strong>이 작은 팀의 생산성을 크게 높여 줌,
+        셋째, Django는 풀스택이라 추천 API용으로 무거웠고 Flask는 가볍지만 타입·문서화를 직접 갖춰야 했습니다.
+        FastAPI는 그 사이에서 "API에만 집중한 가벼운 풀세트"라 적합했고, 현재 회사에서도 Slack/Jira 게이트웨이 서버를 FastAPI로 만들고 있습니다.
+      </div>
+      <div class="script">
+        <span class="script-label">🎤 면접 답변</span>
+        비동기 지원이 1급 시민이라 외부 OpenAPI 동시 호출에 유리했고, Pydantic 자동 검증과 OpenAPI 문서 자동 생성이 작은 팀에 큰 생산성을 줬습니다.
+        Django는 추천 API용으로 무거웠고 Flask는 타입·문서를 직접 갖춰야 했어서요. 지금 회사에서도 Slack·Jira 게이트웨이를 FastAPI로 만들고 있습니다.
+      </div>
+    </div>
+
+    <h2>🎣 실패 가능성 있는 꼬리 질문</h2>
+    <ul style="line-height:1.9;">
+      <li>PostgreSQL의 <code>plan_cache_mode</code>(custom·generic·force_custom_plan)를 알고 있나요?</li>
+      <li>"Java로 timestamp를 미리 완성"이 SQL Injection 측면에서는 안전한가요? (답: 정적 문자열로 바인딩하면 PreparedStatement 보호 그대로 유지)</li>
+      <li>JMeter 외에 부하 테스트 도구를 써봤다면 어떤 도구이고 차이는 무엇인가요? (k6, Locust, Gatling)</li>
+      <li>PlatformTransactionManager로 학생 단위 트랜잭션을 잡으면 트랜잭션 수가 폭증하는데 DB에 부담은 없나요?</li>
+      <li>심사 데이터에 PII가 포함된다면 ETL 과정에서 어떻게 보호하시겠어요? (마스킹·키 분리·접근 통제)</li>
+      <li>현재 회사에서 만들고 있는 Slack/Jira 게이트웨이의 구조와 Claude Code 활용 방식을 설명할 수 있나요?</li>
+    </ul>
+
+    <h2>📚 관련 CS 노트</h2>
+    <ul class="related-chips">
+      <li><a href="../database/execution-plan.html">실행 계획</a></li>
+      <li><a href="../database/indexing.html">인덱스</a></li>
+      <li><a href="../database/sql-basics.html">SQL 기본</a></li>
+      <li><a href="../database/transaction-acid.html">트랜잭션 ACID</a></li>
+      <li><a href="../database/join-algorithm.html">조인 알고리즘</a></li>
+      <li><a href="../python/python-basics.html">Python 기본</a></li>
+      <li><a href="../python/iterators-generators.html">제너레이터 (ETL 청크 처리)</a></li>
+    </ul>
+
+    <nav class="footer-nav" aria-label="페이지 이동">
+      <a class="prev" href="index.html">
+        <span class="label">이전</span>
+        ← 심평원 면접 메인
+      </a>
+      <a href="index.html">📂 심평원 면접</a>
+      <a class="next" href="q2-stt-poc.html">
+        <span class="label">다음</span>
+        Q2. STT PoC →
+      </a>
+    </nav>
+  </main>
+
+  <script src="../assets/js/common.js"></script>
+</body>
+</html>
